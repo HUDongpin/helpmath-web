@@ -13,6 +13,9 @@
 6. Promote manually only after contact delivery, bilingual navigation, both
    demos, metadata, accessibility, and the raw-Flash 404 probes pass.
 
+Without a public Turnstile key, the production contact page intentionally
+shows an unavailable notice and renders no form. The API also fails closed.
+
 ## Vercel
 
 - Framework: Next.js
@@ -43,4 +46,3 @@ Record the release commit and prior production deployment. For an application
 failure, use Vercel Instant Rollback. For DNS/TLS failure, restore only the
 previous website A/AAAA/CNAME values. Never roll back mail records as part of a
 website incident.
-

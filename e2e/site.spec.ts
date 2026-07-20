@@ -136,25 +136,21 @@ test('account access page is a status page and never renders credential fields',
   expectNoRuntimeIssues(issues);
 });
 
-test('contact page provides an adult-facing form and prominent sensitive-data guidance', async ({
+test('contact page fails closed until verified delivery is configured', async ({
   page,
 }) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/contact', 'en');
 
   await expect(page.getByRole('heading', {level: 1, name: 'Tell us what you are looking for'})).toBeVisible();
-  const form = page.locator('main form');
-  await expect(form).toBeVisible();
-  await expect(form.getByLabel('Your role')).toBeVisible();
-  await expect(form.getByLabel('Email address')).toHaveAttribute('type', 'email');
-  await expect(form.getByLabel('How can we help?')).toBeVisible();
-  await expect(form.getByRole('option', {name: 'Educator', exact: true})).toHaveCount(1);
-  await expect(form.getByRole('option', {name: 'Parent or guardian', exact: true})).toHaveCount(1);
-  await expect(form.getByRole('option', {name: /student/i})).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'Contact intake is not accepting messages yet'}),
+  ).toBeVisible();
+  await expect(page.locator('main form')).toHaveCount(0);
   await expect(
     page.getByRole('heading', {level: 2, name: 'Do not send student or account secrets'}),
   ).toBeVisible();
-  await expect(page.getByText(/student records, passwords, or other sensitive personal information/i)).toBeVisible();
+  await expect(page.getByText(/student data, passwords, or account information/i)).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   expectNoRuntimeIssues(issues);
 });
