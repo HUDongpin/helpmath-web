@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-21",
+  "validationStatus": "conditional",
+  "sources": {
+    "conversion-1-2": {
+      "flaSha256": "7c59923ebd200f4fb951e1c9a7683861c21af7688d537fa5fca370acf6d9291d",
+      "swfSha256": "91d63f9f045d2097cd0f46c59ceacd4faefd95851f9039003589d8052c39e758"
+    },
+    "conversion-1-4": {
+      "flaSha256": "d661c776e239fb59c44278c6e4d5fd75812599eb2dc9fa758b1ba37a59251b1c",
+      "swfSha256": "cbb7f3f529c8c5ca679da864c7c49ab472cac4d0feb2392eed5aa04d21a4e1a9"
+    }
+  },
+  "files": {
+    "demos/vendor/FlashBauhausFormula.jsx": "8216b35a1ca0c9230a58fa7245d64ec9d549a61e86f481b8f3762f0ff35b7b71",
+    "demos/vendor/FlashBauhausGallon.jsx": "48564432846793dd54b9abfd3e04a3f38fb2529a3b261f7d3c133f3e2498d0a6",
+    "demos/vendor/GallonConversionAnimation.jsx": "bebc6758f5b06b5cafd65994cb88aa26adc8536ba42a30b2bc695d89ac0c0073",
+    "demos/vendor/LiterConversionAnimation.jsx": "b5de640446f4e89f80f5382ea4245c8e0264d547627f90fe9f6e415ddd2225bb",
+    "demos/lib/conversionTimeline.js": "5ffef75269fff6c28c360f3a75303d739b2e509590d2bf1c9d80791b83f752f8",
+    "public/flash-assets/conversion-1-2/gallon-0.png": "ee08cc634e0c8d9019e4e75161e4c1782de82fc74a5fb4fe14e67d2cd2c9ca6d",
+    "public/flash-assets/conversion-1-2/gallon-32.png": "067605176a72fd410471c78b3b518bf3a566e6417488996e4d30856fdd3eca0b",
+    "public/flash-assets/conversion-1-2/gallon-64.png": "1f8f38e5d64ad6f64d7b86ca547f84eac2d632de0187873e1e5ff6cff89f187c",
+    "public/flash-assets/conversion-1-2/gallon-96.png": "27c824870f25276fc1c826960203b2d2a7ddeeccfbda1a8f62bdb0e0a82dcd4c",
+    "public/flash-assets/conversion-1-2/gallon-128.png": "e56efa3ec6a524f3b9ffc078c343f72ac066662818df276982a64d330394c5d6",
+    "public/flash-assets/conversion-1-2/quart-empty-stage.png": "787c393e2c9871a18cab03bad8268a04531d87db4dee238e5b37dda882152a3d",
+    "public/flash-assets/conversion-1-2/quart-full-stage.png": "8a59974bbb0db31ca12d45d85276c9432f4ca6abbcdcfd45334b22dc7aeb1bf7",
+    "public/flash-assets/conversion-1-2/quart-pouring-empty.png": "7b5dbfd5193be7f41814a796937ebfc4f8f7fa11b97ae85c153ca9741a76718c",
+    "public/flash-assets/conversion-1-2/quart-pouring-full.png": "30c708178259cfdb7f4e04d648e0b0c11a72ba788dd72b9fcdf7985218eb4ec4",
+    "public/flash-assets/cylinder-base.png": "97578297f09956d47cf4c34009122810c6054c7d8d44b681b214eb7e4ba867e8",
+    "public/flash-assets/pitcher-back.png": "7018dc94cfd9c5126b044770ff806dcbc53332792e72782b21f15f5ba1074792",
+    "public/flash-assets/pitcher-front.png": "ca0cd95d7142fc375e6b5a5cc16c56b0402e1586a0bb9881ecd3eb6286df1622"
+  }
+}
