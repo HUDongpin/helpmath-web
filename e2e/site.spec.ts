@@ -188,6 +188,21 @@ test('unknown routes return a non-indexable 404 response', async ({page}) => {
   await expect(page.locator('body')).toHaveText('Not Found');
 });
 
+test('audited legacy pages and document directories redirect permanently', async ({request}) => {
+  for (const [legacyPath, destination] of [
+    ['/Contact.htm', '/contact'],
+    ['/Ped.htm', '/approach'],
+    ['/Demo.htm', '/demos'],
+    ['/PR/historical-study.pdf', '/research'],
+    ['/DealerDocs/historical-guide.pdf', '/resources'],
+    ['/shortdemo/index.htm', '/demos'],
+  ] as const) {
+    const response = await request.get(legacyPath, {maxRedirects: 0});
+    expect(response.status(), legacyPath).toBe(308);
+    expect(response.headers().location, legacyPath).toBe(destination);
+  }
+});
+
 test('robots and sitemap publish crawl policy and both locale variants', async ({request}) => {
   const robots = await request.get('/robots.txt');
   expect(robots.status()).toBe(200);

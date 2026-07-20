@@ -25,6 +25,7 @@ export const contactTopics = [
   'resources',
   'research',
   'accessibility',
+  'privacy',
   'collaboration',
   'project-history',
 ] as const;
@@ -78,7 +79,6 @@ export function isContactTopic(value: string): value is (typeof contactTopics)[n
 const topicAliases: Record<string, (typeof contactTopics)[number]> = {
   instruction: 'curriculum',
   'family-support': 'account-access',
-  privacy: 'accessibility',
   permissions: 'collaboration',
   'accessible-resource': 'resources',
   'resource-about-help-math': 'resources',

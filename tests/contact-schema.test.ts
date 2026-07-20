@@ -62,7 +62,7 @@ describe('contactRequestSchema', () => {
   });
 
   it('maps legacy contact-link topics to supported categories', () => {
-    assert.equal(normalizeContactTopic('privacy'), 'accessibility');
+    assert.equal(normalizeContactTopic('privacy'), 'privacy');
     assert.equal(normalizeContactTopic('resource-html5-proposal'), 'resources');
     assert.equal(normalizeContactTopic('support'), 'support');
     assert.equal(normalizeContactTopic('unknown'), undefined);

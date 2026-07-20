@@ -25,21 +25,32 @@ const securityHeaders = [
   {key: 'X-Frame-Options', value: 'DENY'}
 ];
 
-const legacyRedirects: NonNullable<NextConfig['redirects']> = async () => [
+export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () => [
   {source: '/Home.htm', destination: '/', permanent: true},
+  {source: '/Index.htm', destination: '/', permanent: true},
   {source: '/About.htm', destination: '/about', permanent: true},
+  {source: '/ProgramInfo.htm', destination: '/about', permanent: true},
   {source: '/AcademicLanguage.htm', destination: '/approach', permanent: true},
+  {source: '/Ped.htm', destination: '/approach', permanent: true},
   {source: '/SIOP.htm', destination: '/approach', permanent: true},
   {source: '/Content.htm', destination: '/curriculum', permanent: true},
   {source: '/Standards.htm', destination: '/curriculum', permanent: true},
   {source: '/Evidence.htm', destination: '/research', permanent: true},
   {source: '/Awards.htm', destination: '/research', permanent: true},
+  {source: '/Testimonials.htm', destination: '/research', permanent: true},
   {source: '/Resources.htm', destination: '/resources', permanent: true},
   {source: '/Sales.htm', destination: '/contact', permanent: true},
   {source: '/Trial.htm', destination: '/contact', permanent: true},
   {source: '/Purchasing.htm', destination: '/contact', permanent: true},
+  {source: '/PurchaseInfo.htm', destination: '/contact', permanent: true},
+  {source: '/Contact.htm', destination: '/contact', permanent: true},
   {source: '/Login.htm', destination: '/login', permanent: true},
-  {source: '/TechSpecs.htm', destination: '/support', permanent: true}
+  {source: '/TechSpecs.htm', destination: '/support', permanent: true},
+  {source: '/Demo.htm', destination: '/demos', permanent: true},
+  {source: '/shortdemo/:path*', destination: '/demos', permanent: true},
+  {source: '/PR/:path*', destination: '/research', permanent: true},
+  {source: '/DealerDocs/:path*', destination: '/resources', permanent: true},
+  {source: '/Beta/:path*', destination: '/curriculum', permanent: true}
 ];
 
 const nextConfig: NextConfig = {

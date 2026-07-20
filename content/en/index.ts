@@ -805,6 +805,7 @@ export const enContent = {
           { value: "resources", label: "Resource request" },
           { value: "research", label: "Research or evidence" },
           { value: "accessibility", label: "Accessibility feedback" },
+          { value: "privacy", label: "Privacy question" },
           { value: "collaboration", label: "Future access or collaboration" },
           { value: "project-history", label: "Project history" },
         ],

@@ -39,6 +39,8 @@ so the website records can be restored.
 
 Do not claim an SEO migration from `helpprogram.net` until administrative
 control of that host is confirmed and page-level permanent redirects are live.
+The audited URL mapping and verification procedure are recorded in
+[LEGACY_CUTOVER.md](./LEGACY_CUTOVER.md).
 
 ## Rollback
 

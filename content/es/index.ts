@@ -805,6 +805,7 @@ export const esContent = {
           { value: "resources", label: "Solicitud de recursos" },
           { value: "research", label: "Investigación o evidencia" },
           { value: "accessibility", label: "Comentarios de accesibilidad" },
+          { value: "privacy", label: "Consulta sobre privacidad" },
           { value: "collaboration", label: "Acceso o colaboración futura" },
           { value: "project-history", label: "Historia del proyecto" },
         ],
