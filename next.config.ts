@@ -1,5 +1,7 @@
 import type {NextConfig} from 'next';
 
+import {DRAFT_LEGAL_PATHS} from './lib/legal-publishing';
+
 const securityHeaders = [
   {
     key: 'Content-Security-Policy',
@@ -24,6 +26,11 @@ const securityHeaders = [
   {key: 'X-Content-Type-Options', value: 'nosniff'},
   {key: 'X-Frame-Options', value: 'DENY'}
 ];
+
+const draftLegalHeaders = DRAFT_LEGAL_PATHS.map((source) => ({
+  source,
+  headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]
+}));
 
 export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () => [
   {source: '/Home.htm', destination: '/', permanent: true},
@@ -57,7 +64,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {
-    return [{source: '/(.*)', headers: securityHeaders}];
+    return [...draftLegalHeaders, {source: '/(.*)', headers: securityHeaders}];
   },
   redirects: legacyRedirects
 };

@@ -14,9 +14,7 @@ const routes = [
   '/demos/conversion-1-4',
   '/support',
   '/login',
-  '/contact',
-  '/privacy',
-  '/terms'
+  '/contact'
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {

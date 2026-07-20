@@ -16,6 +16,12 @@
 Without a public Turnstile key, the production contact page intentionally
 shows an unavailable notice and renders no form. The API also fails closed.
 
+Until release-gate item 2 is complete, the English and Spanish Privacy and
+Terms drafts send `X-Robots-Tag: noindex, follow`, render matching robots meta,
+and are excluded from the sitemap. After signed review, update the legal copy
+first, then remove the paths from `lib/legal-publishing.ts` and update the
+boundary and browser tests in the same reviewed commit.
+
 ## Vercel
 
 - Framework: Next.js

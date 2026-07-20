@@ -220,7 +220,26 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   expect(sitemapText).toContain('<loc>https://www.helpmath.ai/es</loc>');
   expect(sitemapText).toContain('https://www.helpmath.ai/demos/conversion-1-2');
   expect(sitemapText).toContain('https://www.helpmath.ai/es/demos/conversion-1-4');
+  expect(sitemapText).not.toContain('https://www.helpmath.ai/privacy');
+  expect(sitemapText).not.toContain('https://www.helpmath.ai/terms');
+  expect(sitemapText).not.toContain('https://www.helpmath.ai/es/privacy');
+  expect(sitemapText).not.toContain('https://www.helpmath.ai/es/terms');
 });
+
+for (const path of ['/privacy', '/terms', '/es/privacy', '/es/terms'] as const) {
+  test(`${path} exposes the draft but prevents search indexing`, async ({page}) => {
+    const response = await page.goto(path, {waitUntil: 'networkidle'});
+    expect(response?.status()).toBe(200);
+    expect(response?.headers()['x-robots-tag']).toBe('noindex, follow');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'noindex, follow',
+    );
+    await expect(page.locator('.legal-meta p')).toContainText(
+      path.startsWith('/es') ? 'Borrador' : 'Draft',
+    );
+  });
+}
 
 for (const path of [
   '/',

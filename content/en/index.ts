@@ -997,7 +997,7 @@ export const enContent = {
       effectiveDateLabel: "Last updated",
       effectiveDate: "July 21, 2026",
       reviewNotice:
-        "Owner review required before publication. This draft reflects the planned launch configuration and must be updated if vendors, data flows, or services change.",
+        "Draft for owner review. This is not a final legal notice. It reflects the planned launch configuration and must be updated if vendors, data flows, or services change.",
       sections: [
         {
           id: "scope",
@@ -1076,7 +1076,7 @@ export const enContent = {
       contact: {
         title: "Privacy question or request?",
         body:
-          "Use the contact form and choose Accessibility feedback or another relevant topic. Do not include sensitive records in the request.",
+          "Use the contact form and choose Privacy question. Do not include sensitive records in the request.",
         action: { label: "Contact the project", href: "/contact?topic=privacy" },
       },
     },
@@ -1095,7 +1095,7 @@ export const enContent = {
       effectiveDateLabel: "Last updated",
       effectiveDate: "July 21, 2026",
       reviewNotice:
-        "Owner and legal review required before publication. Governing entity, jurisdiction, contact address, and any demo-specific license terms must be confirmed for the production version.",
+        "Draft for owner and legal review. These are not final terms. Governing entity, jurisdiction, contact address, and any demo-specific license terms must be confirmed for the production version.",
       sections: [
         {
           id: "acceptance",
