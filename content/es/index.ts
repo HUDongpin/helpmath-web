@@ -997,7 +997,7 @@ export const esContent = {
       effectiveDateLabel: "Última actualización",
       effectiveDate: "21 de julio de 2026",
       reviewNotice:
-        "Requiere revisión del titular antes de publicarse. Este borrador refleja la configuración prevista y debe actualizarse si cambian proveedores, flujos de datos o servicios.",
+        "Borrador para revisión del titular. No es un aviso legal definitivo. Refleja la configuración prevista y debe actualizarse si cambian proveedores, flujos de datos o servicios.",
       sections: [
         {
           id: "scope",
@@ -1076,7 +1076,7 @@ export const esContent = {
       contact: {
         title: "¿Tienes una pregunta o solicitud de privacidad?",
         body:
-          "Usa el formulario y elige comentarios de accesibilidad u otro tema pertinente. No incluyas expedientes sensibles.",
+          "Usa el formulario y elige Consulta sobre privacidad. No incluyas expedientes sensibles.",
         action: { label: "Contactar con el proyecto", href: "/es/contact?topic=privacy" },
       },
     },
@@ -1095,7 +1095,7 @@ export const esContent = {
       effectiveDateLabel: "Última actualización",
       effectiveDate: "21 de julio de 2026",
       reviewNotice:
-        "Requiere revisión del titular y asesoría legal antes de publicarse. La entidad responsable, jurisdicción, dirección de contacto y posibles licencias de demostraciones deben confirmarse para producción.",
+        "Borrador para revisión del titular y asesoría legal. No son términos definitivos. La entidad responsable, jurisdicción, dirección de contacto y posibles licencias de demostraciones deben confirmarse para producción.",
       sections: [
         {
           id: "acceptance",

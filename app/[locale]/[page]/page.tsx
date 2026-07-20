@@ -14,6 +14,7 @@ import {
   SupportPage
 } from '@/components/content-pages';
 import {getSiteContent} from '@/content';
+import {isDraftLegalPage} from '@/lib/legal-publishing';
 import {createPageMetadata} from '@/lib/metadata';
 
 const supported = [
@@ -38,7 +39,17 @@ function isSupported(value: string): value is SupportedPage {
 export async function generateMetadata({params}: {params: Promise<{locale: 'en' | 'es'; page: string}>}): Promise<Metadata> {
   const {locale, page} = await params;
   if (!isSupported(page)) return {};
-  return createPageMetadata(locale, getSiteContent(locale).pages[page].metadata, `/${page}`);
+  const metadata = createPageMetadata(locale, getSiteContent(locale).pages[page].metadata, `/${page}`);
+  if (!isDraftLegalPage(page)) return metadata;
+
+  return {
+    ...metadata,
+    robots: {
+      index: false,
+      follow: true,
+      googleBot: {index: false, follow: true},
+    },
+  };
 }
 
 export default async function ContentPage({params}: {params: Promise<{locale: 'en' | 'es'; page: string}>}) {

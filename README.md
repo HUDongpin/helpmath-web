@@ -29,3 +29,6 @@ project root. Configure the variables in `.env.example`; production contact
 delivery fails closed when Turnstile or Resend is missing. See
 `docs/DEPLOYMENT.md` before promoting a deployment or changing DNS.
 
+The publicly readable Privacy and Terms pages are explicitly marked as drafts,
+send `noindex, follow`, and remain outside the sitemap until owner/legal review
+is complete. They must not be described as final policies.
