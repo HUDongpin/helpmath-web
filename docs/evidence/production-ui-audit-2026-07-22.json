@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-21T19:08:19.893Z",
+  "reviewedAt": "2026-07-21T19:39:00.000Z",
+  "identity": {
+    "repositoryCommit": "05c3b460db78ac61b88b6d34479d925af634d724",
+    "vercelDeploymentId": "dpl_2CCekiWMGdnwc78gdifVSs1NWNsX",
+    "url": "https://www.helpmath.ai/"
+  },
+  "visualReview": {
+    "tool": "Playwright CLI",
+    "desktop": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "docs/evidence/screenshots/production-home-desktop-2026-07-22.png",
+      "screenshotWidth": 1425,
+      "screenshotHeight": 5184,
+      "bytes": 632424,
+      "sha256": "0adfbf1704067674f48452e32d86c23ff87cf3487f7e12e9ad2a1c105f303331"
+    },
+    "mobile": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "docs/evidence/screenshots/production-home-mobile-2026-07-22.png",
+      "screenshotWidth": 375,
+      "screenshotHeight": 7151,
+      "bytes": 483681,
+      "sha256": "77087abbbd3152783e9300ef55740cfbed7223b43a3664debf38ffc694672a09"
+    },
+    "checks": {
+      "homePageNoHorizontalClippingObserved": true,
+      "primaryHierarchyReadable": true,
+      "strategicPartnershipVisible": true,
+      "mobileStackingUsable": true,
+      "privateDemoBoundaryVisible": true
+    }
+  },
+  "lighthouse": {
+    "version": "13.0.3",
+    "evidenceLevel": "uncorroborated point-in-time operator observation",
+    "reportRetained": false,
+    "invocationRetained": false,
+    "fetchTime": "2026-07-21T19:08:19.893Z",
+    "finalUrl": "https://www.helpmath.ai/",
+    "scores": {
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "seo": 100
+    },
+    "maxPotentialFirstInputDelayMs": 80
+  },
+  "knownProductionExceptions": [
+    {
+      "route": "/es/terms",
+      "viewports": [
+        "320x740",
+        "390x844"
+      ],
+      "observation": "The PR #13 Production hero's long Spanish title enlarged its grid item and was clipped at the right edge while the ancestor hid overflow.",
+      "remediationStatus": "Implemented and browser-tested with overflow-wrap: anywhere on unmerged branch codex/reviewer-entry-mobile-fix at commit 3a948166354915bbab609515e28091b68a2bb534; not part of this PR #13 Production evidence."
+    }
+  ],
+  "limitations": [
+    "The retained screenshots prove only the production home page pixels at two representative viewports; they do not prove the capture URL, commit, or every site route without the accompanying operator record.",
+    "The automated browser matrix did not detect the Spanish Terms clipping because the hero ancestor hid overflow; the known exception above supersedes any broader no-clipping inference.",
+    "Lighthouse scores are an uncorroborated point-in-time operator observation because no LHR, HTML report, invocation, or report hash was retained; they are not a substitute for field Core Web Vitals.",
+    "The visual review does not approve public demo rights or the unfinished legacy-domain cutover."
+  ]
+}
