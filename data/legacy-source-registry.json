@@ -1,0 +1,358 @@
+{
+  "schemaVersion": 1,
+  "registryId": "help-math-legacy-source-custody",
+  "reviewedAt": "2026-07-21",
+  "allowedOrigin": "https://www.helpprogram.net",
+  "defaultArchiveRoot": "../helpmath-legacy-web-archive",
+  "currentEvidenceManifest": "docs/evidence/legacy-source-crawl-2026-07-21.json",
+  "scope": "Legacy HELP Math sources used by the public-content source register, every finite locator in the exact-document disposition map, and the operator/legal locators required by launch decisions.",
+  "defaults": {
+    "rightsStatus": "pending",
+    "accessibilityStatus": "pending",
+    "republishStatus": "pending"
+  },
+  "sources": [
+    {
+      "id": "legacy-home",
+      "url": "https://www.helpprogram.net/",
+      "claimUse": [
+        "Historical Grades 3–8 program self-description",
+        "Conflicting historical federal-support percentage wording"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "legacy-program-info",
+      "url": "https://www.helpprogram.net/ProgramInfo.htm",
+      "claimUse": [
+        "Historical Grades 3–8 scope and 73-lesson catalog",
+        "Historical learner supports and educator tools",
+        "Conflicting historical federal-support percentage wording"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "legacy-awards",
+      "url": "https://www.helpprogram.net/Awards.htm",
+      "claimUse": [
+        "Historical award wording",
+        "Conflicting historical federal-support percentage wording"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "legacy-contact",
+      "url": "https://www.helpprogram.net/Contact.htm",
+      "claimUse": [
+        "Historical operator identity evidence before DNS cutover"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LAUNCH_DECISIONS.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "legacy-login",
+      "url": "https://www.helpprogram.net/Login.htm",
+      "claimUse": [
+        "Historical account-service boundary and operator evidence before DNS cutover"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LAUNCH_DECISIONS.md"
+      ]
+    },
+    {
+      "id": "legacy-privacy-policy-2007",
+      "url": "https://www.helpprogram.net/HELP%20Math%20Privacy%20Policy%203.12.07.pdf",
+      "claimUse": [
+        "Historical privacy-policy and operator evidence before DNS cutover"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LAUNCH_DECISIONS.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "codie-award-pdf",
+      "url": "https://www.helpprogram.net/CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf",
+      "claimUse": [
+        "Historical CODiE recognition"
+      ],
+      "stableReplacement": "https://codieawards.com/past-winners",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "codie-release-ddi",
+      "url": "https://www.helpprogram.net/Codie%20Release%20DDI.pdf",
+      "claimUse": [
+        "Company-authored release about historical CODiE recognition"
+      ],
+      "stableReplacement": "https://codieawards.com/past-winners",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "evaluation-white-paper-2013",
+      "url": "https://www.helpprogram.net/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf",
+      "claimUse": [
+        "Program-authored 42.1% versus 4.6% historical evaluation result",
+        "Program-authored Grade 6 and Grade 7 subgroup percentages"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "usdoe-research-summary-2013",
+      "url": "https://www.helpprogram.net/DealerDocs/U%20S%20%20Department%20of%20Education%20Research%20Summary%205-2013.pdf",
+      "claimUse": [
+        "Legacy marketing summary associated with the WWC-reviewed study"
+      ],
+      "stableReplacement": "https://ies.ed.gov/ncee/wwc/Study/72999",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "help-math-self-efficacy",
+      "url": "https://www.helpprogram.net/DealerDocs/HELP%20Math%20self-efficacy%20in%20secondary%20students%20R.pdf",
+      "claimUse": [
+        "Historical HELP Math self-efficacy study locator"
+      ],
+      "stableReplacement": "https://doi.org/10.1016/j.compedu.2011.11.003",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "legacy-wwc-single-study-copy",
+      "url": "https://www.helpprogram.net/DealerDocs/What%20Works%20Clearinghouse_help_102312.pdf",
+      "claimUse": [
+        "Legacy duplicate of the WWC single-study review"
+      ],
+      "stableReplacement": "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "scope-sequence-2012",
+      "url": "https://www.helpprogram.net/DealerDocs/SCOPE%20and%20Sequence%202012.pdf",
+      "claimUse": [
+        "Historical 29-lesson elementary scope",
+        "Historical catalog edition reconciliation"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "sheltered-scaffolding-2012",
+      "url": "https://www.helpprogram.net/DealerDocs/Sheltered%20Instruction%20and%20scaffolding%20techniques%20in%20HELP%20Math%20final%202012.pdf",
+      "claimUse": [
+        "Historical sheltered-instruction and scaffolding design description"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "sheltered-sped-2012",
+      "url": "https://www.helpprogram.net/DealerDocs/Sheltered%20Instruction%20and%20SPED%202012.pdf",
+      "claimUse": [
+        "Historical design context for learners needing added support"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "academic-language-integration",
+      "url": "https://www.helpprogram.net/DealerDocs/INTEGRATION%20OF%20ACADEMIC%20LANGUAGE%20IN%20HELP%20MATH.pdf",
+      "claimUse": [
+        "Historical academic-language design description"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "reports-overview-2010",
+      "url": "https://www.helpprogram.net/DealerDocs/HELP%20Math%20Overview%20of%20Reports%20%282010%29.pdf",
+      "claimUse": [
+        "Historical educator reporting-tool description"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "rti-solution-2012",
+      "url": "https://www.helpprogram.net/DealerDocs/HELP%20Math%20as%20an%20RtI%20Solution%202012.pdf",
+      "claimUse": [
+        "Historical RtI positioning"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "ed-week-article-copy",
+      "url": "https://www.helpprogram.net/DealerDocs/Ed%20Week%20Article.pdf",
+      "claimUse": [
+        "Legacy copy of third-party period reporting"
+      ],
+      "stableReplacement": "https://www.edweek.org/policy-politics/schools-face-shortage-of-digital-curricula-for-english-learners/2013/05",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "technology-innovations-copy",
+      "url": "https://www.helpprogram.net/DealerDocs/TechnologyInnovations.pdf",
+      "claimUse": [
+        "Legacy copy of third-party period context"
+      ],
+      "stableReplacement": "https://lexingtoninstitute.org/wp-content/uploads/2013/11/TechnologyInnovations.pdf",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "sage-publications-copy",
+      "url": "https://www.helpprogram.net/DealerDocs/Sage%20Publications%20article.pdf",
+      "claimUse": [
+        "Legacy copy of historical curriculum-design article"
+      ],
+      "stableReplacement": "https://eric.ed.gov/?id=EJ796893",
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "helpmath-brochure",
+      "url": "https://www.helpprogram.net/DealerDocs/HelpMath%20print%208.5%20x%2011%20each.pdf",
+      "claimUse": [
+        "Historical brochure and program overview"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    },
+    {
+      "id": "teacher-guide-nctm-2007",
+      "url": "https://www.helpprogram.net/teacher_guide/HELP%20Alignment%20v3.1.2-%20NCTM.pdf",
+      "claimUse": [
+        "Historical four-strand middle-school catalog and 44 named lessons",
+        "Historical learner supports and educator tools",
+        "Historical catalog edition reconciliation"
+      ],
+      "stableReplacement": null,
+      "rightsStatus": "pending",
+      "accessibilityStatus": "pending",
+      "republishStatus": "pending",
+      "referencedBy": [
+        "docs/CONTENT_SOURCES.md",
+        "docs/LEGACY_RESOURCE_MAP.md"
+      ]
+    }
+  ]
+}

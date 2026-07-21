@@ -38,6 +38,100 @@ const executivePreviewRuntimes = [
 const executivePreviewAccessKey =
   process.env.PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
 
+const sitemapBasePaths = [
+  '/',
+  '/about',
+  '/approach',
+  '/curriculum',
+  '/research',
+  '/resources',
+  '/demos',
+  '/support',
+  '/login',
+  '/contact',
+] as const;
+
+const sitemapPagePaths = sitemapBasePaths.flatMap((path) =>
+  path === '/' ? ['/', '/es'] : [path, `/es${path}`],
+);
+
+const browserExperiencePaths = [
+  ...sitemapPagePaths,
+  '/privacy',
+  '/es/privacy',
+  '/terms',
+  '/es/terms',
+  '/executive-preview',
+  '/es/executive-preview',
+] as const;
+
+const browserExperienceViewports = [
+  {name: 'desktop', width: 1280, height: 800},
+  {name: '390px', width: 390, height: 844},
+] as const;
+
+const legacyDeepLinkCases = [
+  {
+    legacyPath: '/ProgramInfo.htm',
+    destination: '/curriculum#help-math-1-catalog',
+    targetSelector: '#help-math-1-catalog',
+  },
+  {
+    legacyPath: '/CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf',
+    destination: '/resources#codie-past-winners',
+    targetSelector: '#codie-past-winners',
+  },
+  {
+    legacyPath:
+      '/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf',
+    destination: '/research#help-math-pilot',
+    targetSelector: '#help-math-pilot',
+  },
+  {
+    legacyPath:
+      '/DealerDocs/U%20S%20%20Department%20of%20Education%20Research%20Summary%205-2013.pdf',
+    destination: '/research#wwc-tran-study',
+    targetSelector: '#wwc-tran-study',
+  },
+  {
+    legacyPath:
+      '/DealerDocs/HELP%20Math%20self-efficacy%20in%20secondary%20students%20R.pdf',
+    destination: '/resources#freeman-2012-doi',
+    targetSelector: '#freeman-2012-doi',
+  },
+  {
+    legacyPath: '/DealerDocs/What%20Works%20Clearinghouse_help_102312.pdf',
+    destination: '/resources#wwc-single-study-review',
+    targetSelector: '#wwc-single-study-review',
+  },
+  {
+    legacyPath:
+      '/DealerDocs/Sheltered%20Instruction%20and%20SPED%202012.pdf',
+    destination: '/approach#support-layers',
+    targetSelector: '#support-layers',
+  },
+  {
+    legacyPath: '/DealerDocs/Ed%20Week%20Article.pdf',
+    destination: '/resources#education-week-2013',
+    targetSelector: '#education-week-2013',
+  },
+  {
+    legacyPath: '/DealerDocs/TechnologyInnovations.pdf',
+    destination: '/resources#technology-innovations-report',
+    targetSelector: '#technology-innovations-report',
+  },
+  {
+    legacyPath: '/DealerDocs/Sage%20Publications%20article.pdf',
+    destination: '/resources#ell-curriculum-eric',
+    targetSelector: '#ell-curriculum-eric',
+  },
+  {
+    legacyPath: '/DealerDocs/HelpMath%20print%208.5%20x%2011%20each.pdf',
+    destination: '/resources#about-help-math',
+    targetSelector: '#about-help-math',
+  },
+] as const;
+
 function monitorRuntimeIssues(page: Page): RuntimeIssue[] {
   const issues: RuntimeIssue[] = [];
 
@@ -55,6 +149,32 @@ function monitorRuntimeIssues(page: Page): RuntimeIssue[] {
 
 function expectNoRuntimeIssues(issues: RuntimeIssue[]) {
   expect(issues, `Unexpected browser errors:\n${JSON.stringify(issues, null, 2)}`).toEqual([]);
+}
+
+async function expectNoBlockingAxeViolations(
+  page: Page,
+  path: string,
+  viewport: string,
+) {
+  const results = await new AxeBuilder({page})
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  const blocking = results.violations.filter(
+    (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+  );
+
+  expect(
+    blocking,
+    [
+      `${path} at ${viewport} has serious or critical accessibility violations:`,
+      ...blocking.map(
+        (violation) =>
+          `${violation.id} (${violation.impact}): ${violation.help}\n${violation.nodes
+            .map((node) => `  ${node.target.join(' ')}: ${node.failureSummary ?? ''}`)
+            .join('\n')}`,
+      ),
+    ].join('\n\n'),
+  ).toEqual([]);
 }
 
 async function expectDocument(page: Page, path: string, language: 'en' | 'es') {
@@ -292,8 +412,16 @@ test('deep-link targets remain visible below the sticky site header', async ({pa
     ['/approach#support-layers', '#support-layers'],
     ['/about#program-lineage', '#program-lineage'],
     ['/about#preservation', '#preservation'],
+    ['/curriculum#help-math-1-catalog', '#help-math-1-catalog'],
+    ['/research#help-math-pilot', '#help-math-pilot'],
     ['/research#wwc-tran-study', '#wwc-tran-study'],
+    ['/resources#codie-past-winners', '#codie-past-winners'],
     ['/resources#freeman-2012-doi', '#freeman-2012-doi'],
+    ['/resources#wwc-single-study-review', '#wwc-single-study-review'],
+    ['/resources#education-week-2013', '#education-week-2013'],
+    ['/resources#technology-innovations-report', '#technology-innovations-report'],
+    ['/resources#ell-curriculum-eric', '#ell-curriculum-eric'],
+    ['/resources#about-help-math', '#about-help-math'],
   ] as const) {
     await page.goto(path, {waitUntil: 'networkidle'});
     const headerBottom = await page.locator('.site-header').evaluate(
@@ -305,6 +433,16 @@ test('deep-link targets remain visible below the sticky site header', async ({pa
     expect(targetTop, `${path} must clear the sticky header`).toBeGreaterThanOrEqual(
       headerBottom,
     );
+  }
+});
+
+test('every exact legacy fragment redirect lands on its existing target', async ({page}) => {
+  for (const {legacyPath, destination, targetSelector} of legacyDeepLinkCases) {
+    const response = await page.goto(legacyPath, {waitUntil: 'networkidle'});
+    expect(response?.status(), legacyPath).toBe(200);
+    const finalUrl = new URL(page.url());
+    expect(`${finalUrl.pathname}${finalUrl.hash}`, legacyPath).toBe(destination);
+    await expect(page.locator(targetSelector), destination).toBeVisible();
   }
 });
 
@@ -689,6 +827,8 @@ test('audited legacy pages and document directories redirect permanently', async
     ['/DealerDocs/historical-guide.pdf', '/resources'],
     ['/teacher_guide/historical-guide.pdf', '/resources'],
     ['/shortdemo/index.htm', '/demos'],
+    ['/Beta/historical-unit', '/curriculum'],
+    ['/beta/historical-unit', '/curriculum'],
   ] as const) {
     const response = await request.get(legacyPath, {maxRedirects: 0});
     expect(response.status(), legacyPath).toBe(308);
@@ -739,6 +879,9 @@ test('every sitemap page has one heading, canonical metadata, and the expected l
   const sitemapText = await sitemap.text();
   const urls = [...sitemapText.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
   expect(urls).toHaveLength(20);
+  expect(urls.map((url) => new URL(url).pathname).sort()).toEqual(
+    [...sitemapPagePaths].sort(),
+  );
 
   for (const absoluteUrl of urls) {
     const parsed = new URL(absoluteUrl);
@@ -752,23 +895,28 @@ test('every sitemap page has one heading, canonical metadata, and the expected l
   }
 });
 
-test('representative content and status pages do not overflow a phone viewport', async ({page}) => {
-  await page.setViewportSize({width: 390, height: 844});
-  for (const path of [
-    '/',
-    '/es',
-    '/research',
-    '/es/research',
-    '/resources',
-    '/es/resources',
-    '/demos',
-    '/es/demos',
-    '/executive-preview',
-    '/es/executive-preview',
-  ] as const) {
-    await expectDocument(page, path, path.startsWith('/es') ? 'es' : 'en');
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    expect(overflow, `${path} overflows horizontally`).toBeLessThanOrEqual(1);
+test.describe('complete public browser experience matrix', () => {
+  for (const path of browserExperiencePaths) {
+    test(`${path} passes desktop and 390px browser checks`, async ({page}) => {
+      test.setTimeout(60_000);
+      const issues = monitorRuntimeIssues(page);
+      const language = path === '/es' || path.startsWith('/es/') ? 'es' : 'en';
+
+      for (const viewport of browserExperienceViewports) {
+        await page.setViewportSize(viewport);
+        await expectDocument(page, path, language);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(
+          overflow,
+          `${path} overflows horizontally at ${viewport.name}`,
+        ).toBeLessThanOrEqual(1);
+        await expectNoBlockingAxeViolations(page, path, viewport.name);
+      }
+
+      expectNoRuntimeIssues(issues);
+    });
   }
 });
 
@@ -812,39 +960,5 @@ for (const path of ['/privacy', '/terms', '/es/privacy', '/es/terms'] as const) 
     await expect(page.locator('.legal-meta p')).toContainText(
       path.startsWith('/es') ? 'Borrador' : 'Draft',
     );
-  });
-}
-
-for (const path of [
-  '/',
-  '/es',
-  '/login',
-  '/contact',
-  '/demos',
-  '/executive-preview',
-] as const) {
-  test(`${path} has no serious or critical axe violations`, async ({page}) => {
-    const issues = monitorRuntimeIssues(page);
-    const response = await page.goto(path, {waitUntil: 'networkidle'});
-    expect(response?.status()).toBe(200);
-
-    const results = await new AxeBuilder({page})
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    const blocking = results.violations.filter(
-      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
-    );
-    expect(
-      blocking,
-      blocking
-        .map(
-          (violation) =>
-            `${violation.id} (${violation.impact}): ${violation.help}\n${violation.nodes
-              .map((node) => `  ${node.target.join(' ')}: ${node.failureSummary ?? ''}`)
-              .join('\n')}`,
-        )
-        .join('\n\n'),
-    ).toEqual([]);
-    expectNoRuntimeIssues(issues);
   });
 }

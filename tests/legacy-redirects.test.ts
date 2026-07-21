@@ -8,7 +8,7 @@ describe('legacy HELP Program redirects', () => {
     const destinations = new Map(
       redirects.map((redirect) => [redirect.source, redirect.destination]),
     );
-    assert.equal(redirects.length, 81);
+    assert.equal(redirects.length, 82);
 
     assert.equal(destinations.get('/favicon.ico'), '/icon.svg');
     assert.equal(destinations.get('/Home.htm'), '/');
@@ -147,6 +147,7 @@ describe('legacy HELP Program redirects', () => {
     assert.equal(destinations.get('/teacher_guide/:path*'), '/resources');
     assert.equal(destinations.get('/shortdemo/:path*'), '/demos');
     assert.equal(destinations.get('/Beta/:path*'), '/curriculum');
+    assert.equal(destinations.get('/beta/:path*'), '/curriculum');
     assert.equal(destinations.get('/Images/Help_Slideshow.swf'), undefined);
     assert.equal(
       destinations.get(

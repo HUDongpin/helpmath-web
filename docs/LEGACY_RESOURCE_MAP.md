@@ -30,6 +30,12 @@ sync with that configuration.
   project evidence, but a public download is not yet approved. “External
   link-only” means the modern site may point to the source host; it does not
   claim rights to republish that source.
+- `data/legacy-source-registry.json` is the machine-readable capture allowlist.
+  The dated JSON, CSV, and SHA-256 files under `docs/evidence/` record crawl
+  metadata and hashes but contain none of the captured HTML, PDF, or other
+  response bytes. Those original bytes belong only in the external owner
+  archive. A successful capture does not change any pending rights,
+  accessibility, or republication status.
 
 ## Legacy page and directory mapping
 
@@ -49,7 +55,7 @@ sync with that configuration.
 | `/Demo.htm`, `/shortdemo/*` | `/demos` | Routes to the public demo-status page, not directly to unapproved legacy or executive-preview files. |
 | `/PR/*` | `/research` | Generic fallback after any exact mappings. Preserve source metadata before cutover. |
 | `/DealerDocs/*`, `/teacher_guide/*` | `/resources` | Generic fallback after the exact mappings below; it must remain below them in redirect order. |
-| `/Beta/*` | `/curriculum` | Historical curriculum context only; no beta service is represented as active. |
+| `/Beta/*`, `/beta/*` | `/curriculum` | Historical curriculum context only; no beta service is represented as active. |
 
 ## Exact document mapping
 

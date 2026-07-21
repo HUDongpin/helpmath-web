@@ -10,6 +10,11 @@ public health endpoint.
 Store these non-secret fields in the pull request, release record, or another
 owner-approved operational system:
 
+Completed in-repository records are append-only under [`docs/releases`](./releases/README.md).
+The active pull request remains the record for a candidate that has not yet
+been promoted, because its final production deployment ID cannot exist inside
+the candidate commit itself.
+
 | Field | Required evidence |
 | --- | --- |
 | Candidate commit | Full Git SHA from the local reviewed worktree |
