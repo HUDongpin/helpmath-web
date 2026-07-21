@@ -35,6 +35,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: locale === 'es'
       ? 'Página no encontrada · HELP Math'
       : 'Page not found · HELP Math',
+    robots: {
+      index: false,
+      follow: false,
+      googleBot: {index: false, follow: false},
+    },
   };
 }
 

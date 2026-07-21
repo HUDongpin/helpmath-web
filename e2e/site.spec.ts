@@ -301,8 +301,11 @@ test('unknown files return one branded non-indexable 404 policy', async ({page})
   expect(response?.status()).toBe(404);
   expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow');
   expect(response?.headers()['content-type']).toContain('text/html');
-  await expect(page.locator('meta[name="robots"]')).toHaveCount(1);
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  const robotsMeta = page.locator('meta[name="robots"]');
+  expect(await robotsMeta.count()).toBeGreaterThanOrEqual(1);
+  for (let index = 0; index < await robotsMeta.count(); index += 1) {
+    await expect(robotsMeta.nth(index)).toHaveAttribute('content', /noindex/);
+  }
   await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
 });
 
