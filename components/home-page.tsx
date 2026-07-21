@@ -1,4 +1,4 @@
-import {BookOpenText, GraduationCap, School, UsersRound} from 'lucide-react';
+import {BookOpenText, GraduationCap, Handshake, School, UsersRound} from 'lucide-react';
 
 import type {HomeContent, Locale} from '@/content/types';
 
@@ -44,6 +44,31 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
             title={content.status.title}
             tone="yellow"
           />
+        </Container>
+      </Section>
+
+      <Section className="section--compact surface-mint" id="strategic-partnership">
+        <Container>
+          <article className="partnership-panel">
+            <span aria-hidden="true" className="partnership-panel__icon">
+              <Handshake size={34} strokeWidth={1.9} />
+            </span>
+            <div className="partnership-panel__copy">
+              <Eyebrow>{content.partnership.eyebrow}</Eyebrow>
+              <h2>{content.partnership.title}</h2>
+              <p>{content.partnership.body}</p>
+              <p className="partnership-panel__status">{content.partnership.statusNote}</p>
+            </div>
+            <div className="partnership-panel__actions">
+              {content.partnership.actions.map((action, index) => (
+                <Action
+                  action={action}
+                  key={action.href}
+                  kind={index === 0 ? 'primary' : 'secondary'}
+                />
+              ))}
+            </div>
+          </article>
         </Container>
       </Section>
 

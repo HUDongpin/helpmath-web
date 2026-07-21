@@ -96,6 +96,22 @@ test('English home exposes the primary navigation and the language-rich project 
   ) as {'@type'?: string; inLanguage?: string[]};
   expect(structuredData['@type']).toBe('WebSite');
   expect(structuredData.inLanguage).toEqual(['en', 'es']);
+
+  const partnership = page.locator('#strategic-partnership');
+  await expect(
+    partnership.getByRole('heading', {
+      level: 2,
+      name: /Boulder Learning and PedaNova are strategic partners/i,
+    }),
+  ).toBeVisible();
+  await expect(partnership.getByText(/Both organizations have confirmed this bilateral partnership/i)).toBeVisible();
+  await expect(
+    partnership.getByRole('link', {name: 'Explore Boulder Learning'}),
+  ).toHaveAttribute('href', 'https://www.boulderlearning.com/products');
+  await expect(partnership.getByRole('link', {name: 'Visit PedaNova'})).toHaveAttribute(
+    'href',
+    'https://www.pedanova.tech/',
+  );
   expectNoRuntimeIssues(issues);
 });
 
@@ -122,6 +138,14 @@ test('Spanish home localizes content and never duplicates the /es route prefix',
   for (const href of localHrefs) {
     expect(href === '/' || href?.startsWith('/es')).toBe(true);
   }
+  const partnership = page.locator('#strategic-partnership');
+  await expect(
+    partnership.getByRole('heading', {
+      level: 2,
+      name: /Boulder Learning y PedaNova son socios estratégicos/i,
+    }),
+  ).toBeVisible();
+  await expect(partnership.getByText(/Ambas organizaciones han confirmado esta alianza bilateral/i)).toBeVisible();
   expectNoRuntimeIssues(issues);
 });
 
@@ -178,6 +202,7 @@ test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with c
     await expect(page.locator(`a[href="${href}"]`), href).toHaveCount(1);
   }
   await expect(page.getByText(/are strategic partners in the modernization of HELP Math 1\.0 into HELP Math 2\.0/i)).toBeVisible();
+  await expect(page.getByText(/have bilaterally confirmed this strategic partnership/i)).toBeVisible();
   await expect(page.getByText(/planned next phase in updating and relaunching/i)).toBeVisible();
 
   await expectDocument(page, '/es/about', 'es');
@@ -187,6 +212,7 @@ test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with c
   await expect(page.locator('a[href="https://www.boulderlearning.com/products"]')).toHaveCount(1);
   await expect(page.locator('a[href="https://www.pedanova.tech/"]')).toHaveCount(1);
   await expect(page.getByText(/son socios estratégicos en la modernización de HELP Math 1\.0 hacia HELP Math 2\.0/i)).toBeVisible();
+  await expect(page.getByText(/han confirmado bilateralmente esta alianza estratégica/i)).toBeVisible();
   expectNoRuntimeIssues(issues);
 });
 

@@ -118,12 +118,13 @@ Source hashes and fidelity evidence prove provenance and behavior; they do not
 by themselves prove publication rights.
 
 Public history, research, and collaborator statements are tracked in
-`docs/CONTENT_SOURCES.md`. Dr. Peter Hu, CEO of PedaNova, confirmed on
-2026-07-21 that Boulder Learning and PedaNova are bilateral strategic partners
-for the modernization of HELP Math 1.0 into HELP Math 2.0 and instructed that
-relationship to be stated publicly. This approval does not release Boulder
-Learning’s confidential two-module strategy; publishing those internal details
-still requires Boulder Learning’s separate written public-release approval.
+`docs/CONTENT_SOURCES.md`. Boulder Learning and PedaNova have bilaterally
+confirmed that they are strategic partners for the modernization of HELP Math
+1.0 into HELP Math 2.0. Dr. Peter Hu, CEO of PedaNova, instructed on 2026-07-21
+that this jointly confirmed relationship be stated publicly as fact. This
+approval does not release Boulder Learning’s confidential two-module strategy;
+publishing those internal details still requires Boulder Learning’s separate
+written public-release approval.
 
 ### CEO Executive Preview decision record
 

@@ -26,7 +26,7 @@ not a substitute for legal, rights, or partner approval.
 | Public statement | Source | Publication boundary |
 | --- | --- | --- |
 | PedaNova identifies Dr. Peter Hu (Hu Dongpin) as founder and CEO and describes education research/application-development work | [PedaNova](https://www.pedanova.tech/) and [team page](https://www.pedanova.tech/team/) | Public company/founder description. |
-| Boulder Learning and PedaNova are strategic partners in modernizing HELP Math 1.0 into HELP Math 2.0 | Bilateral project confirmation supplied by Dr. Peter Hu, PedaNova CEO, 2026-07-21 | Approved relationship wording for this HELP Math initiative. It does not establish that proposed HELP Math 2.0 features are complete or released. |
+| Boulder Learning and PedaNova are strategic partners in modernizing HELP Math 1.0 into HELP Math 2.0 | Bilateral confirmation by Boulder Learning and PedaNova, recorded for the project on 2026-07-21 | Approved, jointly confirmed relationship fact for this HELP Math initiative. It does not establish that proposed HELP Math 2.0 features are complete or released. |
 
 ## Copy rules
 
