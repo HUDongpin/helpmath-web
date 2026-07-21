@@ -31,9 +31,11 @@ not authorize a status change. Record the manifest SHA-256 in release evidence.
    navigation, private-demo route/asset boundary, metadata, accessibility, and
    raw-Flash 404 probes pass.
 
-Changing a manifest status is currently forbidden. A later reviewed lifecycle
-change must keep legal publishing, contact intake, demos, cutover, and release
-consumers fail closed throughout each approval and activation transition.
+Changing a launch-gate status is currently forbidden. Demo candidates and
+inactive activation records are modeled separately, but a later reviewed
+transition-lock change must keep legal publishing, contact intake, demos,
+cutover, and release consumers fail closed throughout each approval and
+activation transition.
 
 After promotion, run `npm run smoke:production` against the canonical domain.
 This checks the exact sitemap set, metadata and reciprocal language alternates,

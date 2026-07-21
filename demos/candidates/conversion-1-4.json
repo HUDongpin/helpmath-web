@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "conversion-1-4",
+  "candidateId": "conversion-1-4--2026-07-22--2b6febcd",
+  "source": {
+    "flaSha256": "d661c776e239fb59c44278c6e4d5fd75812599eb2dc9fa758b1ba37a59251b1c",
+    "swfSha256": "cbb7f3f529c8c5ca679da864c7c49ab472cac4d0feb2392eed5aa04d21a4e1a9"
+  },
+  "movie": {
+    "stage": {
+      "width": 780,
+      "height": 379
+    },
+    "fps": 12,
+    "frameCount": 67,
+    "durationMs": 5583
+  },
+  "maturity": "legacy-prototype",
+  "validationStatus": "conditional",
+  "runtime": {
+    "entry": "private-demo-runtime/conversion-1-4.ts",
+    "globalName": "HelpMathExecutiveRuntimeConversion14",
+    "bundleSha256": "2b6febcd3379e7db3e3acf7d8543587c99dd7c52656a0a7e280ece564ac78be8"
+  },
+  "artifacts": [
+    {
+      "path": "components/animation-player-core.tsx",
+      "sha256": "357d6a91450bb9f5a7c50d0395e4968da31edad8339bd2b4119e06d60e6e8f77"
+    },
+    {
+      "path": "demos/contract.ts",
+      "sha256": "bb02930ff8ff2c798aa7e87342a57bb57e3b438224076d66ffd7132776fc9653"
+    },
+    {
+      "path": "demos/legacy-accessible-frame.tsx",
+      "sha256": "c3f6165f7aa1be56826fa9abc3328faf94607814310a0b0cf92fc1f9bffcf05a"
+    },
+    {
+      "path": "demos/lib/conversionTimeline.js",
+      "sha256": "5ffef75269fff6c28c360f3a75303d739b2e509590d2bf1c9d80791b83f752f8"
+    },
+    {
+      "path": "demos/modules/conversion-1-4.tsx",
+      "sha256": "6ff9aa8d1b770e35509418d7fe9e83d79d0ab78893bfa87c0159c15744caa87d"
+    },
+    {
+      "path": "demos/runtime.ts",
+      "sha256": "323de3f8023e506467dea4c43c9f9b6d18c149817295843a815280fa480aff3c"
+    },
+    {
+      "path": "demos/vendor/FlashBauhausFormula.jsx",
+      "sha256": "793592ed6d25b921ba7e0dfd19ebc6631f9f1771f13a5273d35522291f2f1554"
+    },
+    {
+      "path": "demos/vendor/LiterConversionAnimation.jsx",
+      "sha256": "bbeb00b564a3746a6bb2e2b96b6dc2215072151017d021107db21c6a51fc51f4"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-4/cylinder-base.png",
+      "sha256": "97578297f09956d47cf4c34009122810c6054c7d8d44b681b214eb7e4ba867e8"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-4/pitcher-back.png",
+      "sha256": "7018dc94cfd9c5126b044770ff806dcbc53332792e72782b21f15f5ba1074792"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-4/pitcher-front.png",
+      "sha256": "ca0cd95d7142fc375e6b5a5cc16c56b0402e1586a0bb9881ecd3eb6286df1622"
+    },
+    {
+      "path": "private-demo-runtime/conversion-1-4.ts",
+      "sha256": "4cd8c5310fefd2d37f423e3be3747ecb4ca139858783db65c79d74e8958112f1"
+    },
+    {
+      "path": "private-demo-runtime/create-runtime.tsx",
+      "sha256": "e8554d4794155f53ff6a35b42dfa47c367cf79555bf80f01e5f6ca19865c827f"
+    }
+  ],
+  "artifactSha256": "9f2fff5678db9ffa3165c39e02220a8eda92e540dd739eabde3022d1815f36b8"
+}

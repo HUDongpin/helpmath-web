@@ -1,34 +1,23 @@
-import snapshot from './SNAPSHOT.json';
-import {isLaunchGateApproved} from '../lib/launch-gates';
+import {
+  DEMO_CANDIDATE_IDS,
+  type DemoCandidateId,
+} from './candidates';
+import {
+  isDemoIndexable as lifecycleIsDemoIndexable,
+  isDemoPrivatePreview,
+  isDemoPublic,
+} from '../lib/demo-lifecycle';
 
-export type DemoId = keyof typeof snapshot.sources;
-
-type SnapshotSource = (typeof snapshot.sources)[DemoId];
-const sourceEntries = Object.entries(snapshot.sources) as Array<[DemoId, SnapshotSource]>;
-const demoPublicationApproved = isLaunchGateApproved('demoPublication');
+export type DemoId = DemoCandidateId;
 
 export const demoIds = Object.freeze(
-  sourceEntries
-    .filter(([, source]) =>
-      demoPublicationApproved &&
-      source.public &&
-      source.publication.access === 'public-preview' &&
-      source.publication.rightsApproval === 'approved'
-    )
-    .map(([id]) => id),
+  DEMO_CANDIDATE_IDS.filter((id) => isDemoPublic(id)),
 ) as readonly DemoId[];
 
 export const demoRoutes = Object.freeze(demoIds.map((id) => `/demos/${id}` as const));
 
 export const reviewDemoIds = Object.freeze(
-  sourceEntries
-    .filter(([, source]) =>
-      !source.public &&
-      source.publication.access === 'private' &&
-      !source.publication.indexable &&
-      source.publication.internalExecutiveReview === 'approved'
-    )
-    .map(([id]) => id),
+  DEMO_CANDIDATE_IDS.filter((id) => isDemoPrivatePreview(id)),
 ) as readonly DemoId[];
 
 export const reviewDemoRoutes = Object.freeze(
@@ -36,16 +25,7 @@ export const reviewDemoRoutes = Object.freeze(
 );
 
 export const indexableDemoIds = Object.freeze(
-  sourceEntries
-    .filter(([, source]) =>
-      demoPublicationApproved &&
-      source.public &&
-      source.validationStatus === 'strict-complete' &&
-      source.publication.indexable &&
-      source.publication.technicalAcceptance === 'approved' &&
-      source.publication.rightsApproval === 'approved'
-    )
-    .map(([id]) => id),
+  DEMO_CANDIDATE_IDS.filter((id) => lifecycleIsDemoIndexable(id)),
 ) as readonly DemoId[];
 
 export const indexableDemoRoutes = Object.freeze(

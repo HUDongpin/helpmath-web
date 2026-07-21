@@ -11,13 +11,27 @@ the two approved bundles, the two API route traces contain exactly the expected
 12 PNG and two runtime files, and `.next/static` contains neither a known text
 fingerprint nor a byte-for-byte SHA-256 match for any private PNG.
 
-Public demo promotion is intentionally disabled in this repository revision.
-The holding-only transition lock rejects `demoPublication=approved`, so do not
-change the snapshot to public or describe the evidence contracts as an
-executable release procedure. A later, separately reviewed implementation must
-provide a protected publication-candidate state, a distinct activation switch,
-server-side route, runtime, and asset enforcement, and post-activation
-Production verification without invalidating or replaying candidate evidence.
+Public demo promotion remains intentionally disabled. Immutable artifact
+candidates now live under `demos/candidates/`, while
+`config/demo-activations.json` separately binds private-review approval,
+rights acceptance, product acceptance, and the activation switch to the exact
+candidate and artifact digest. Both current activations are `false`, both
+acceptance records are `null`, and the holding-only transition lock rejects
+`demoPublication=approved`.
+
+`npm run check:demo-lifecycle` verifies canonical manifests, repository file
+hashes, candidate bindings, evidence shapes, timestamps, and fail-closed
+activation prerequisites. `npm run build:executive-runtime` independently
+verifies that each deterministic browser bundle matches the SHA-256 recorded
+by its candidate. The legacy `demos/SNAPSHOT.json` no longer pins mutable site
+integration files; candidate evidence therefore remains stable when routing or
+activation enforcement changes.
+
+This foundation is not an executable public-release procedure. A later,
+separately reviewed change must remove or replace the holding-only launch-gate
+lock, finish public runtime and asset enforcement, activate only a fully bound
+candidate, and retain post-activation Production verification. It must not
+invalidate or replay the accepted candidate evidence.
 
 Before that implementation may be proposed:
 
@@ -32,10 +46,10 @@ Before that implementation may be proposed:
 4. Obtain and retain the underlying publication-rights and product-acceptance
    records outside the repository; the preparatory envelope shapes in
    `docs/LAUNCH_GATE_EVIDENCE.md` do not unlock the current gate.
-5. Design and validate the protected candidate-to-activation lifecycle before
-   changing `demos/SNAPSHOT.json`, the generated registry, public routes, or
-   asset access. Candidate and final release evidence must not claim a future
-   deployment or rely on a digest invalidated by activation.
+5. Validate the protected candidate-to-activation lifecycle before changing
+   the generated registry, public routes, or asset access. Candidate and final
+   release evidence must not claim a future deployment or rely on a digest
+   invalidated by activation.
 6. Keep the public label `conditional` until the strict migration gate is
    actually complete and owner-accepted.
 7. Run the full Quality workflow and inspect the protected Vercel candidate

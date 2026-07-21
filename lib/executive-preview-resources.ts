@@ -1,5 +1,8 @@
 import path from 'node:path';
 
+import {reviewDemoIds} from '@/demos/catalog';
+import {demoCandidates} from '@/demos/candidates';
+
 export const EXECUTIVE_PREVIEW_PRIVATE_HEADERS = {
   'Cache-Control': 'private, no-store, max-age=0',
   'Cross-Origin-Resource-Policy': 'same-origin',
@@ -8,25 +11,26 @@ export const EXECUTIVE_PREVIEW_PRIVATE_HEADERS = {
   'X-Robots-Tag': 'noindex, nofollow, noarchive',
 } as const;
 
-export const EXECUTIVE_PREVIEW_RUNTIME_FILES = {
-  'conversion-1-2.js': 'conversion-1-2.js',
-  'conversion-1-4.js': 'conversion-1-4.js',
-} as const;
+export const EXECUTIVE_PREVIEW_RUNTIME_FILES: Readonly<Record<string, string>> =
+  Object.freeze(Object.fromEntries(
+    reviewDemoIds.map((id) => [`${id}.js`, `${id}.js`]),
+  ));
 
-export const EXECUTIVE_PREVIEW_ASSET_FILES = {
-  'conversion-1-2/gallon-0.png': 'conversion-1-2/gallon-0.png',
-  'conversion-1-2/gallon-32.png': 'conversion-1-2/gallon-32.png',
-  'conversion-1-2/gallon-64.png': 'conversion-1-2/gallon-64.png',
-  'conversion-1-2/gallon-96.png': 'conversion-1-2/gallon-96.png',
-  'conversion-1-2/gallon-128.png': 'conversion-1-2/gallon-128.png',
-  'conversion-1-2/quart-empty-stage.png': 'conversion-1-2/quart-empty-stage.png',
-  'conversion-1-2/quart-full-stage.png': 'conversion-1-2/quart-full-stage.png',
-  'conversion-1-2/quart-pouring-empty.png': 'conversion-1-2/quart-pouring-empty.png',
-  'conversion-1-2/quart-pouring-full.png': 'conversion-1-2/quart-pouring-full.png',
-  'conversion-1-4/cylinder-base.png': 'conversion-1-4/cylinder-base.png',
-  'conversion-1-4/pitcher-back.png': 'conversion-1-4/pitcher-back.png',
-  'conversion-1-4/pitcher-front.png': 'conversion-1-4/pitcher-front.png',
-} as const;
+const PRIVATE_ASSET_PREFIX = 'private-demo-assets/';
+
+export const EXECUTIVE_PREVIEW_ASSET_FILES: Readonly<Record<string, string>> =
+  Object.freeze(Object.fromEntries(
+    reviewDemoIds.flatMap((id) => {
+      const ownedAssetPrefix = `${PRIVATE_ASSET_PREFIX}${id}/`;
+      return demoCandidates[id].artifacts
+        .map(({path: artifactPath}) => artifactPath)
+        .filter((artifactPath) => artifactPath.startsWith(ownedAssetPrefix))
+        .map((artifactPath) => {
+          const privatePath = artifactPath.slice(PRIVATE_ASSET_PREFIX.length);
+          return [privatePath, privatePath] as const;
+        });
+    }),
+  ));
 
 type ReadPrivateFile = (absolutePath: string) => Promise<Uint8Array>;
 

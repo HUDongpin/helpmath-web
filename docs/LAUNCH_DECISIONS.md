@@ -122,18 +122,18 @@ adaptation, Spanish localization, PNG derivatives, and Vercel/CDN distribution:
 
 | Demo | Source and derivative evidence | Rights approver / date | Product acceptance / date |
 | --- | --- | --- | --- |
-| `conversion-1-2` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
-| `conversion-1-4` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
+| `conversion-1-2` | `demos/candidates/conversion-1-2.json`, legacy snapshot, and workbench migration record | Pending | Pending |
+| `conversion-1-4` | `demos/candidates/conversion-1-4.json`, legacy snapshot, and workbench migration record | Pending | Pending |
 
-A future candidate-to-activation lifecycle may support a non-indexed,
-`conditional` public preview after publication-rights approval while reserving
-indexing for strict validation and technical acceptance. The current code does
-not enable that transition. The owner must decide whether the future
-intermediate public-preview policy is allowed or whether technical/product
-acceptance is required for every public route. Until both that decision and the
-separate lifecycle implementation are complete, keep the top-level
-`demoPublication` gate and both demo records private regardless of rights
-evidence:
+The repository now separates immutable candidates, private review, rights and
+product acceptance, and public activation. Its conservative default requires
+both acceptance records and the `demoPublication` gate before any public
+route; `strict-complete` remains additionally required for indexing. The
+current holding-only gate lock makes every activation fail closed. The owner
+must still decide whether a future policy may permit a rights-cleared,
+non-indexed `conditional` preview or whether the conservative default is
+permanent. Until that decision and a separately reviewed transition-lock
+change are complete, keep both activations `false` regardless of new evidence:
 
 | Demo publication policy decision | Owner answer or evidence reference | Approved by / date |
 | --- | --- | --- |
@@ -141,9 +141,10 @@ evidence:
 
 The application implements the temporary-removal state for both previously
 online demos. Record pre-existing authorization evidence or a new approval
-before changing `public`, `publication.access`, or either approval field in
-`demos/SNAPSHOT.json`. A `conditional` technical label does not resolve
-copyright or license questions.
+before adding either acceptance envelope or changing an activation in
+`config/demo-activations.json`. Never mutate a candidate digest to make old
+evidence fit. A `conditional` technical label does not resolve copyright or
+license questions.
 
 Source hashes and fidelity evidence prove provenance and behavior; they do not
 by themselves prove publication rights.

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "conversion-1-2",
+  "candidateId": "conversion-1-2--2026-07-22--4224e3c0",
+  "source": {
+    "flaSha256": "7c59923ebd200f4fb951e1c9a7683861c21af7688d537fa5fca370acf6d9291d",
+    "swfSha256": "91d63f9f045d2097cd0f46c59ceacd4faefd95851f9039003589d8052c39e758"
+  },
+  "movie": {
+    "stage": {
+      "width": 780,
+      "height": 379
+    },
+    "fps": 12,
+    "frameCount": 109,
+    "durationMs": 9083
+  },
+  "maturity": "legacy-prototype",
+  "validationStatus": "conditional",
+  "runtime": {
+    "entry": "private-demo-runtime/conversion-1-2.ts",
+    "globalName": "HelpMathExecutiveRuntimeConversion12",
+    "bundleSha256": "4224e3c04140a41341d26a9771cf2ec553b8938b5a3b908250f6a1e3f54e107c"
+  },
+  "artifacts": [
+    {
+      "path": "components/animation-player-core.tsx",
+      "sha256": "357d6a91450bb9f5a7c50d0395e4968da31edad8339bd2b4119e06d60e6e8f77"
+    },
+    {
+      "path": "demos/contract.ts",
+      "sha256": "bb02930ff8ff2c798aa7e87342a57bb57e3b438224076d66ffd7132776fc9653"
+    },
+    {
+      "path": "demos/legacy-accessible-frame.tsx",
+      "sha256": "c3f6165f7aa1be56826fa9abc3328faf94607814310a0b0cf92fc1f9bffcf05a"
+    },
+    {
+      "path": "demos/lib/conversionTimeline.js",
+      "sha256": "5ffef75269fff6c28c360f3a75303d739b2e509590d2bf1c9d80791b83f752f8"
+    },
+    {
+      "path": "demos/modules/conversion-1-2.tsx",
+      "sha256": "9133171838abd5203ebd2efffffe918425be22e398683bf8ce0d38e0ae301bf2"
+    },
+    {
+      "path": "demos/runtime.ts",
+      "sha256": "323de3f8023e506467dea4c43c9f9b6d18c149817295843a815280fa480aff3c"
+    },
+    {
+      "path": "demos/vendor/FlashBauhausFormula.jsx",
+      "sha256": "793592ed6d25b921ba7e0dfd19ebc6631f9f1771f13a5273d35522291f2f1554"
+    },
+    {
+      "path": "demos/vendor/FlashBauhausGallon.jsx",
+      "sha256": "48564432846793dd54b9abfd3e04a3f38fb2529a3b261f7d3c133f3e2498d0a6"
+    },
+    {
+      "path": "demos/vendor/GallonConversionAnimation.jsx",
+      "sha256": "8741aca6c5c2f127a44786c3cf4a08641df9d9f41defa63afb99007aa4d1b0cf"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/gallon-0.png",
+      "sha256": "ee08cc634e0c8d9019e4e75161e4c1782de82fc74a5fb4fe14e67d2cd2c9ca6d"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/gallon-128.png",
+      "sha256": "e56efa3ec6a524f3b9ffc078c343f72ac066662818df276982a64d330394c5d6"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/gallon-32.png",
+      "sha256": "067605176a72fd410471c78b3b518bf3a566e6417488996e4d30856fdd3eca0b"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/gallon-64.png",
+      "sha256": "1f8f38e5d64ad6f64d7b86ca547f84eac2d632de0187873e1e5ff6cff89f187c"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/gallon-96.png",
+      "sha256": "27c824870f25276fc1c826960203b2d2a7ddeeccfbda1a8f62bdb0e0a82dcd4c"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/quart-empty-stage.png",
+      "sha256": "787c393e2c9871a18cab03bad8268a04531d87db4dee238e5b37dda882152a3d"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/quart-full-stage.png",
+      "sha256": "8a59974bbb0db31ca12d45d85276c9432f4ca6abbcdcfd45334b22dc7aeb1bf7"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/quart-pouring-empty.png",
+      "sha256": "7b5dbfd5193be7f41814a796937ebfc4f8f7fa11b97ae85c153ca9741a76718c"
+    },
+    {
+      "path": "private-demo-assets/conversion-1-2/quart-pouring-full.png",
+      "sha256": "30c708178259cfdb7f4e04d648e0b0c11a72ba788dd72b9fcdf7985218eb4ec4"
+    },
+    {
+      "path": "private-demo-runtime/conversion-1-2.ts",
+      "sha256": "d7fe359009ffbf9a496db28b5c0493d9c57a38f44a85d5fc56995364d8f18737"
+    },
+    {
+      "path": "private-demo-runtime/create-runtime.tsx",
+      "sha256": "e8554d4794155f53ff6a35b42dfa47c367cf79555bf80f01e5f6ca19865c827f"
+    }
+  ],
+  "artifactSha256": "83b8dd710c28951341af5c401aefd59b99492d8cebbb8fb893d582e80cb3000a"
+}
