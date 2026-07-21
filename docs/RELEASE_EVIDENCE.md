@@ -84,6 +84,15 @@ is promoted, run:
 npm run smoke:production
 ```
 
+The `Production deployment smoke` workflow also runs after a successful GitHub
+`Production` deployment status. It checks out the deployment SHA, confirms it
+is contained by `main`, verifies the immutable URL's Vercel SSO boundary, runs
+the public canonical contract, and retains non-secret JSON artifacts for 90
+days. It intentionally stores no bypass or executive credential. Therefore it
+does not replace the authenticated Preview semantic smoke, authenticated
+executive-demo smoke, or Vercel evidence that the canonical alias is assigned
+to the named deployment.
+
 Contact intake is expected to be disabled unless the separate Turnstile,
 Resend, rate-limit, inbox, privacy, and owner gates are complete. Only for the
 controlled contact-delivery verification run, set

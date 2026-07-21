@@ -14,6 +14,9 @@
     "test:release-smoke": "node --test tests/release-smoke-helpers.test.mjs",
     "test:legacy-apache": "npm run check:legacy-apache && tsx --test tests/apache-legacy-generator.test.ts tests/legacy-apache.contract.ts",
     "check:legacy-source-custody": "node scripts/validate-legacy-source-custody.mjs --require-successful",
+    "verify:legacy-source-archive": "node scripts/verify-legacy-source-archive.mjs",
+    "build:legacy-source-recovery": "node scripts/build-legacy-source-recovery-bundle.mjs",
+    "drill:legacy-source-recovery": "node scripts/drill-legacy-source-recovery.mjs",
     "test:e2e": "playwright test",
     "smoke:production": "node scripts/release-smoke.mjs",
     "generate:demos": "node scripts/generate-registry.mjs",
@@ -21,7 +24,8 @@
     "check:generated": "npm run generate:demos && git diff --exit-code -- demos/registry.generated.ts && npm run check:legacy-apache",
     "check:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts --check",
     "check:private-demo-leaks": "node scripts/check-private-demo-leaks.mjs",
-    "check:private-demo-traces": "node scripts/verify-private-demo-traces.mjs"
+    "check:private-demo-traces": "node scripts/verify-private-demo-traces.mjs",
+    "check:stable-links": "node scripts/check-stable-external-links.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fredoka": "^5.3.0",

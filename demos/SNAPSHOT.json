@@ -180,7 +180,7 @@
     "lib/public-paths.ts": "0dc923702c009177f95290952e8a5e16d54d55515da03608d45b0b695e2686c2",
     "next.config.ts": "c2ac34ff3a75ef251c61dcd69f73e9dbb8d60e48402240fd2c8af91f11dd1038",
     "package-lock.json": "6af6df86ff8a287d357a8813a03b1a7846311707221fdd433ac7a12edff0d641",
-    "package.json": "ca3054f8a8e570192c58b0b4e6653abe3e02332dfd0185c0ffed2b5b2ab1f458",
+    "package.json": "93f96aafa0c878c85e4efe0092b3cfa53176c905885fcd6ef8423f8bd34db259",
     "playwright.config.ts": "551465ee50be6c97f0dc33bbd528cd1c45b865f730180644964b854e4cfadb98",
     "playwright.global-setup.ts": "0c08a9e689680fdaf7c88201f737dfbce35bddff11ba7e2c25ae0488b29fb58b",
     "proxy.ts": "f4157f2c66194a5830680f4d917916fd9462bad826f1d891a3f3cca8497a0692",

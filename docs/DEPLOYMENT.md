@@ -178,7 +178,9 @@ The audited URL mapping and verification procedure are recorded in
 
 ## Rollback
 
-Record the release commit and prior production deployment. For an application
-failure, use Vercel Instant Rollback. For DNS/TLS failure, restore only the
-previous website A/AAAA/CNAME values. Never roll back mail records as part of a
-website incident.
+Use the reviewed [production rollback runbook](./ROLLBACK_RUNBOOK.md) and retain
+its incident record. For an application failure, select an exact previously
+reviewed deployment and use Vercel Instant Rollback; then rerun the production
+contract and verify authenticated alias identity. For DNS/TLS failure, restore
+only the recorded previous website A/AAAA/CNAME values. Never roll back mail
+records as part of a website incident.
