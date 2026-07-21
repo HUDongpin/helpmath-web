@@ -27,7 +27,7 @@ export function NotFoundPage({locale}: {locale: Locale}) {
           <h1>{content.title}</h1>
           <p>{content.body}</p>
           <div className="page-hero__actions">
-            <NextLink className="action action--primary" href={content.href}>
+            <NextLink className="action action--primary" href={content.href} prefetch={false}>
               {content.action}
             </NextLink>
           </div>
