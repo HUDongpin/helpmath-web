@@ -1,3 +1,5 @@
+@import "@fontsource-variable/fredoka/wght.css";
+@import "@fontsource-variable/nunito-sans/wght.css";
 @import "tailwindcss";
 
 :root {
@@ -20,6 +22,8 @@
   --shadow: 0 18px 45px rgb(20 33 61 / 12%);
   --shadow-small: 0 8px 24px rgb(20 33 61 / 9%);
   --radius: 18px;
+  --font-nunito: "Nunito Sans Variable";
+  --font-fredoka: "Fredoka Variable";
   --font-body: var(--font-nunito), "Avenir Next", Avenir, system-ui, sans-serif;
   --font-display: var(--font-fredoka), var(--font-body);
 }
@@ -381,6 +385,90 @@ svg {
   padding: 0.35rem 0.6rem;
 }
 
+.program-lineage-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 2rem;
+}
+
+.program-lineage-card {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: clamp(1.35rem, 3vw, 2rem);
+}
+
+.program-lineage-card:nth-child(2) {
+  background: var(--blue-pale);
+}
+
+.program-lineage-card:nth-child(3) {
+  background: var(--mint-pale);
+}
+
+.program-lineage-card__heading {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.program-lineage-card__heading > p {
+  color: var(--blue-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.program-lineage-card__icon {
+  align-items: center;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  display: inline-flex;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.program-lineage-card h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  line-height: 1.1;
+  margin: 1.25rem 0 0;
+}
+
+.program-lineage-card__body {
+  flex: 1;
+}
+
+.program-lineage-card__body p {
+  color: var(--ink-soft);
+  margin: 0.85rem 0 0;
+}
+
+.program-lineage-card__actions,
+.evidence-entry__actions {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+}
+
+.program-lineage-card__source {
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 750;
+  margin: 1.25rem 0 0;
+  padding-top: 0.85rem;
+}
+
 .evidence-list,
 .resource-list {
   border-top: 2px solid var(--ink);
@@ -451,6 +539,10 @@ svg {
 .status-badge--context,
 .status-badge--request {
   color: #67531a;
+}
+
+.status-badge--verified {
+  color: #176b50;
 }
 
 .status-badge--verification,
@@ -2119,6 +2211,7 @@ svg {
   .feature-grid--2,
   .feature-grid--3,
   .feature-grid--4,
+  .program-lineage-grid,
   .text-section {
     grid-template-columns: 1fr;
   }

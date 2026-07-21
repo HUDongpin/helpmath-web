@@ -39,22 +39,13 @@ function ScaleMark({ mark }) {
 }
 
 function ReplayButton({ opacity, onReplay }) {
-  const onKeyDown = (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onReplay();
-    }
-  };
-
   return (
     <g
+      aria-hidden="true"
       className="flash-replay"
       opacity={opacity}
-      role="button"
-      tabIndex={opacity > 0 ? 0 : -1}
-      aria-label="Replay animation"
       onClick={onReplay}
-      onKeyDown={onKeyDown}
+      tabIndex={-1}
     >
       <rect
         fill="transparent"
@@ -182,11 +173,14 @@ export function LiterConversionAnimation({
           aria-labelledby="liter-conversion-title liter-conversion-desc"
         >
           <title id="liter-conversion-title">
-            1 liter equals 1000 milliliters
+            {spanishFormulaFlag === "on"
+              ? "1 litro equivale a 1000 mililitros"
+              : "1 liter equals 1000 milliliters"}
           </title>
           <desc id="liter-conversion-desc">
-            A pitcher fills a graduated cylinder to one liter, then the conversion
-            formula and Replay button appear.
+            {spanishFormulaFlag === "on"
+              ? "Una jarra llena una probeta graduada hasta un litro."
+              : "A pitcher fills a graduated cylinder to one liter."}
           </desc>
 
           <defs>
@@ -230,14 +224,14 @@ export function LiterConversionAnimation({
           </g>
 
           <image
-            href="/flash-assets/pitcher-back.png"
+            href="/api/executive-preview/assets/conversion-1-4/pitcher-back.png"
             width="780"
             height="379"
             opacity={frameState.pitcherOpacity}
           />
 
           <image
-            href="/flash-assets/cylinder-base.png"
+            href="/api/executive-preview/assets/conversion-1-4/cylinder-base.png"
             width="780"
             height="379"
           />
@@ -287,18 +281,21 @@ export function LiterConversionAnimation({
           </text>
 
           <image
-            href="/flash-assets/pitcher-front.png"
+            href="/api/executive-preview/assets/conversion-1-4/pitcher-front.png"
             width="780"
             height="379"
             opacity={frameState.pitcherOpacity}
           />
 
-          <FlashBauhausFormula opacity={frameState.formulaOpacity} />
+          <FlashBauhausFormula
+            lang={spanishFormulaFlag === "on" ? "es" : "en"}
+            opacity={frameState.formulaOpacity}
+          />
           <ReplayButton opacity={frameState.replayOpacity} onReplay={replay} />
         </svg>
 
         <span className="sr-only" aria-live="polite">
-          Frame {frameState.frame} of {LITER_FLASH_MOVIE.frameCount}
+          {spanishFormulaFlag === "on" ? "Fotograma" : "Frame"} {frameState.frame} {spanishFormulaFlag === "on" ? "de" : "of"} {LITER_FLASH_MOVIE.frameCount}
         </span>
       </div>
     </div>

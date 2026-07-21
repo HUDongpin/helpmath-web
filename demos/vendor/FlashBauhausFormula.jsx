@@ -20,9 +20,15 @@ function GlyphRun({ run, x, y, scale }) {
   ));
 }
 
-export function FlashBauhausFormula({ opacity }) {
+export function FlashBauhausFormula({ opacity, lang = "en" }) {
+  const visible = opacity > 0.01;
   return (
-    <g opacity={opacity} role="img" aria-label="1 liter = 1000 milliliters">
+    <g
+      aria-hidden={visible ? undefined : "true"}
+      aria-label={visible ? (lang === "es" ? "1 litro = 1000 mililitros" : "1 liter = 1000 milliliters") : undefined}
+      opacity={opacity}
+      role={visible ? "img" : undefined}
+    >
       <GlyphRun
         run={FORMULA_RUN}
         x={147.65}

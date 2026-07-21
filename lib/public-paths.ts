@@ -1,4 +1,6 @@
-import {demoRoutes} from '../demos/catalog';
+import {demoRoutes, reviewDemoRoutes} from '../demos/catalog';
+
+export const executivePreviewEntryPath = '/executive-preview' as const;
 
 export const publicPagePaths = Object.freeze([
   '/',
@@ -13,7 +15,13 @@ export const publicPagePaths = Object.freeze([
   '/privacy',
   '/terms',
   '/demos',
+  executivePreviewEntryPath,
   ...demoRoutes,
+]);
+
+export const routablePagePaths = Object.freeze([
+  ...publicPagePaths,
+  ...reviewDemoRoutes,
 ]);
 
 const publicPagePathSet = new Set<string>(publicPagePaths);

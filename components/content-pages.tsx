@@ -1,8 +1,11 @@
 import {
   Archive,
+  Building2,
   CheckCircle2,
   CircleAlert,
   FileCheck2,
+  Handshake,
+  History,
   LifeBuoy,
   LockKeyhole,
   MonitorPlay,
@@ -28,6 +31,8 @@ import {TextSection} from './text-section';
 import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
 export function AboutPage({content}: {content: AboutContent}) {
+  const lineageIcons = [History, Building2, Handshake];
+
   return (
     <>
       <PageHero content={content.hero} tone="yellow" />
@@ -36,6 +41,42 @@ export function AboutPage({content}: {content: AboutContent}) {
           {content.story.map((section) => (
             <TextSection content={section} key={section.id} />
           ))}
+        </Container>
+      </Section>
+      <Section className="surface-grid" id="program-lineage">
+        <Container>
+          <SectionHeading
+            eyebrow={content.lineage.eyebrow}
+            intro={content.lineage.intro}
+            title={content.lineage.title}
+          />
+          <div className="program-lineage-grid">
+            {content.lineage.items.map((item, index) => {
+              const Icon = lineageIcons[index % lineageIcons.length];
+              return (
+                <article className="program-lineage-card" key={item.id}>
+                  <div className="program-lineage-card__heading">
+                    <span aria-hidden="true" className="program-lineage-card__icon">
+                      <Icon size={26} strokeWidth={2.1} />
+                    </span>
+                    <p>{item.period}</p>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <div className="program-lineage-card__body">
+                    {item.paragraphs.map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+                  <div className="program-lineage-card__actions">
+                    {item.actions.map((action) => (
+                      <Action action={action} key={action.href} kind="quiet" />
+                    ))}
+                  </div>
+                  <p className="program-lineage-card__source">{item.sourceNote}</p>
+                </article>
+              );
+            })}
+          </div>
         </Container>
       </Section>
       <Section className="surface-blue">
@@ -150,7 +191,8 @@ export function CurriculumPage({content}: {content: CurriculumContent}) {
 const evidenceIcons: Record<EvidenceStatus, typeof Archive> = {
   archived: Archive,
   verification: SearchCheck,
-  context: FileCheck2
+  context: FileCheck2,
+  verified: CheckCircle2
 };
 
 export function ResearchPage({content}: {content: ResearchContent}) {
@@ -182,6 +224,13 @@ export function ResearchPage({content}: {content: ResearchContent}) {
                     <p>{entry.summary}</p>
                     <p className="evidence-entry__interpretation">{entry.interpretation}</p>
                     <p className="evidence-entry__source">{entry.sourceLabel}</p>
+                    {entry.sourceActions?.length ? (
+                      <div className="evidence-entry__actions">
+                        {entry.sourceActions.map((action) => (
+                          <Action action={action} key={action.href} kind="quiet" />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               );

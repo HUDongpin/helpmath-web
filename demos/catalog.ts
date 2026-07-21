@@ -17,6 +17,21 @@ export const demoIds = Object.freeze(
 
 export const demoRoutes = Object.freeze(demoIds.map((id) => `/demos/${id}` as const));
 
+export const reviewDemoIds = Object.freeze(
+  sourceEntries
+    .filter(([, source]) =>
+      !source.public &&
+      source.publication.access === 'private' &&
+      !source.publication.indexable &&
+      source.publication.internalExecutiveReview === 'approved'
+    )
+    .map(([id]) => id),
+) as readonly DemoId[];
+
+export const reviewDemoRoutes = Object.freeze(
+  reviewDemoIds.map((id) => `/demos/${id}` as const),
+);
+
 export const indexableDemoIds = Object.freeze(
   sourceEntries
     .filter(([, source]) =>
@@ -35,6 +50,10 @@ export const indexableDemoRoutes = Object.freeze(
 
 export function isDemoId(value: string): value is DemoId {
   return demoIds.some((id) => id === value);
+}
+
+export function isReviewDemoId(value: string): value is DemoId {
+  return reviewDemoIds.some((id) => id === value);
 }
 
 export function isIndexableDemo(value: DemoId): boolean {

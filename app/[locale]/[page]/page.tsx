@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 
 import {ContactPage} from '@/components/contact-page';
-import {DemosPage} from '@/components/demos-pages';
+import {DemosPage} from '@/components/demos-page';
 import {
   AboutPage,
   ApproachPage,

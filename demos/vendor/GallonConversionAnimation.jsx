@@ -14,7 +14,7 @@ import {
 } from "./FlashBauhausGallon.jsx";
 import { FlashBauhausReplayText } from "./FlashBauhausFormula.jsx";
 
-const ASSET_ROOT = "/flash-assets/conversion-1-2";
+const ASSET_ROOT = "/api/executive-preview/assets/conversion-1-2";
 const FULL_BOTTLE_SOURCE = [1, 0, 0, 1, 56.8, 144.65];
 const EMPTY_BOTTLE_SOURCE = [
   -0.363312, 0.93045, -0.93045, -0.363312, 96.4, 203.6,
@@ -186,22 +186,13 @@ function BottleLayer({ bottle }) {
 }
 
 function ReplayButton({ opacity, onReplay }) {
-  const onKeyDown = (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onReplay();
-    }
-  };
-
   return (
     <g
+      aria-hidden="true"
       className="flash-replay"
       opacity={opacity}
-      role="button"
-      tabIndex={opacity > 0 ? 0 : -1}
-      aria-label="Replay animation"
       onClick={onReplay}
-      onKeyDown={onKeyDown}
+      tabIndex={-1}
     >
       <rect
         fill="transparent"
@@ -322,11 +313,14 @@ export function GallonConversionAnimation({
           aria-labelledby="gallon-conversion-title gallon-conversion-desc"
         >
           <title id="gallon-conversion-title">
-            1 gallon equals 128 fluid ounces
+            {spanishFormulaFlag === "on"
+              ? "1 galón equivale a 128 onzas líquidas"
+              : "1 gallon equals 128 fluid ounces"}
           </title>
           <desc id="gallon-conversion-desc">
-            Four quart bottles pour into a gallon jug as the fluid-ounce total
-            increases from 32 to 128.
+            {spanishFormulaFlag === "on"
+              ? "Cuatro botellas de un cuarto llenan una jarra de un galón."
+              : "Four quart bottles fill a one-gallon jug."}
           </desc>
 
           <defs>
@@ -402,7 +396,7 @@ export function GallonConversionAnimation({
         </svg>
 
         <span className="sr-only" aria-live="polite">
-          Frame {frameState.frame} of {GALLON_FLASH_MOVIE.frameCount}
+          {spanishFormulaFlag === "on" ? "Fotograma" : "Frame"} {frameState.frame} {spanishFormulaFlag === "on" ? "de" : "of"} {GALLON_FLASH_MOVIE.frameCount}
         </span>
       </div>
     </div>

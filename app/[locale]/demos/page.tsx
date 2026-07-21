@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 
-import {DemosPage} from '@/components/demos-pages';
+import {DemosPage} from '@/components/demos-page';
 import {getSiteContent} from '@/content';
 import {createPageMetadata} from '@/lib/metadata';
 

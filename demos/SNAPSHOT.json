@@ -4,6 +4,11 @@
   "validationStatus": "conditional",
   "publicationPolicy": {
     "defaultAccess": "private",
+    "internalReviewAccessRequires": [
+      "explicit owner authorization for a named internal audience",
+      "application-authenticated short-lived session",
+      "visible non-public and unvalidated status notice"
+    ],
     "publicAccessRequires": [
       "publication-rights approval"
     ],
@@ -21,7 +26,10 @@
       "flaSha256": "7c59923ebd200f4fb951e1c9a7683861c21af7688d537fa5fca370acf6d9291d",
       "swfSha256": "91d63f9f045d2097cd0f46c59ceacd4faefd95851f9039003589d8052c39e758",
       "runtimeMovie": {
-        "stage": {"width": 780, "height": 379},
+        "stage": {
+          "width": 780,
+          "height": 379
+        },
         "fps": 12,
         "frameCount": 109,
         "durationMs": 9083
@@ -33,8 +41,13 @@
         "machineAudit": "partial",
         "actionScriptVersion": "AS1/2",
         "backgroundColor": "#e4e4e4",
-        "languages": ["en", "es"],
-        "scenarios": ["default"],
+        "languages": [
+          "en",
+          "es"
+        ],
+        "scenarios": [
+          "default"
+        ],
         "audioRequired": true,
         "audioImplemented": false,
         "externalDependencies": [],
@@ -45,6 +58,8 @@
       "publication": {
         "access": "private",
         "indexable": false,
+        "internalExecutiveReview": "approved",
+        "internalReviewApprovalRef": "Project researcher/software engineer request, 2026-07-21",
         "technicalAcceptance": "pending",
         "rightsApproval": "pending"
       },
@@ -52,7 +67,7 @@
         "The private workbench record is preserved but its audit, baseline, RMSE evidence, strict validator, and owner acceptance are incomplete.",
         "Matching English and Spanish source audio is cataloged privately but is not implemented in this public prototype.",
         "The review runtime is a prototype and must not be described as one-to-one, faithful, or complete.",
-        "The route and extracted image assets must remain private until JavaScript-derivative and publication rights are approved."
+        "The route and extracted image assets must remain behind application authentication and must not be made public until JavaScript-derivative and publication rights are approved."
       ]
     },
     "conversion-1-4": {
@@ -62,7 +77,10 @@
       "flaSha256": "d661c776e239fb59c44278c6e4d5fd75812599eb2dc9fa758b1ba37a59251b1c",
       "swfSha256": "cbb7f3f529c8c5ca679da864c7c49ab472cac4d0feb2392eed5aa04d21a4e1a9",
       "runtimeMovie": {
-        "stage": {"width": 780, "height": 379},
+        "stage": {
+          "width": 780,
+          "height": 379
+        },
         "fps": 12,
         "frameCount": 67,
         "durationMs": 5583
@@ -74,8 +92,13 @@
         "machineAudit": "partial",
         "actionScriptVersion": "AS1/2",
         "backgroundColor": "#e4e4e4",
-        "languages": ["en", "es"],
-        "scenarios": ["default"],
+        "languages": [
+          "en",
+          "es"
+        ],
+        "scenarios": [
+          "default"
+        ],
         "audioRequired": true,
         "audioImplemented": false,
         "externalDependencies": [],
@@ -86,6 +109,8 @@
       "publication": {
         "access": "private",
         "indexable": false,
+        "internalExecutiveReview": "approved",
+        "internalReviewApprovalRef": "Project researcher/software engineer request, 2026-07-21",
         "technicalAcceptance": "pending",
         "rightsApproval": "pending"
       },
@@ -93,47 +118,76 @@
         "The private workbench record is preserved but its audit, baseline, RMSE evidence, strict validator, and owner acceptance are incomplete.",
         "Matching English and Spanish source audio is cataloged privately but is not implemented in this public prototype.",
         "The review runtime is a prototype and must not be described as one-to-one, faithful, or complete.",
-        "The route and extracted image assets must remain private until JavaScript-derivative and publication rights are approved."
+        "The route and extracted image assets must remain behind application authentication and must not be made public until JavaScript-derivative and publication rights are approved."
       ]
     }
   },
   "files": {
     "demos/animation-registry.ts": "50f5e4874e227591cb14677121ac60c2524eb4c11cf47a55be567e1ded7ff136",
-    "demos/catalog.ts": "ae394ad30777cba9b47666fe9c6deb4260490fa546baee1501378a6cdc29f036",
+    "demos/catalog.ts": "f52382fc58e8601de228cce26df7c283f885785bce8e14ddae54cb4e65229cf4",
     "demos/contract.ts": "bb02930ff8ff2c798aa7e87342a57bb57e3b438224076d66ffd7132776fc9653",
-    "demos/legacy-accessible-frame.tsx": "8c7e2db90b5b5187f04e4d3c3a7936194c7d7a12cffcf84272a2e0005990dcfd",
+    "demos/legacy-accessible-frame.tsx": "c3f6165f7aa1be56826fa9abc3328faf94607814310a0b0cf92fc1f9bffcf05a",
     "demos/lib/conversionTimeline.js": "5ffef75269fff6c28c360f3a75303d739b2e509590d2bf1c9d80791b83f752f8",
-    "demos/modules/conversion-1-2.tsx": "32c6f23a861b1bfcdd76a8c1cf57a3cce1d8afb00d923de551666983d6c04bfc",
-    "demos/modules/conversion-1-4.tsx": "0f0cd7f90d283ddbb5b49abc0eb4fdad3126c43b641f4479c3e915158f929c02",
+    "demos/modules/conversion-1-2.tsx": "9133171838abd5203ebd2efffffe918425be22e398683bf8ce0d38e0ae301bf2",
+    "demos/modules/conversion-1-4.tsx": "6ff9aa8d1b770e35509418d7fe9e83d79d0ab78893bfa87c0159c15744caa87d",
     "demos/registry.generated.ts": "1a2101867e2e3e8cda4bdeac6216aef8d5a3ec3fb3418b8f6188e30c1182e68c",
+    "demos/review-animation-registry.ts": "d64aa33e94b517c8de1f4d05de23f9659b4fd32ee574e95328235e37721e1fea",
     "demos/runtime.ts": "323de3f8023e506467dea4c43c9f9b6d18c149817295843a815280fa480aff3c",
-    "demos/vendor/FlashBauhausFormula.jsx": "8216b35a1ca0c9230a58fa7245d64ec9d549a61e86f481b8f3762f0ff35b7b71",
+    "demos/vendor/FlashBauhausFormula.jsx": "793592ed6d25b921ba7e0dfd19ebc6631f9f1771f13a5273d35522291f2f1554",
     "demos/vendor/FlashBauhausGallon.jsx": "48564432846793dd54b9abfd3e04a3f38fb2529a3b261f7d3c133f3e2498d0a6",
-    "demos/vendor/GallonConversionAnimation.jsx": "0a8be5229d3a2a760996e9ac3f17a049da07f1fe18f3c46bb2d529641e13536e",
-    "demos/vendor/LiterConversionAnimation.jsx": "98a9c6506d96d24be57b28a002f894d18c43a3a98df041340897e8eb567f46c8",
-    "public/flash-assets/conversion-1-2/gallon-0.png": "ee08cc634e0c8d9019e4e75161e4c1782de82fc74a5fb4fe14e67d2cd2c9ca6d",
-    "public/flash-assets/conversion-1-2/gallon-32.png": "067605176a72fd410471c78b3b518bf3a566e6417488996e4d30856fdd3eca0b",
-    "public/flash-assets/conversion-1-2/gallon-64.png": "1f8f38e5d64ad6f64d7b86ca547f84eac2d632de0187873e1e5ff6cff89f187c",
-    "public/flash-assets/conversion-1-2/gallon-96.png": "27c824870f25276fc1c826960203b2d2a7ddeeccfbda1a8f62bdb0e0a82dcd4c",
-    "public/flash-assets/conversion-1-2/gallon-128.png": "e56efa3ec6a524f3b9ffc078c343f72ac066662818df276982a64d330394c5d6",
-    "public/flash-assets/conversion-1-2/quart-empty-stage.png": "787c393e2c9871a18cab03bad8268a04531d87db4dee238e5b37dda882152a3d",
-    "public/flash-assets/conversion-1-2/quart-full-stage.png": "8a59974bbb0db31ca12d45d85276c9432f4ca6abbcdcfd45334b22dc7aeb1bf7",
-    "public/flash-assets/conversion-1-2/quart-pouring-empty.png": "7b5dbfd5193be7f41814a796937ebfc4f8f7fa11b97ae85c153ca9741a76718c",
-    "public/flash-assets/conversion-1-2/quart-pouring-full.png": "30c708178259cfdb7f4e04d648e0b0c11a72ba788dd72b9fcdf7985218eb4ec4",
-    "public/flash-assets/cylinder-base.png": "97578297f09956d47cf4c34009122810c6054c7d8d44b681b214eb7e4ba867e8",
-    "public/flash-assets/pitcher-back.png": "7018dc94cfd9c5126b044770ff806dcbc53332792e72782b21f15f5ba1074792",
-    "public/flash-assets/pitcher-front.png": "ca0cd95d7142fc375e6b5a5cc16c56b0402e1586a0bb9881ecd3eb6286df1622"
+    "demos/vendor/GallonConversionAnimation.jsx": "8741aca6c5c2f127a44786c3cf4a08641df9d9f41defa63afb99007aa4d1b0cf",
+    "demos/vendor/LiterConversionAnimation.jsx": "bbeb00b564a3746a6bb2e2b96b6dc2215072151017d021107db21c6a51fc51f4",
+    "private-demo-assets/conversion-1-2/gallon-0.png": "ee08cc634e0c8d9019e4e75161e4c1782de82fc74a5fb4fe14e67d2cd2c9ca6d",
+    "private-demo-assets/conversion-1-2/gallon-128.png": "e56efa3ec6a524f3b9ffc078c343f72ac066662818df276982a64d330394c5d6",
+    "private-demo-assets/conversion-1-2/gallon-32.png": "067605176a72fd410471c78b3b518bf3a566e6417488996e4d30856fdd3eca0b",
+    "private-demo-assets/conversion-1-2/gallon-64.png": "1f8f38e5d64ad6f64d7b86ca547f84eac2d632de0187873e1e5ff6cff89f187c",
+    "private-demo-assets/conversion-1-2/gallon-96.png": "27c824870f25276fc1c826960203b2d2a7ddeeccfbda1a8f62bdb0e0a82dcd4c",
+    "private-demo-assets/conversion-1-2/quart-empty-stage.png": "787c393e2c9871a18cab03bad8268a04531d87db4dee238e5b37dda882152a3d",
+    "private-demo-assets/conversion-1-2/quart-full-stage.png": "8a59974bbb0db31ca12d45d85276c9432f4ca6abbcdcfd45334b22dc7aeb1bf7",
+    "private-demo-assets/conversion-1-2/quart-pouring-empty.png": "7b5dbfd5193be7f41814a796937ebfc4f8f7fa11b97ae85c153ca9741a76718c",
+    "private-demo-assets/conversion-1-2/quart-pouring-full.png": "30c708178259cfdb7f4e04d648e0b0c11a72ba788dd72b9fcdf7985218eb4ec4",
+    "private-demo-assets/conversion-1-4/cylinder-base.png": "97578297f09956d47cf4c34009122810c6054c7d8d44b681b214eb7e4ba867e8",
+    "private-demo-assets/conversion-1-4/pitcher-back.png": "7018dc94cfd9c5126b044770ff806dcbc53332792e72782b21f15f5ba1074792",
+    "private-demo-assets/conversion-1-4/pitcher-front.png": "ca0cd95d7142fc375e6b5a5cc16c56b0402e1586a0bb9881ecd3eb6286df1622",
+    "private-demo-runtime/conversion-1-2.ts": "d7fe359009ffbf9a496db28b5c0493d9c57a38f44a85d5fc56995364d8f18737",
+    "private-demo-runtime/conversion-1-4.ts": "4cd8c5310fefd2d37f423e3be3747ecb4ca139858783db65c79d74e8958112f1",
+    "private-demo-runtime/create-runtime.tsx": "e8554d4794155f53ff6a35b42dfa47c367cf79555bf80f01e5f6ca19865c827f"
   },
   "integrationFiles": {
-    "app/[locale]/demos/[id]/page.tsx": "9ec81a576413ed7b5675cf55463abee37489d624c0a29aedb16b0bcb4730644b",
-    "app/[locale]/demos/page.tsx": "ac89f7bb55ff00781e2d703623b35949aa243f1605bd4d44a095c5086179d84f",
+    ".env.example": "dd70c7eec32ed5424b80b05647b71de5709f85e0a395543b398dc66bead26b4e",
+    "app/[locale]/[page]/page.tsx": "34d51c46585930341fce57f25182af9021c8f30e640d5c217ab02a65ed033748",
+    "app/[locale]/demos/[id]/page.tsx": "158fe2b5deba48723cccc58f86ff996cd54e26af4321e356c35ec8ae96e78b2c",
+    "app/[locale]/demos/page.tsx": "4710abc5f7d5a7f07032c18cffa6ef276cc12331ffd1b17ba2e084a88544afa6",
+    "app/[locale]/executive-preview/page.tsx": "b88ba935d48c61b5fb62ef283bcc6228b754d69ee8388fe911202b9cf9c86538",
+    "app/api/executive-preview/assets/[...asset]/route.ts": "c82e71caf1992d4fda8c370e29d34113270b9fa2bdebc783c0ea182980dca236",
+    "app/api/executive-preview/runtime/[id]/route.ts": "40b7c5fcb73da43c5a1e71e95bf43863151a5702736ef11b822e026d119c5c77",
+    "app/api/executive-preview/session/route.ts": "0bf348fa2a1f4be5f51d0b88eba26de069cd3320417f8b369c0de3215ec038d1",
+    "app/robots.ts": "8ae8038b86cc0875865ce5797b5805c957e032bd41b63aedc1b37008d0511816",
     "app/sitemap.ts": "1440ece1c0ea36cc730fd336aec64eff8e81eca30e5f1512a91ae0e7dfac31ed",
-    "components/demo-player.tsx": "89a5c62953002b7d42f3f3f12e2d66bfcedc8e5e17154f2e8272b14cb383de4e",
-    "components/demos-pages.tsx": "68aadb5b6861a6488b9cbfa8d31f2821e3d3d85248fbedfc7ea3a80b71c98558",
+    "components/animation-player-core.tsx": "357d6a91450bb9f5a7c50d0395e4968da31edad8339bd2b4119e06d60e6e8f77",
+    "components/demo-player.tsx": "92d7077fe210dbe83bfe24f446ef0233e0e48beffbc5797a832f9e59df4a829a",
+    "components/demos-page.tsx": "1927829771d643bd46467362828e9fa9f84b24aae85c57e567ba83f0213e25b4",
+    "components/demos-pages.tsx": "9339a64710dfe9c472c596aec4e7536353472e7f36a9568cf09f947a1b81e013",
+    "components/executive-demo-runtime-loader.tsx": "33dddff54ed7a7df73643f9a82675c894914f550a15ded9787c3446060d2dd56",
+    "components/executive-preview-page.tsx": "2842feed8ad53ed05214ebba34629db75db453eba1b6495c267758f7b68a632d",
     "components/home-page.tsx": "64e3d88592d47b43cc07c747fcc5f295ceae61ae63175ba3b87d7d9f2c5d6992",
-    "lib/public-paths.ts": "50699bb5a18167cc06631a02972a20472039cb5c419b328e8b4987d997a18af7",
-    "next.config.ts": "6bd26f678dadb38b5d230690b7c6a094fd81a0a90b78be8b4d9f337ff445823f",
-    "proxy.ts": "5d9c614a870e7f960e330de9a8ed3b57ad706b644e9eb040181ddfc88374bb33",
-    "scripts/generate-registry.mjs": "dff90e5e6105ece559c7254afb167d1bc1c80d3a746c6694e12ef2474a01f5db"
+    "e2e/site.spec.ts": "c38cca5644add01e492f1f9b5353585e524ec803ca9cb2fcf9a0aa94e5bbe47f",
+    "eslint.config.mjs": "66a3a43881ea21aa45ae4ba2ed9ff053a6f4a5239665f39e9fbde70e50fa43bc",
+    "lib/executive-preview-access.ts": "41d3c6177590b5e9367ec257ca9a0e6af35a0dda5d0ccab294ab783e729680cf",
+    "lib/executive-preview-rate-limit.ts": "c35ebfff6404551cca63746c66239bb14c43bd677883eecf3297c7b54e012043",
+    "lib/executive-preview-resources.ts": "3c6d00ff5f33c15ff5d7d41bb89e5ca253eacac4f143663f35882a14c73c394f",
+    "lib/executive-preview-server.ts": "11a8051da74870f71d767b11daa476970a19fef70b887aad96eb693747b6d6f4",
+    "lib/public-paths.ts": "0dc923702c009177f95290952e8a5e16d54d55515da03608d45b0b695e2686c2",
+    "next.config.ts": "8b4ae3012f42f9e80e09bd56ad39e28e77cb6e004051e91a7fe6b4fd0f6b639e",
+    "package-lock.json": "6af6df86ff8a287d357a8813a03b1a7846311707221fdd433ac7a12edff0d641",
+    "package.json": "24dc961ae7cb14227fe766bd1868382819f12c440b214903159493ad41718395",
+    "playwright.config.ts": "551465ee50be6c97f0dc33bbd528cd1c45b865f730180644964b854e4cfadb98",
+    "playwright.global-setup.ts": "0c08a9e689680fdaf7c88201f737dfbce35bddff11ba7e2c25ae0488b29fb58b",
+    "proxy.ts": "f4157f2c66194a5830680f4d917916fd9462bad826f1d891a3f3cca8497a0692",
+    "scripts/build-executive-demo-runtime.mjs": "0167cd4d7d468bba837944639d6066c17f2465d4798f86852926033668272869",
+    "scripts/check-private-demo-leaks.mjs": "21d0be77d1b96188a61d1975daf1fbbc19b8ae320a00fbedea756d3abc4bf6a2",
+    "scripts/generate-registry.mjs": "dff90e5e6105ece559c7254afb167d1bc1c80d3a746c6694e12ef2474a01f5db",
+    "scripts/release-smoke.mjs": "2cd8e2feaa1efc399e931fe85fc09738622d556094dd7143fedb1972ffb166d2",
+    "scripts/verify-private-demo-traces.mjs": "80a4a70da172d449039df82f905c4286d54c7df7c721986e65d5f2d683604fd7"
   }
 }
