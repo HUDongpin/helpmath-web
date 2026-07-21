@@ -16,14 +16,15 @@ cannot be disabled by editing the manifest or an environment variable. The
 evidence schemas below are preparatory contracts only; they are not an
 operational approval or promotion lifecycle in this release.
 
-Before any transition can be enabled, a separately reviewed implementation
-must add fixed evidence-kind subject scopes, approval identity, revocation, and
-renewal rules, a protected demo candidate-to-activation workflow, and explicit
-private or disabled terminal decisions for optional demo and contact features.
-It must also prove that legal publishing, contact intake, demo routes and
-assets, legacy cutover, release smoke, and every other consumer fail closed in
-each intermediate state. Until then, Codex, CI, an approver name, an evidence
-JSON file, or a manifest edit cannot unlock a gate.
+The demo subsystem now has an inactive, digest-bound candidate-to-activation
+foundation, but it does not remove this lock. Before any launch-gate transition
+can be enabled, a separately reviewed implementation must add fixed
+evidence-kind subject scopes, approval identity, revocation and renewal rules,
+and explicit private or disabled terminal decisions for optional demo and
+contact features. It must also prove that legal publishing, contact intake,
+demo routes and assets, legacy cutover, release smoke, and every other consumer
+fail closed in each intermediate state. Until then, Codex, CI, an approver
+name, an evidence JSON file, or a manifest edit cannot unlock a gate.
 
 While this lock is active, `.vercelignore` excludes the entire `docs/evidence/`
 tree from every Vercel build context. No preparatory envelope, private contract,

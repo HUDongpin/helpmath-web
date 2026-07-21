@@ -6,8 +6,13 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 
 import {siteContent} from '../content';
-import {demoIds, indexableDemoIds, reviewDemoIds} from '../demos/catalog';
+import {demoIds, reviewDemoIds} from '../demos/catalog';
 import {loadAnimationModule, registeredAnimationKeys} from '../demos/animation-registry';
+import {
+  DEMO_CANDIDATE_IDS,
+  demoCandidates,
+  isDemoCandidateId,
+} from '../demos/candidates';
 import {
   loadReviewAnimationModule,
   registeredReviewAnimationKeys,
@@ -30,6 +35,7 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
   const manifest = JSON.parse(
     await readFile(path.join(repositoryRoot, 'demos/SNAPSHOT.json'), 'utf8')
   ) as {
+    schemaVersion: number;
     validationStatus: string;
     publicationPolicy: {
       defaultAccess: string;
@@ -71,9 +77,9 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
       knownExceptions: string[];
     }>;
     files: Record<string, string>;
-    integrationFiles: Record<string, string>;
   };
 
+  assert.equal(manifest.schemaVersion, 2);
   assert.equal(manifest.validationStatus, 'conditional');
   assert.equal(manifest.publicationPolicy.defaultAccess, 'private');
   assert.deepEqual(manifest.publicationPolicy.internalReviewAccessRequires, [
@@ -89,107 +95,26 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
     'technical acceptance',
     'publication-rights approval',
   ]);
-  const runtimeFiles = [
-    ...(await filesBelow(path.join(repositoryRoot, 'demos'))),
-    ...(await filesBelow(path.join(repositoryRoot, 'private-demo-assets'))),
-    ...(await filesBelow(path.join(repositoryRoot, 'private-demo-runtime'))),
-  ]
-    .map((file) => path.relative(repositoryRoot, file).split(path.sep).join('/'))
-    .filter((file) => file !== 'demos/SNAPSHOT.json')
-    .sort();
-  assert.deepEqual(Object.keys(manifest.files).sort(), runtimeFiles);
-
-  const expectedIntegrationFiles = [
-    '.env.example',
-    'app/[locale]/[page]/page.tsx',
-    'app/[locale]/demos/[id]/page.tsx',
-    'app/[locale]/demos/page.tsx',
-    'app/[locale]/executive-preview/page.tsx',
-    'app/api/executive-preview/assets/[...asset]/route.ts',
-    'app/api/executive-preview/runtime/[id]/route.ts',
-    'app/api/executive-preview/session/route.ts',
-    'app/robots.ts',
-    'app/sitemap.ts',
-    'components/animation-player-core.tsx',
-    'components/demo-player.tsx',
-    'components/demos-page.tsx',
-    'components/demos-pages.tsx',
-    'components/executive-demo-runtime-loader.tsx',
-    'components/executive-preview-page.tsx',
-    'components/home-page.tsx',
-    'e2e/site.spec.ts',
-    'eslint.config.mjs',
-    'lib/executive-preview-access.ts',
-    'lib/executive-preview-rate-limit.ts',
-    'lib/executive-preview-resources.ts',
-    'lib/executive-preview-server.ts',
-    'lib/public-paths.ts',
-    'next.config.ts',
-    'package-lock.json',
-    'package.json',
-    'playwright.config.ts',
-    'playwright.global-setup.ts',
-    'proxy.ts',
-    'scripts/build-executive-demo-runtime.mjs',
-    'scripts/check-private-demo-leaks.mjs',
-    'scripts/generate-registry.mjs',
-    'scripts/release-smoke-helpers.mjs',
-    'scripts/release-smoke.mjs',
-    'scripts/verify-private-demo-traces.mjs',
-  ].sort();
-  assert.deepEqual(Object.keys(manifest.integrationFiles).sort(), expectedIntegrationFiles);
+  const pinnedPaths = Object.keys(manifest.files).sort();
+  assert.ok(pinnedPaths.length > 0);
+  assert.equal(pinnedPaths.some((file) => file.startsWith('demos/candidates/')), false);
+  assert.equal(pinnedPaths.some((file) => /(?:catalog|registry)\.ts$/u.test(file)), false);
 
   await assert.rejects(
     access(path.join(repositoryRoot, 'public/flash-assets')),
     {code: 'ENOENT'},
   );
 
-  for (const [relativePath, expected] of Object.entries({
-    ...manifest.files,
-    ...manifest.integrationFiles,
-  })) {
+  for (const [relativePath, expected] of Object.entries(manifest.files)) {
     const bytes = await readFile(path.join(repositoryRoot, relativePath));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), expected, relativePath);
   }
 
   const sourceEntries = Object.entries(manifest.sources);
   const allSourceIds = sourceEntries.map(([id]) => id).sort();
-  const declaredPublicSourceIds = sourceEntries
-    .filter(([, source]) => source.public)
-    .map(([id]) => id)
-    .sort();
-  const publicSourceIds = sourceEntries
-    .filter(([, source]) =>
-      source.public &&
-      source.publication.access === 'public-preview' &&
-      source.publication.rightsApproval === 'approved'
-    )
-    .map(([id]) => id)
-    .sort();
-  const reviewSourceIds = sourceEntries
-    .filter(([, source]) =>
-      !source.public &&
-      source.publication.access === 'private' &&
-      !source.publication.indexable &&
-      source.publication.internalExecutiveReview === 'approved'
-    )
-    .map(([id]) => id)
-    .sort();
-  const indexableSourceIds = sourceEntries
-    .filter(([, source]) =>
-      source.public &&
-      source.validationStatus === 'strict-complete' &&
-      source.publication.indexable &&
-      source.publication.technicalAcceptance === 'approved' &&
-      source.publication.rightsApproval === 'approved'
-    )
-    .map(([id]) => id)
-    .sort();
-
-  assert.deepEqual(declaredPublicSourceIds, publicSourceIds);
-  assert.deepEqual([...demoIds].sort(), publicSourceIds);
-  assert.deepEqual([...reviewDemoIds].sort(), reviewSourceIds);
-  assert.deepEqual([...indexableDemoIds].sort(), indexableSourceIds);
+  const publicSourceIds = [...demoIds].sort();
+  const reviewSourceIds = [...reviewDemoIds].sort();
+  assert.deepEqual(allSourceIds, [...DEMO_CANDIDATE_IDS].sort());
   assert.deepEqual([...registeredAnimationKeys].sort(), publicSourceIds);
   assert.deepEqual([...registeredReviewAnimationKeys].sort(), reviewSourceIds);
   assert.deepEqual(Object.keys(siteContent.en.pages.demoDetails).sort(), allSourceIds);
@@ -198,9 +123,16 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
   assert.deepEqual(siteContent.es.pages.demos.items.map((item) => item.id).sort(), publicSourceIds);
 
   for (const id of allSourceIds) {
+    if (!isDemoCandidateId(id)) throw new Error(`Unknown demo candidate: ${id}`);
     const source = manifest.sources[id];
+    const candidate = demoCandidates[id];
     const animationModule = await loadAnimationModule(id);
     const reviewAnimationModule = await loadReviewAnimationModule(id);
+    assert.equal(candidate.source.flaSha256, source.flaSha256);
+    assert.equal(candidate.source.swfSha256, source.swfSha256);
+    assert.deepEqual(candidate.movie, source.runtimeMovie);
+    assert.equal(candidate.maturity, source.maturity);
+    assert.equal(candidate.validationStatus, source.validationStatus);
     assert.equal(source.validationStatus, 'conditional');
     assert.equal(source.evidenceStatus.workbenchStatus, 'preserved');
     assert.equal(source.evidenceStatus.machineAudit, 'partial');
@@ -221,22 +153,14 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
       'Project researcher/software engineer request, 2026-07-21',
     );
     assert.equal(source.publication.technicalAcceptance, 'pending');
-    if (source.public) {
-      assert.equal(source.publication.access, 'public-preview');
-      assert.equal(source.publication.rightsApproval, 'approved');
-      assert.ok(animationModule, id);
-      assert.equal(animationModule.key, id);
-      assert.deepEqual(animationModule.movie, source.runtimeMovie);
-      assert.equal(animationModule.maturity, source.maturity);
-    } else {
-      assert.equal(source.publication.access, 'private');
-      assert.equal(source.publication.rightsApproval, 'pending');
-      assert.equal(animationModule, undefined);
-      assert.ok(reviewAnimationModule, id);
-      assert.equal(reviewAnimationModule.key, id);
-      assert.deepEqual(reviewAnimationModule.movie, source.runtimeMovie);
-      assert.equal(reviewAnimationModule.maturity, source.maturity);
-    }
+    assert.equal(source.public, false);
+    assert.equal(source.publication.access, 'private');
+    assert.equal(source.publication.rightsApproval, 'pending');
+    assert.equal(animationModule, undefined);
+    assert.ok(reviewAnimationModule, id);
+    assert.equal(reviewAnimationModule.key, id);
+    assert.deepEqual(reviewAnimationModule.movie, source.runtimeMovie);
+    assert.equal(reviewAnimationModule.maturity, source.maturity);
     assert.equal(source.route, `/demos/${id}`);
     assert.match(source.workbenchMigrationId, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     assert.match(source.flaSha256, /^[a-f0-9]{64}$/);

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-21T22:20:19.000Z",
+  "demos": {
+    "conversion-1-2": {
+      "candidateId": "conversion-1-2--2026-07-22--4224e3c0",
+      "artifactSha256": "83b8dd710c28951341af5c401aefd59b99492d8cebbb8fb893d582e80cb3000a",
+      "approvals": {
+        "privatePreview": {
+          "status": "approved",
+          "audience": "CEO and Chairman John Ramo",
+          "purpose": "internal JavaScript prototype review",
+          "approvalRef": "Project researcher/software engineer request, 2026-07-21"
+        },
+        "rightsAcceptance": null,
+        "productAcceptance": null
+      },
+      "activation": {
+        "active": false,
+        "activatedAt": null
+      }
+    },
+    "conversion-1-4": {
+      "candidateId": "conversion-1-4--2026-07-22--2b6febcd",
+      "artifactSha256": "9f2fff5678db9ffa3165c39e02220a8eda92e540dd739eabde3022d1815f36b8",
+      "approvals": {
+        "privatePreview": {
+          "status": "approved",
+          "audience": "CEO and Chairman John Ramo",
+          "purpose": "internal JavaScript prototype review",
+          "approvalRef": "Project researcher/software engineer request, 2026-07-21"
+        },
+        "rightsAcceptance": null,
+        "productAcceptance": null
+      },
+      "activation": {
+        "active": false,
+        "activatedAt": null
+      }
+    }
+  }
+}

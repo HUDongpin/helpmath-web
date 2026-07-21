@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "npm run check:launch-gates && npm run build:executive-runtime && next build && npm run check:private-demo-traces && npm run check:private-demo-leaks",
+    "build": "npm run check:launch-gates && npm run check:demo-lifecycle && npm run build:executive-runtime && next build && npm run check:private-demo-traces && npm run check:private-demo-leaks",
     "build:executive-runtime": "node scripts/build-executive-demo-runtime.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "npm run check:launch-gates && npm run build:executive-runtime && tsx --test tests/**/*.test.ts && npm run test:release-smoke && npm run check:legacy-source-custody",
+    "test": "npm run check:launch-gates && npm run check:demo-lifecycle && npm run build:executive-runtime && tsx --test tests/**/*.test.ts && npm run test:release-smoke && npm run check:legacy-source-custody",
     "test:release-smoke": "node --test tests/release-smoke-helpers.test.mjs",
     "test:legacy-apache": "npm run check:legacy-apache && tsx --test tests/apache-legacy-generator.test.ts tests/legacy-apache.contract.ts",
     "preflight:legacy-cutover": "tsx scripts/legacy-cutover-preflight.ts",
@@ -20,9 +20,10 @@
     "drill:legacy-source-recovery": "node scripts/drill-legacy-source-recovery.mjs",
     "test:e2e": "playwright test",
     "smoke:production": "node scripts/release-smoke.mjs",
-    "generate:demos": "node scripts/generate-registry.mjs",
+    "generate:demos": "npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs",
     "generate:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts",
-    "check:generated": "npm run check:launch-gates && npm run generate:demos && git diff --exit-code -- demos/registry.generated.ts && npm run check:legacy-apache",
+    "check:generated": "npm run check:launch-gates && npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs && git diff --exit-code -- demos/registry.generated.ts && npm run check:legacy-apache",
+    "check:demo-lifecycle": "tsx scripts/validate-demo-lifecycle.ts",
     "check:launch-gates": "tsx scripts/validate-launch-gates.ts",
     "check:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts --check",
     "check:private-demo-leaks": "node scripts/check-private-demo-leaks.mjs",
@@ -55,6 +56,7 @@
     "typescript": "6.0.3"
   },
   "overrides": {
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.10",
+    "sharp": "0.35.3"
   }
 }

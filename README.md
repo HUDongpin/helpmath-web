@@ -12,6 +12,7 @@ npx playwright install chromium
 npm run lint
 npm run typecheck
 npm run check:generated
+npm run check:demo-lifecycle
 npm test
 npm run build
 npm run test:e2e
@@ -26,8 +27,11 @@ runtime bundles and PNG derivatives are served only by authenticated,
 non-cacheable API handlers; unauthenticated demo pages return a non-indexable
 branded HTML `404`, while runtime and asset requests return empty `404`
 responses. Image-optimizer requests are rejected without image content.
-Publication requires documented rights plus
-the technical and visual acceptance recorded by that manifest.
+Immutable candidate manifests under `demos/candidates/` bind the source,
+runtime bundle, and repository artifacts independently from the inactive
+switches in `config/demo-activations.json`. Publication requires documented
+rights, product acceptance, an approved launch gate, and an explicit activation
+bound to the same candidate digest.
 
 ## Deployment
 

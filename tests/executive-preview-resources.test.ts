@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
+import {reviewDemoIds} from '../demos/catalog';
+import {demoCandidates} from '../demos/candidates';
 import {
   EXECUTIVE_PREVIEW_ASSET_FILES,
   EXECUTIVE_PREVIEW_RUNTIME_FILES,
@@ -16,6 +18,21 @@ function assertPrivateHeaders(response: Response) {
 }
 
 describe('executive preview resource service', () => {
+  it('allowlists only lifecycle-approved private-preview runtimes and owned assets', () => {
+    assert.deepEqual(
+      Object.keys(EXECUTIVE_PREVIEW_RUNTIME_FILES).sort(),
+      reviewDemoIds.map((id) => `${id}.js`).sort(),
+    );
+
+    const expectedAssets = reviewDemoIds.flatMap((id) =>
+      demoCandidates[id].artifacts
+        .map(({path}) => path)
+        .filter((path) => path.startsWith(`private-demo-assets/${id}/`))
+        .map((path) => path.slice('private-demo-assets/'.length)),
+    ).sort();
+    assert.deepEqual(Object.keys(EXECUTIVE_PREVIEW_ASSET_FILES).sort(), expectedAssets);
+  });
+
   it('returns the same empty 404 for unauthorized and non-allowlisted requests', async () => {
     let reads = 0;
     const readFile = async () => {

@@ -2,18 +2,11 @@ import {readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+import {demoIds} from '../demos/catalog.ts';
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const snapshotPath = path.join(repositoryRoot, 'demos/SNAPSHOT.json');
 const outputPath = path.join(repositoryRoot, 'demos/registry.generated.ts');
-const snapshot = JSON.parse(await readFile(snapshotPath, 'utf8'));
-const publicIds = Object.entries(snapshot.sources)
-  .filter(([, source]) =>
-    source.public === true &&
-    source.publication?.access === 'public-preview' &&
-    source.publication?.rightsApproval === 'approved'
-  )
-  .map(([id]) => id)
-  .sort();
+const publicIds = [...demoIds].sort();
 
 for (const id of publicIds) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
