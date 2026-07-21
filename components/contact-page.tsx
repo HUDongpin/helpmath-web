@@ -1,6 +1,8 @@
 import {CircleAlert, ShieldCheck} from 'lucide-react';
 
 import type {ContactContent, Locale} from '@/content/types';
+import {areContactManifestGatesApproved} from '@/lib/launch-gates';
+import {isLegalCopyReady} from '@/lib/legal-copy-readiness';
 
 import {ContactForm} from './contact-form';
 import {PageHero} from './page-hero';
@@ -18,7 +20,13 @@ export function ContactPage({content, locale}: {content: ContactContent; locale:
       <Section>
         <Container className="contact-layout">
           <div className="contact-form-shell">
-            <ContactForm content={content} locale={locale} />
+            <ContactForm
+              content={content}
+              locale={locale}
+              repositoryGateApproved={
+                areContactManifestGatesApproved() && isLegalCopyReady()
+              }
+            />
           </div>
           <aside className="contact-safety">
             <ShieldCheck aria-hidden="true" size={38} />

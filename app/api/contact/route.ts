@@ -1,6 +1,11 @@
 import {NextResponse} from 'next/server';
 import {Resend} from 'resend';
 import {contactRequestSchema, type ContactRequest} from '@/lib/contact-schema';
+import {
+  areContactManifestGatesApproved,
+  isContactIntakeEnabled,
+} from '@/lib/launch-gates';
+import {isLegalCopyReady} from '@/lib/legal-copy-readiness';
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const MAX_CONTACT_BODY_BYTES = 16 * 1024;
@@ -203,8 +208,11 @@ export function buildContactEmail(payload: ContactRequest, from: string, to: str
   };
 }
 
-export async function POST(request: Request) {
-  if (process.env.NEXT_PUBLIC_CONTACT_ENABLED !== 'true') {
+export async function handleContactRequest(
+  request: Request,
+  {repositoryGateApproved}: {repositoryGateApproved: boolean},
+) {
+  if (!isContactIntakeEnabled(process.env.NEXT_PUBLIC_CONTACT_ENABLED, repositoryGateApproved)) {
     return errorResponse(503, 'CONTACT_DISABLED', 'Contact intake is not enabled.');
   }
 
@@ -278,4 +286,11 @@ export async function POST(request: Request) {
 
   const success: SuccessBody = {ok: true};
   return NextResponse.json(success, {headers: NO_STORE_HEADERS});
+}
+
+export async function POST(request: Request) {
+  return handleContactRequest(request, {
+    repositoryGateApproved:
+      areContactManifestGatesApproved() && isLegalCopyReady(),
+  });
 }

@@ -15,6 +15,7 @@ type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 interface ContactFormProps {
   content: ContactContent;
   locale: Locale;
+  repositoryGateApproved: boolean;
 }
 
 function text(formData: FormData, field: string) {
@@ -66,11 +67,12 @@ function RequiredMark({label}: {label: string}) {
   );
 }
 
-export function ContactForm({content, locale}: ContactFormProps) {
+export function ContactForm({content, locale, repositoryGateApproved}: ContactFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
-  const contactEnabled = process.env.NEXT_PUBLIC_CONTACT_ENABLED === 'true';
+  const contactEnabled =
+    repositoryGateApproved && process.env.NEXT_PUBLIC_CONTACT_ENABLED === 'true';
   const publicSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const localSimulation = process.env.NODE_ENV !== 'production' && !publicSiteKey;
   const [turnstileToken, setTurnstileToken] = useState(

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import {expect, test, type Page} from '@playwright/test';
+import {isLaunchGateApproved} from '../lib/launch-gates';
 
 type RuntimeIssue = {kind: 'console' | 'page'; message: string};
 
@@ -37,6 +38,8 @@ const executivePreviewRuntimes = [
 ] as const;
 const executivePreviewAccessKey =
   process.env.PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
+const legalPublicationApproved = isLaunchGateApproved('legalPublication');
+const legalPagePaths = ['/privacy', '/terms'] as const;
 
 const sitemapBasePaths = [
   '/',
@@ -49,6 +52,7 @@ const sitemapBasePaths = [
   '/support',
   '/login',
   '/contact',
+  ...(legalPublicationApproved ? legalPagePaths : []),
 ] as const;
 
 const sitemapPagePaths = sitemapBasePaths.flatMap((path) =>
@@ -57,10 +61,9 @@ const sitemapPagePaths = sitemapBasePaths.flatMap((path) =>
 
 const browserExperiencePaths = [
   ...sitemapPagePaths,
-  '/privacy',
-  '/es/privacy',
-  '/terms',
-  '/es/terms',
+  ...(!legalPublicationApproved
+    ? ['/privacy', '/es/privacy', '/terms', '/es/terms']
+    : []),
   '/executive-preview',
   '/es/executive-preview',
 ] as const;
@@ -597,6 +600,9 @@ test('executive preview grants a short-lived private session for both JavaScript
   page,
 }) => {
   test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
+  await page.clock.install();
+  const clockPauseStepMs = 5 * 60 * 1000;
+  let nextClockPauseAt = Date.now() + clockPauseStepMs;
   const issues = monitorRuntimeIssues(page);
   await page.emulateMedia({reducedMotion: 'no-preference'});
 
@@ -636,17 +642,38 @@ test('executive preview grants a short-lived private session for both JavaScript
   await expect(page.locator('.demo-player')).toHaveAttribute('data-playback-state', 'paused');
   const firstSlider = page.getByRole('slider', {name: 'Animation frame'});
   await expect(firstSlider).toHaveAttribute('max', '109');
+  await expect(firstSlider).toHaveValue('1');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 1 of 109');
   await page.getByRole('button', {name: 'Play animation'}).click();
   await expect(page.locator('.demo-player')).toHaveAttribute('data-playback-state', 'playing');
+  await expect.poll(async () =>
+    Number(await page.locator('.faithful-stage-wrap').getAttribute('data-flash-frame')),
+  ).toBeGreaterThan(1);
+  await firstSlider.fill('30');
+  await expect(firstSlider).toHaveValue('30');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '30');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 30 of 109');
+  await expect(page.locator('image[href$="quart-pouring-full.png"]')).toHaveCount(1);
+  await expect(page.locator('image[href$="quart-pouring-empty.png"]')).toHaveCount(1);
   await firstSlider.fill('109');
+  await expect(firstSlider).toHaveValue('109');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '109');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 109 of 109');
+  await expect(page.locator('.flash-replay')).toHaveAttribute('opacity', '1');
   await expect(page.locator('.flash-replay')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.locator('.flash-replay')).toHaveAttribute('tabindex', '-1');
   const restartButton = page.getByRole('button', {name: 'Restart from the beginning'});
   await restartButton.focus();
   const scrollBeforeRestart = await page.evaluate(() => window.scrollY);
+  await page.clock.pauseAt(nextClockPauseAt);
   await page.keyboard.press('Space');
+  await expect(firstSlider).toHaveValue('1');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 1 of 109');
   await expect(restartButton).toBeFocused();
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeRestart);
+  await page.clock.resume();
 
   const authenticatedRequest = page.context().request;
   for (const asset of executivePreviewAssets) {
@@ -674,7 +701,32 @@ test('executive preview grants a short-lived private session for both JavaScript
   await expect(secondDemoLink).toHaveAttribute('href', '/demos/conversion-1-4');
   await secondDemoLink.click();
   await expect(page.getByRole('heading', {level: 1, name: 'Conversion 1.4'})).toBeVisible();
-  await expect(page.getByRole('slider', {name: 'Animation frame'})).toHaveAttribute('max', '67');
+  const secondSlider = page.getByRole('slider', {name: 'Animation frame'});
+  await expect(secondSlider).toHaveAttribute('max', '67');
+  await expect(secondSlider).toHaveValue('1');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 1 of 67');
+  await page.getByRole('button', {name: 'Play animation'}).click();
+  await expect.poll(async () =>
+    Number(await page.locator('.faithful-stage-wrap').getAttribute('data-flash-frame')),
+  ).toBeGreaterThan(1);
+  await secondSlider.fill('20');
+  await expect(secondSlider).toHaveValue('20');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '20');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 20 of 67');
+  await expect(page.locator('.faithful-stage > g[clip-path]')).toHaveCount(1);
+  await secondSlider.fill('67');
+  await expect(secondSlider).toHaveValue('67');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '67');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 67 of 67');
+  await expect(page.locator('.flash-replay')).toHaveAttribute('opacity', '1');
+  nextClockPauseAt += clockPauseStepMs;
+  await page.clock.pauseAt(nextClockPauseAt);
+  await page.getByRole('button', {name: 'Restart from the beginning'}).click();
+  await expect(secondSlider).toHaveValue('1');
+  await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
+  await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 1 of 67');
+  await page.clock.resume();
 
   await page.goto('/executive-preview', {waitUntil: 'networkidle'});
   await Promise.all([
@@ -953,23 +1005,35 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   expect(sitemapText).not.toContain('https://www.helpmath.ai/demos/conversion-1-2');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/es/demos/conversion-1-4');
   expect(sitemapText).not.toContain('executive-preview');
-  expect(sitemapText).not.toContain('https://www.helpmath.ai/privacy');
-  expect(sitemapText).not.toContain('https://www.helpmath.ai/terms');
-  expect(sitemapText).not.toContain('https://www.helpmath.ai/es/privacy');
-  expect(sitemapText).not.toContain('https://www.helpmath.ai/es/terms');
+  for (const legalPath of ['/privacy', '/terms', '/es/privacy', '/es/terms']) {
+    if (legalPublicationApproved) {
+      expect(sitemapText).toContain(`https://www.helpmath.ai${legalPath}`);
+    } else {
+      expect(sitemapText).not.toContain(`https://www.helpmath.ai${legalPath}`);
+    }
+  }
 });
 
 for (const path of ['/privacy', '/terms', '/es/privacy', '/es/terms'] as const) {
-  test(`${path} exposes the draft but prevents search indexing`, async ({page}) => {
+  test(`${path} follows the repository legal-publication gate`, async ({page}) => {
     const response = await page.goto(path, {waitUntil: 'networkidle'});
     expect(response?.status()).toBe(200);
-    expect(response?.headers()['x-robots-tag']).toBe('noindex, follow');
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
-      'content',
-      'noindex, follow',
-    );
-    await expect(page.locator('.legal-meta p')).toContainText(
-      path.startsWith('/es') ? 'Borrador' : 'Draft',
-    );
+    if (legalPublicationApproved) {
+      expect(response?.headers()['x-robots-tag'] ?? '').not.toContain('noindex');
+      await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute(
+        'content',
+        /noindex/,
+      );
+      await expect(page.locator('.legal-meta p')).not.toContainText(/Draft|Borrador/i);
+    } else {
+      expect(response?.headers()['x-robots-tag']).toBe('noindex, follow');
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+        'content',
+        'noindex, follow',
+      );
+      await expect(page.locator('.legal-meta p')).toContainText(
+        path.startsWith('/es') ? 'Borrador' : 'Draft',
+      );
+    }
   });
 }

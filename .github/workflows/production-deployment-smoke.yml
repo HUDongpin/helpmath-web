@@ -194,6 +194,8 @@ jobs:
             `- Immutable protection outcome: ${process.env.IMMUTABLE_OUTCOME}`,
             `- Canonical step outcome: ${process.env.CANONICAL_OUTCOME}`,
             `- Canonical failures: ${canonical ? canonical.failures.length : 'not completed'}`,
+            `- Executive preview state: ${canonical?.executivePreviewState ?? 'not observed'}`,
+            `- Executive preview expiry: ${canonical?.executivePreviewExpiresAt ?? 'none'}`,
             '',
             'Canonical alias-to-deployment identity still requires authenticated Vercel evidence.',
             '',
@@ -204,6 +206,8 @@ jobs:
             immutableProtectionOutcome: process.env.IMMUTABLE_OUTCOME,
             canonicalContractOutcome: process.env.CANONICAL_OUTCOME,
             canonicalFailureCount: canonical?.failures.length,
+            executivePreviewState: canonical?.executivePreviewState,
+            executivePreviewExpiresAt: canonical?.executivePreviewExpiresAt,
             aliasIdentity:
               'Not independently proven; retain authenticated Vercel assignment evidence separately.',
           };

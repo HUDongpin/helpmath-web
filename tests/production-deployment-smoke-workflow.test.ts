@@ -41,4 +41,13 @@ describe('production deployment smoke workflow', () => {
     assert.doesNotMatch(workflow, /AUTOMATION_BYPASS_SECRET|EXECUTIVE_PREVIEW_ACCESS_KEY/u);
     assert.match(workflow, /aliasIdentity:[\s\S]*Not independently proven/iu);
   });
+
+  it('surfaces the non-secret executive preview state in retained evidence', async () => {
+    const workflow = await readFile(workflowPath, 'utf8');
+
+    assert.match(workflow, /Executive preview state:[^\n]*canonical\?\.executivePreviewState/u);
+    assert.match(workflow, /Executive preview expiry:[^\n]*canonical\?\.executivePreviewExpiresAt/u);
+    assert.match(workflow, /executivePreviewState: canonical\?\.executivePreviewState/u);
+    assert.match(workflow, /executivePreviewExpiresAt: canonical\?\.executivePreviewExpiresAt/u);
+  });
 });

@@ -6,6 +6,7 @@ import {
   DRAFT_LEGAL_PATHS,
   isDraftLegalPage,
 } from '../lib/legal-publishing';
+import {isLegalCopyDraft, isLegalCopyReady} from '../lib/legal-copy-readiness';
 
 describe('draft legal publishing boundary', () => {
   it('keeps every draft route out of the public sitemap', () => {
@@ -21,5 +22,10 @@ describe('draft legal publishing boundary', () => {
     assert.equal(isDraftLegalPage('privacy'), true);
     assert.equal(isDraftLegalPage('terms'), true);
     assert.equal(isDraftLegalPage('contact'), false);
+  });
+
+  it('keeps the machine-readable legal copy state aligned with the holding gate', () => {
+    assert.equal(isLegalCopyDraft(), true);
+    assert.equal(isLegalCopyReady(), false);
   });
 });

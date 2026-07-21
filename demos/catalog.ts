@@ -1,13 +1,16 @@
 import snapshot from './SNAPSHOT.json';
+import {isLaunchGateApproved} from '../lib/launch-gates';
 
 export type DemoId = keyof typeof snapshot.sources;
 
 type SnapshotSource = (typeof snapshot.sources)[DemoId];
 const sourceEntries = Object.entries(snapshot.sources) as Array<[DemoId, SnapshotSource]>;
+const demoPublicationApproved = isLaunchGateApproved('demoPublication');
 
 export const demoIds = Object.freeze(
   sourceEntries
     .filter(([, source]) =>
+      demoPublicationApproved &&
       source.public &&
       source.publication.access === 'public-preview' &&
       source.publication.rightsApproval === 'approved'
@@ -35,6 +38,7 @@ export const reviewDemoRoutes = Object.freeze(
 export const indexableDemoIds = Object.freeze(
   sourceEntries
     .filter(([, source]) =>
+      demoPublicationApproved &&
       source.public &&
       source.validationStatus === 'strict-complete' &&
       source.publication.indexable &&

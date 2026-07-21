@@ -2,11 +2,128 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  evaluateExecutivePreviewEntries,
+  inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
+  isStrictIsoUtcTimestamp,
   mapWithConcurrency,
   retryDelayMs,
   retryOperation,
 } from '../scripts/release-smoke-helpers.mjs';
+
+test('isStrictIsoUtcTimestamp accepts only canonical millisecond UTC timestamps', () => {
+  assert.equal(isStrictIsoUtcTimestamp('2026-07-28T15:59:00.000Z'), true);
+
+  for (const value of [
+    '2026-07-28T15:59:00Z',
+    '2026-07-28T15:59:00.000+00:00',
+    '2026-02-30T15:59:00.000Z',
+    'not-a-date',
+    null,
+  ]) {
+    assert.equal(isStrictIsoUtcTimestamp(value), false, String(value));
+  }
+});
+
+test('inspectExecutivePreviewEntry recognizes an active login in either attribute style', () => {
+  for (const dateTimeAttribute of ['dateTime', 'datetime']) {
+    const result = inspectExecutivePreviewEntry(`
+      <form method="post" action="/api/executive-preview/session">
+        <input type="password" name="passphrase" />
+      </form>
+      <time ${dateTimeAttribute}="2026-07-28T15:59:00.000Z">July 28</time>
+    `);
+
+    assert.deepEqual(result, {
+      state: 'login',
+      hasLoginForm: true,
+      hasPassphraseField: true,
+      hasUnavailableNotice: false,
+      unavailableLocales: [],
+      expiryValues: ['2026-07-28T15:59:00.000Z'],
+    });
+  }
+});
+
+test('inspectExecutivePreviewEntry recognizes the bilingual unavailable state', () => {
+  for (const notice of [
+    'Executive preview is unavailable',
+    'La vista previa ejecutiva no está disponible',
+  ]) {
+    assert.deepEqual(inspectExecutivePreviewEntry(`<h2>${notice}</h2>`), {
+      state: 'unavailable',
+      hasLoginForm: false,
+      hasPassphraseField: false,
+      hasUnavailableNotice: true,
+      unavailableLocales: [notice.startsWith('Executive') ? 'en' : 'es'],
+      expiryValues: [],
+    });
+  }
+});
+
+test('inspectExecutivePreviewEntry requires the passphrase field inside the login form', () => {
+  const result = inspectExecutivePreviewEntry(`
+    <form method="post" action="/api/executive-preview/session">
+      <input type="text" name="returnTo" />
+    </form>
+    <form><input type="password" name="passphrase" /></form>
+  `);
+
+  assert.equal(result.hasLoginForm, true);
+  assert.equal(result.hasPassphraseField, false);
+  assert.equal(result.state, 'unknown');
+});
+
+test('evaluateExecutivePreviewEntries rejects inconsistent state, expiry, and expectations', () => {
+  const nowMs = Date.parse('2026-07-21T00:00:00.000Z');
+  const matching = [
+    {state: 'login', expiryValues: ['2026-07-28T15:59:00.000Z']},
+    {state: 'login', expiryValues: ['2026-07-28T15:59:00.000Z']},
+  ];
+  assert.deepEqual(
+    evaluateExecutivePreviewEntries(matching, {
+      expectedState: 'login',
+      expectedExpiresAt: '2026-07-28T15:59:00.000Z',
+      nowMs,
+    }),
+    {
+      state: 'login',
+      expiresAt: '2026-07-28T15:59:00.000Z',
+      failures: [],
+    },
+  );
+
+  const inconsistent = evaluateExecutivePreviewEntries(
+    [
+      {state: 'login', expiryValues: ['2026-07-28T15:59:00.000Z']},
+      {state: 'unavailable', expiryValues: []},
+    ],
+    {expectedState: 'login', expectedExpiresAt: '2026-07-29T00:00:00.000Z', nowMs},
+  );
+  assert.match(inconsistent.failures.join('\n'), /disagree on state/);
+  assert.match(inconsistent.failures.join('\n'), /expected login/);
+  assert.match(inconsistent.failures.join('\n'), /expected 2026-07-29/);
+
+  const differentExpiries = evaluateExecutivePreviewEntries(
+    [
+      {state: 'login', expiryValues: ['2026-07-28T15:59:00.000Z']},
+      {state: 'login', expiryValues: ['2026-07-29T15:59:00.000Z']},
+    ],
+    {nowMs},
+  );
+  assert.match(differentExpiries.failures.join('\n'), /same single review expiry/);
+});
+
+test('inspectExecutivePreviewEntry fails classification for incomplete or mixed markup', () => {
+  for (const markup of [
+    '<form method="post" action="/api/executive-preview/session"></form>',
+    '<input type="password" name="passphrase" />',
+    '<form method="post" action="/api/executive-preview/session"><input type="password" name="passphrase" /></form><h2>Executive preview is unavailable</h2>',
+    '<h2>Unexpected entry state</h2>',
+  ]) {
+    assert.equal(inspectExecutivePreviewEntry(markup).state, 'unknown');
+  }
+});
 
 test('mapWithConcurrency limits active work and preserves result order', async () => {
   let active = 0;

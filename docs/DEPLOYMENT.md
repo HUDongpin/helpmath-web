@@ -2,6 +2,14 @@
 
 ## Release gate
 
+The repository gate manifest is `config/launch-gates.json`. Both `npm test`
+and `npm run build` validate it before continuing. Approval entries require a
+named approver, canonical UTC approval time, at least one non-secret evidence
+reference, no open blocker reference, and approved dependencies. The validator
+also rejects a build with `NEXT_PUBLIC_CONTACT_ENABLED=true` while the legal
+or contact repository gate is still holding. Record the manifest SHA-256 in
+the release evidence.
+
 1. Require the GitHub `Quality` workflow on `main`.
 2. Review Privacy and Terms with the project owner or qualified counsel.
 3. Configure all variables from `.env.example` in Vercel. Use separate
@@ -20,6 +28,12 @@
    navigation, private-demo route/asset boundary, metadata, accessibility, and
    raw-Flash 404 probes pass.
 
+Changing a manifest status is itself a reviewed code release. Legal approval
+removes the draft indexing boundary only when the approved English and Spanish
+copy and their tests are updated in the same change. Contact intake opens only
+when both repository gates are approved and the deployment flag is exactly
+`true`; the API independently recomputes that same two-key decision.
+
 After promotion, run `npm run smoke:production` against the canonical domain.
 This checks the exact sitemap set, metadata and reciprocal language alternates,
 internal links, legacy and `/en` redirects, branded 404 policy, draft indexing,
@@ -27,22 +41,34 @@ private demo routes/assets/optimizer paths, static assets, security headers,
 the closed contact contract,
 and the apex/www HTTP/HTTPS matrix. Keep the JSON result with the release
 record; a successful Preview result does not replace the Production run.
+When an Executive Preview state is operationally required, set the non-secret
+`EXPECT_EXECUTIVE_PREVIEW_STATE` command input to `login` before the review or
+`unavailable` after closure. The smoke then fails if the two localized entries
+disagree, the login expiry is malformed or elapsed, or the observed state does
+not match the requested state. Before a scheduled review, also set
+`EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT` to the approved canonical UTC timestamp
+(for example, `2026-07-28T15:59:00.000Z`). This second input requires the
+expected state to be `login` and fails unless both localized entries expose
+that exact expiry. These inputs are operator expectations, not Vercel
+deployment variables.
 
 Record the owner inputs and approvals in
 [`LAUNCH_DECISIONS.md`](./LAUNCH_DECISIONS.md). Secret values belong only in
 the relevant provider's protected settings, never in the repository.
 
-Unless `NEXT_PUBLIC_CONTACT_ENABLED=true` and a public Turnstile key are both
-present, the contact page intentionally shows an unavailable notice and
-renders no form. The API independently requires the same enable flag and fails
-closed. Set the flag to `true` last, then redeploy; `NEXT_PUBLIC_*` values are
-embedded into the client build.
+Unless the legal and contact repository gates are approved,
+`NEXT_PUBLIC_CONTACT_ENABLED=true`, and a public Turnstile key is present, the
+contact page intentionally shows an unavailable notice and renders no form.
+The API independently requires the same repository approvals and enable flag
+and fails closed. Set the flag to `true` last, then redeploy;
+`NEXT_PUBLIC_*` values are embedded into the client build.
 
 Until release-gate item 2 is complete, the English and Spanish Privacy and
 Terms drafts send `X-Robots-Tag: noindex, follow`, render matching robots meta,
-and are excluded from the sitemap. After signed review, update the legal copy
-first, then remove the paths from `lib/legal-publishing.ts` and update the
-boundary and browser tests in the same reviewed commit.
+and are excluded from the sitemap. After signed review, update the legal copy,
+the `legalPublication` manifest approval, and the boundary/browser tests in
+the same reviewed commit. The application derives draft headers, metadata, and
+sitemap inclusion from that repository gate.
 
 ## Environment contract
 

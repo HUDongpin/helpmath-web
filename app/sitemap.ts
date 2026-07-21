@@ -2,6 +2,7 @@ import type {MetadataRoute} from 'next';
 
 import {getSiteUrl, localizedPath} from '@/lib/site';
 import {indexableDemoRoutes} from '@/demos/catalog';
+import {PUBLISHED_LEGAL_PAGE_PATHS} from '@/lib/legal-publishing';
 
 const routes = [
   '/',
@@ -14,7 +15,8 @@ const routes = [
   ...indexableDemoRoutes,
   '/support',
   '/login',
-  '/contact'
+  '/contact',
+  ...PUBLISHED_LEGAL_PAGE_PATHS,
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {

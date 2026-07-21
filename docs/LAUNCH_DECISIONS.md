@@ -6,6 +6,15 @@ credentials, private contracts, student information, or personal records here.
 Store sensitive evidence in an owner-approved system and record only its name
 or reference.
 
+The machine-readable mirror is
+[`config/launch-gates.json`](../config/launch-gates.json). Run
+`npm run check:launch-gates` after every decision update. A gate may change
+from `holding` to `approved` only when this record names the approver and date,
+the manifest points to non-secret evidence, its blocker references are empty,
+and every declared dependency is approved. The manifest makes unresolved
+state fail closed; it does not authenticate an approver or replace counsel,
+rights-owner, provider, DNS, mail, or release evidence.
+
 ## Operational holding state while decisions are open
 
 This state prevents accidental data intake and premature domain cutover. It is
@@ -14,6 +23,9 @@ not a legal safe harbor or evidence that public demo rights have been cleared.
 - Privacy and Terms remain visibly marked as drafts, send `noindex, follow`,
   and stay outside the sitemap.
 - The contact form remains unavailable and the API fails closed.
+- A Vercel environment flag cannot open contact intake by itself. Both
+  `legalPublication` and `contactIntake` must be approved in the repository
+  before `NEXT_PUBLIC_CONTACT_ENABLED=true` is honored.
 - `helpprogram.net` remains on its existing host.
 - Demo prototypes and extracted assets remain private. Their former public
   routes now return non-indexable `404` responses until written publication
@@ -166,7 +178,7 @@ file, shell history, retained command output, or this record.
 | Keep automatic `main` production assignment, or require manual promotion | Pending | Pending |
 | GitHub Pro upgrade for required PR checks on the private repository, or documented manual control | Pending | Pending |
 | Release owner and rollback owner | Pending | Pending |
-| Most recent application release baseline (historical evidence gaps disclosed) | Release hardening and deterministic recovery commit `3b2d78f0727cb11749d30160de96425fb4da4279`; GitHub/Vercel production deployment `5538707729` / `2r291UXTui7bX3cJ1GF6yESVQKvS`; same-commit production Quality run `29833169515` and production smoke run `29832453636` passed. `docs/releases/2026-07-21-pr10.md` records the exact candidate, Preview, Production, public smoke, stable-link result, and superseded initial push run, and discloses the protected-Preview semantic-smoke, alias-assignment, and authenticated-repeat gaps. Do not infer a pass for a missing check or alias identity from separate facts. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
+| Most recent application release baseline (historical evidence gaps disclosed) | CEO handoff/domain-baseline commit `aca9c2a73eb359562c09b0c83edc6199d281c635`; GitHub/Vercel production deployment `5539509970` / `2rZYH1gAwqZf5hRgUYjCDhXRQwdt`; production Quality run `29836346154` and production smoke run `29836382011` passed. `docs/releases/2026-07-21-pr11.md` records the exact candidate, Preview, Production, stable-link, and public smoke evidence and discloses the protected-Preview semantic-smoke, alias-assignment, and current authenticated-playback gaps. Do not infer a pass or alias identity from separate facts. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
 
 Until private-repository branch protection is available, every production
 change should still use a PR, wait for the complete `Quality` workflow, and
@@ -200,3 +212,8 @@ mail continuity, and Search Console checks all have retained evidence.
 | Contact delivery | Pending | Pending | Pending |
 | Production release | Pending | Pending | Pending |
 | Legacy-domain cutover | Pending | Pending | Pending |
+
+After a row is genuinely completed, update the matching manifest gate in the
+same reviewed change. Do not delete `Pending` text or set a gate to `approved`
+in anticipation of evidence. `productionLaunch` depends on all four preceding
+gates and therefore remains `holding` while any one of them is unresolved.

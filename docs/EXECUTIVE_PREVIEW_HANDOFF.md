@@ -63,6 +63,8 @@ The following facts still require the meeting owner to record in
      trap cleanup_preview_check EXIT
      trap 'exit 130' HUP INT TERM
 
+     EXPECT_EXECUTIVE_PREVIEW_STATE=login \
+     EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT=2026-07-28T15:59:00.000Z \
      SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
        npm run smoke:production
 
@@ -80,9 +82,10 @@ The following facts still require the meeting owner to record in
    as an artifact.
 
 5. Retain only the non-secret outcome: checked commit, GitHub/Vercel deployment
-   references, UTC time, the expected demo/image/runtime counts, browser-test
-   result, and `failures: []`. Do not retain a trace, browser state, cookie, or
-   command output containing credentials.
+   references, UTC time, `executivePreviewState: "login"`, the exact
+   `executivePreviewExpiresAt`, the expected demo/image/runtime counts,
+   browser-test result, and `failures: []`. Do not retain a trace, browser
+   state, cookie, or command output containing credentials.
 6. Avoid repeated failed logins immediately before the meeting. The application
    and Vercel WAF intentionally rate-limit failures.
 
@@ -116,9 +119,11 @@ After the close deployment:
 
 1. Confirm both language entry routes show **Executive preview is
    unavailable**.
-2. Rerun the unauthenticated production smoke and confirm all four localized
+2. Rerun
+   `EXPECT_EXECUTIVE_PREVIEW_STATE=unavailable npm run smoke:production` and
+   confirm both entry routes report the unavailable state, all four localized
    demo paths, 12 image resources, and two runtime resources are closed with
-   private/no-store/noindex boundaries and `failures: []`.
+   private/no-store/noindex boundaries, and `failures: []`.
 3. When the signing secret was rotated, verify an earlier cookie no longer
    authorizes a demo, then discard the cookie without retaining it.
 4. Record the owner, UTC completion time, non-secret Vercel change/deployment

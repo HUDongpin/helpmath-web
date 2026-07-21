@@ -3,7 +3,8 @@ import {afterEach, beforeEach, describe, it} from 'node:test';
 import {
   buildContactEmail,
   DEVELOPMENT_TURNSTILE_TOKEN,
-  POST,
+  handleContactRequest,
+  POST as repositoryGatedPost,
 } from '../app/api/contact/route';
 import {contactRequestSchema} from '../lib/contact-schema';
 
@@ -22,6 +23,8 @@ const envKeys = [
 ] as const;
 const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
 const originalFetch = globalThis.fetch;
+const POST = (request: Request) =>
+  handleContactRequest(request, {repositoryGateApproved: true});
 
 function setEnv(key: (typeof envKeys)[number], value: string | undefined) {
   if (value === undefined) Reflect.deleteProperty(process.env, key);
@@ -68,6 +71,18 @@ afterEach(() => {
 });
 
 describe('POST /api/contact', () => {
+  it('fails closed when the deployment flag is true but the repository gate is holding', async () => {
+    globalThis.fetch = async () => {
+      throw new Error('Turnstile must not be called while the repository gate is holding');
+    };
+
+    const response = await repositoryGatedPost(request(validRequest()));
+    const body = await response.json();
+    assert.equal(response.status, 503);
+    assertNoStore(response);
+    assert.equal(body.error.code, 'CONTACT_DISABLED');
+  });
+
   it('addresses email to support and sets Reply-To to the validated sender', () => {
     const email = buildContactEmail(
       contactRequestSchema.parse(validRequest()),

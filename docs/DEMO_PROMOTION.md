@@ -21,7 +21,9 @@ To promote a later conversion:
    the server-only directories in this repository. Do not copy FLA, SWF,
    Ruffle, catalogs, or source paths, and do not place unapproved derivatives
    under `public/`.
-4. Update `demos/SNAPSHOT.json` and its integrity test.
+4. Obtain the separate top-level `demoPublication` approval in
+   `config/launch-gates.json`, then update `demos/SNAPSHOT.json` and its
+   integrity test. Neither record can substitute for the other.
 5. Keep the public label `conditional` until the strict migration gate is
    actually complete and owner-accepted.
 6. Run the full Quality workflow and inspect the Vercel Preview before merge.
