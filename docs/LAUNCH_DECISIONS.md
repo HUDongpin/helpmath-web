@@ -120,6 +120,18 @@ adaptation, Spanish localization, PNG derivatives, and Vercel/CDN distribution:
 | `conversion-1-2` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
 | `conversion-1-4` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
 
+The current code can technically represent a non-indexed, `conditional`
+public preview after publication-rights approval while reserving indexing for
+strict validation and technical acceptance. The owner must decide whether that
+intermediate public-preview policy is allowed or whether technical/product
+acceptance is required for every public route. Until the following row is
+resolved, keep the top-level `demoPublication` gate and both demo records
+private regardless of rights evidence:
+
+| Demo publication policy decision | Owner answer or evidence reference | Approved by / date |
+| --- | --- | --- |
+| Permit rights-cleared conditional public preview, or require technical/product acceptance before any public route | Pending | Pending |
+
 The application implements the temporary-removal state for both previously
 online demos. Record pre-existing authorization evidence or a new approval
 before changing `public`, `publication.access`, or either approval field in
@@ -178,7 +190,7 @@ file, shell history, retained command output, or this record.
 | Keep automatic `main` production assignment, or require manual promotion | Pending | Pending |
 | GitHub Pro upgrade for required PR checks on the private repository, or documented manual control | Pending | Pending |
 | Release owner and rollback owner | Pending | Pending |
-| Most recent application release baseline (historical evidence gaps disclosed) | CEO handoff/domain-baseline commit `aca9c2a73eb359562c09b0c83edc6199d281c635`; GitHub/Vercel production deployment `5539509970` / `2rZYH1gAwqZf5hRgUYjCDhXRQwdt`; production Quality run `29836346154` and production smoke run `29836382011` passed. `docs/releases/2026-07-21-pr11.md` records the exact candidate, Preview, Production, stable-link, and public smoke evidence and discloses the protected-Preview semantic-smoke, alias-assignment, and current authenticated-playback gaps. Do not infer a pass or alias identity from separate facts. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
+| Most recent application release baseline (historical evidence gaps disclosed) | Launch-gate release commit `a52f687e77ebd1d29ffff46c5b73cdb31b1fedbd`; GitHub/Vercel Production deployment `5540832611` / `9JMDBSRvgNkfqncvyFKKcBLJg1V6`; Production Quality run `29842954387`, production smoke run `29843000292`, and same-commit stable-link run `29843235726` passed. `docs/releases/2026-07-21-pr12.md` records the exact candidate, Preview, Production, canonical alias assignment, launch-gate, stable-link, and public smoke evidence while disclosing the protected-Preview semantic-smoke and current authenticated-playback gaps. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
 
 Until private-repository branch protection is available, every production
 change should still use a PR, wait for the complete `Quality` workflow, and
@@ -210,8 +222,8 @@ mail continuity, and Search Console checks all have retained evidence.
 | Legal and privacy | Pending | Pending | Pending |
 | Rights and demos | Pending | Pending | Pending |
 | Contact delivery | Pending | Pending | Pending |
-| Production release | Pending | Pending | Pending |
 | Legacy-domain cutover | Pending | Pending | Pending |
+| Production release | Pending | Pending | Pending |
 
 After a row is genuinely completed, update the matching manifest gate in the
 same reviewed change. Do not delete `Pending` text or set a gate to `approved`

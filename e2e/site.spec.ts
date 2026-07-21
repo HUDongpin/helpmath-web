@@ -767,6 +767,12 @@ test('executive preview grants a short-lived private session for both JavaScript
     ),
   ).toEqual([]);
 
+  await page.goto('/es/demos/conversion-1-2', {waitUntil: 'networkidle'});
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(page.getByRole('heading', {level: 1, name: 'Conversión 1.2'})).toBeVisible();
+  await expect(page.locator('output').filter({hasText: 'Fotograma 1 de 109'})).toBeAttached();
+  await expect(page.getByText('Solo revisión interna', {exact: true})).toBeVisible();
+
   await page.goto('/es/executive-preview', {waitUntil: 'networkidle'});
   await Promise.all([
     page.waitForURL((url) => url.pathname === '/es/executive-preview' && url.search === ''),

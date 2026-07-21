@@ -44,8 +44,17 @@ describe('release evidence records', () => {
       readFile(path.join(repositoryRoot, 'docs/LEGACY_CUTOVER.md'), 'utf8'),
     ]);
 
-    assert.match(launchDecisions, new RegExp(reference.replaceAll('.', '\\.')));
-    assert.match(legacyCutover, new RegExp(reference.replaceAll('.', '\\.')));
+    assert.match(
+      tableValue(
+        launchDecisions,
+        'Most recent application release baseline (historical evidence gaps disclosed)',
+      ),
+      new RegExp(reference.replaceAll('.', '\\.')),
+    );
+    assert.match(
+      tableValue(legacyCutover, 'Release commit and Vercel deployment evidence'),
+      new RegExp(reference.replaceAll('.', '\\.')),
+    );
   });
 
   it('retains the required identity, smoke, boundary, and exception fields', async () => {
@@ -83,6 +92,14 @@ describe('release evidence records', () => {
       assert.match(deployment, /https:\/\/[a-z0-9-]+\.vercel\.app/u);
     }
 
+    const aliasAssignment = tableValue(record, 'Canonical alias assignment');
+    assert.match(aliasAssignment, /Owner-authenticated Vercel CLI/iu);
+    assert.match(aliasAssignment, /`READY` Production deployment/iu);
+    assert.match(aliasAssignment, /https:\/\/www\.helpmath\.ai/u);
+    assert.match(aliasAssignment, /https:\/\/helpmath\.ai/u);
+    assert.match(aliasAssignment, /docs\/evidence\/vercel-production-alias-\d{4}-\d{2}-\d{2}\.json/u);
+    assert.match(aliasAssignment, /SHA-256 `[0-9a-f]{64}`/u);
+
     assert.match(tableValue(record, 'Contact mode'), /^Disabled;/u);
     const smokeBlocks = [...record.matchAll(/```json\n([\s\S]*?)\n```/gu)].map(
       (match) =>
@@ -101,7 +118,7 @@ describe('release evidence records', () => {
       'No valid zero-failure smoke JSON was retained.',
     );
     assert.match(record, /^## Exceptions and follow-up gates$/mu);
-    assert.match(record, /alias-assignment export[\s\S]*must not be combined to infer alias identity/iu);
+    assert.match(record, /^## Alias-assignment evidence$/mu);
     assert.match(record, /semantic smoke behind the protected PR #\d+ Preview was not retained/iu);
     assert.match(record, /did not request executive authentication/iu);
     assert.match(record, /off-device custody/iu);

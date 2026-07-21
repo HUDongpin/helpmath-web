@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 
 import {
+  EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES,
   evaluateExecutivePreviewEntries,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
@@ -819,13 +820,7 @@ if (executivePreviewAccessKey) {
 
   if (loginResponse.status === 303 && loginLocation === '/demos/conversion-1-2' && cookieMatch?.[2]) {
     const sessionHeaders = {cookie: `${cookieMatch[1]}=${cookieMatch[2]}`};
-    const authenticatedDemoCases = [
-      {path: '/demos/conversion-1-2', locale: 'en', heading: 'Conversion 1.2'},
-      {path: '/demos/conversion-1-4', locale: 'en', heading: 'Conversion 1.4'},
-      {path: '/es/demos/conversion-1-4', locale: 'es', heading: 'Conversión 1.4'},
-    ];
-
-    for (const testCase of authenticatedDemoCases) {
+    for (const testCase of EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES) {
       const response = await get(testCase.path, {headers: sessionHeaders});
       const html = await response.text();
       const language = html.match(/<html[^>]+lang=["']([^"']+)/i)?.[1] ?? null;

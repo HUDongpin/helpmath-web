@@ -1,5 +1,12 @@
 const RETRYABLE_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
+export const EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES = Object.freeze([
+  Object.freeze({path: '/demos/conversion-1-2', locale: 'en', heading: 'Conversion 1.2'}),
+  Object.freeze({path: '/demos/conversion-1-4', locale: 'en', heading: 'Conversion 1.4'}),
+  Object.freeze({path: '/es/demos/conversion-1-2', locale: 'es', heading: 'Conversión 1.2'}),
+  Object.freeze({path: '/es/demos/conversion-1-4', locale: 'es', heading: 'Conversión 1.4'}),
+]);
+
 export function isRetryableHttpStatus(status) {
   return RETRYABLE_HTTP_STATUSES.has(status);
 }

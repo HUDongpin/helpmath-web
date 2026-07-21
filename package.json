@@ -13,6 +13,7 @@
     "test": "npm run check:launch-gates && npm run build:executive-runtime && tsx --test tests/**/*.test.ts && npm run test:release-smoke && npm run check:legacy-source-custody",
     "test:release-smoke": "node --test tests/release-smoke-helpers.test.mjs",
     "test:legacy-apache": "npm run check:legacy-apache && tsx --test tests/apache-legacy-generator.test.ts tests/legacy-apache.contract.ts",
+    "preflight:legacy-cutover": "tsx scripts/legacy-cutover-preflight.ts",
     "check:legacy-source-custody": "node scripts/validate-legacy-source-custody.mjs --require-successful",
     "verify:legacy-source-archive": "node scripts/verify-legacy-source-archive.mjs",
     "build:legacy-source-recovery": "node scripts/build-legacy-source-recovery-bundle.mjs",
