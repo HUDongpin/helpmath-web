@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {describe, it} from 'node:test';
 
 import launchGateManifest from '../config/launch-gates.json';
@@ -69,6 +70,24 @@ describe('launch gate manifest', () => {
     const errors = validateLaunchGateManifest(manifest).join('\n');
     assert.match(errors, /manifest contains unknown field unexpected/);
     assert.match(errors, /contactIntake.status must be holding or approved/);
+  });
+
+  it('retains every referenced launch document in the Vercel build context', () => {
+    const vercelIgnore = readFileSync('.vercelignore', 'utf8');
+    const retainedPaths = new Set(vercelIgnore.split(/\r?\n/));
+    const references = new Set(
+      Object.values(launchGateManifest.gates).flatMap((gate) => [
+        ...gate.evidenceRefs,
+        ...gate.blockerRefs,
+      ]),
+    );
+
+    assert.doesNotMatch(vercelIgnore, /^docs\/$/m);
+    for (const reference of references) {
+      if (reference.startsWith('docs/')) {
+        assert.equal(retainedPaths.has(`!${reference}`), true, reference);
+      }
+    }
   });
 });
 
