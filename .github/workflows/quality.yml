@@ -31,10 +31,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: npm run check:generated
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm audit --audit-level=high
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-

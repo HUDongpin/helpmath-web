@@ -12,18 +12,41 @@ export function LocaleProvider({children, locale}: {children: ReactNode; locale:
   return createElement(LocaleContext.Provider, {value: locale}, children);
 }
 
-function localizeHref(href: string, locale: AppLocale): string {
-  if (!href.startsWith('/') || href.startsWith('//')) return href;
-  const normalized = stripLocalePrefix(href);
-  return locale === 'es' ? (normalized === '/' ? '/es' : `/es${normalized}`) : normalized;
+export function useLocale(): AppLocale {
+  return useContext(LocaleContext);
 }
 
-function stripLocalePrefix(pathname: string): string {
-  for (const locale of ['en', 'es'] as const) {
-    if (pathname === `/${locale}`) return '/';
-    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(3) || '/';
+function localizeHref(href: string, locale: AppLocale): string {
+  if (!href.startsWith('/') || href.startsWith('//')) return href;
+  const {pathname, suffix} = splitLocalHref(stripLocalePrefix(href));
+  const localizedPathname =
+    locale === 'es' ? (pathname === '/' ? '/es' : `/es${pathname}`) : pathname;
+
+  return `${localizedPathname}${suffix}`;
+}
+
+function splitLocalHref(href: string): {pathname: string; suffix: string} {
+  const suffixIndex = href.search(/[?#]/);
+
+  if (suffixIndex === -1) {
+    return {pathname: href, suffix: ''};
   }
-  return pathname;
+
+  return {
+    pathname: href.slice(0, suffixIndex) || '/',
+    suffix: href.slice(suffixIndex)
+  };
+}
+
+export function stripLocalePrefix(href: string): string {
+  const {pathname, suffix} = splitLocalHref(href);
+
+  for (const locale of ['en', 'es'] as const) {
+    if (pathname === `/${locale}`) return `/${suffix}`;
+    if (pathname.startsWith(`/${locale}/`)) return `${pathname.slice(3) || '/'}${suffix}`;
+  }
+
+  return `${pathname}${suffix}`;
 }
 
 type LocalizedLinkProps = Omit<ComponentProps<typeof NextLink>, 'href' | 'locale'> & {

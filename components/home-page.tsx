@@ -92,31 +92,36 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
             intro={content.demos.intro}
             title={content.demos.title}
           />
-          <div className="demo-preview-grid">
-            {content.demos.items.map((item, index) => (
-              <article className="demo-preview" key={item.id}>
-                <div aria-hidden="true" className={`demo-preview__art demo-preview__art--${index + 1}`}>
-                  {index === 0 ? (
-                    <>
-                      <span className="measure-cup" />
-                      <strong>4 × 32 = 128</strong>
-                    </>
-                  ) : (
-                    <>
-                      <span className="number-line" />
-                      <strong>1 L = 1,000 mL</strong>
-                    </>
-                  )}
-                </div>
-                <div className="demo-preview__copy">
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
-                  {item.detail ? <p className="demo-preview__detail">{item.detail}</p> : null}
-                  <Action action={item.action} kind="quiet" />
-                </div>
-              </article>
-            ))}
-          </div>
+          {content.demos.items.length > 0 ? (
+            <div className="demo-preview-grid">
+              {content.demos.items.map((item, index) => (
+                <article className="demo-preview" key={item.id}>
+                  <div
+                    aria-hidden="true"
+                    className={`demo-preview__art demo-preview__art--${index + 1}`}
+                  >
+                    {index === 0 ? (
+                      <>
+                        <span className="measure-cup" />
+                        <strong>4 × 32 = 128</strong>
+                      </>
+                    ) : (
+                      <>
+                        <span className="number-line" />
+                        <strong>1 L = 1,000 mL</strong>
+                      </>
+                    )}
+                  </div>
+                  <div className="demo-preview__copy">
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                    {item.detail ? <p className="demo-preview__detail">{item.detail}</p> : null}
+                    <Action action={item.action} kind="quiet" />
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
           <p className="demo-preview__note">{content.demos.note}</p>
         </Container>
       </Section>

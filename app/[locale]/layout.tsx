@@ -29,8 +29,7 @@ export const metadata: Metadata = {
   title: {default: `${SITE_NAME} · Math language made visible`, template: `%s · ${SITE_NAME}`},
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  category: 'education',
-  robots: {index: true, follow: true}
+  category: 'education'
 };
 
 export const viewport: Viewport = {

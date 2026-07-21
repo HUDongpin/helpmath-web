@@ -3,7 +3,7 @@ import {expect, test, type Page} from '@playwright/test';
 
 type RuntimeIssue = {kind: 'console' | 'page'; message: string};
 
-const demoAssets = [
+const privateDemoAssets = [
   '/flash-assets/conversion-1-2/gallon-0.png',
   '/flash-assets/conversion-1-2/gallon-32.png',
   '/flash-assets/conversion-1-2/gallon-64.png',
@@ -105,6 +105,41 @@ test('Spanish home localizes content and never duplicates the /es route prefix',
   expectNoRuntimeIssues(issues);
 });
 
+test('language switching preserves the current path, query, and hash', async ({page}) => {
+  await expectDocument(page, '/contact?topic=research#main-content', 'en');
+  const spanish = page.getByRole('link', {name: 'Language: Español'}).first();
+  await expect(spanish).toHaveAttribute(
+    'href',
+    '/es/contact?topic=research#main-content',
+  );
+  await spanish.click();
+  await expect(page).toHaveURL(/\/es\/contact\?topic=research#main-content$/);
+
+  const english = page.getByRole('link', {name: 'Idioma: English'}).first();
+  await expect(english).toHaveAttribute('href', '/contact?topic=research#main-content');
+});
+
+test('primary navigation marks the current section', async ({page}) => {
+  await expectDocument(page, '/research', 'en');
+  const navigation = page.getByRole('navigation', {name: 'Main navigation'});
+  await expect(navigation.getByRole('link', {name: 'Research', exact: true})).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(navigation.getByRole('link', {name: 'About', exact: true})).not.toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+});
+
+test('home metadata keeps the HELP Math name in both language titles', async ({page}) => {
+  await expectDocument(page, '/', 'en');
+  await expect(page).toHaveTitle('HELP Math · Math language made visible');
+
+  await expectDocument(page, '/es', 'es');
+  await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
+});
+
 test('mobile navigation opens at a phone viewport and reaches a primary route', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await page.setViewportSize({width: 390, height: 844});
@@ -117,6 +152,8 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await expect(trigger).toContainText('Open navigation');
   await trigger.click();
   await expect(menu).toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(trigger).toContainText('Close navigation');
 
   const approach = menu.getByRole('link', {name: 'Approach', exact: true});
   await expect(approach).toBeVisible();
@@ -147,7 +184,9 @@ test('contact page fails closed until verified delivery is configured', async ({
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/contact', 'en');
 
-  await expect(page.getByRole('heading', {level: 1, name: 'Tell us what you are looking for'})).toBeVisible();
+  await expect(
+    page.getByRole('heading', {level: 1, name: 'Check whether project requests are open'}),
+  ).toBeVisible();
   await expect(
     page.getByRole('heading', {level: 2, name: 'Contact intake is not accepting messages yet'}),
   ).toBeVisible();
@@ -160,37 +199,111 @@ test('contact page fails closed until verified delivery is configured', async ({
   expectNoRuntimeIssues(issues);
 });
 
-for (const demo of [
-  {id: 'conversion-1-2', title: 'Conversion 1.2'},
-  {id: 'conversion-1-4', title: 'Conversion 1.4'},
-] as const) {
-  test(`${demo.title} detail renders its deterministic JavaScript stage`, async ({page}) => {
-    const issues = monitorRuntimeIssues(page);
-    await expectDocument(page, `/demos/${demo.id}?frame=1`, 'en');
+test('demo landing pages explain the private review boundary without linking prototypes', async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
 
-    await expect(page.getByRole('heading', {level: 1, name: demo.title})).toBeVisible();
-    await expect(page.locator('.demo-player .faithful-stage')).toBeVisible();
-    await expect(page.locator('object, embed')).toHaveCount(0);
-    await expect(page.locator('[src$=".swf"], [data$=".swf"]')).toHaveCount(0);
-    expectNoRuntimeIssues(issues);
-  });
-}
+  await expectDocument(page, '/demos', 'en');
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'Demos remain private while review is incomplete',
+    }),
+  ).toBeVisible();
+  await expect(page.locator('a[href^="/demos/conversion-"]')).toHaveCount(0);
+  await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
 
-test('all public demo image assets respond with PNG content', async ({request}) => {
-  for (const asset of demoAssets) {
-    const response = await request.get(asset);
-    expect(response.status(), asset).toBe(200);
-    expect(response.headers()['content-type'], asset).toContain('image/png');
-    expect((await response.body()).byteLength, asset).toBeGreaterThan(100);
+  await expectDocument(page, '/es/demos', 'es');
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'Las demostraciones siguen privadas mientras la revisión esté incompleta',
+    }),
+  ).toBeVisible();
+  await expect(page.locator('a[href^="/es/demos/conversion-"]')).toHaveCount(0);
+  await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
+  expectNoRuntimeIssues(issues);
+});
+
+test('private demo routes and extracted assets fail closed', async ({request}) => {
+  for (const [path, heading] of [
+    ['/demos/conversion-1-2', 'Page not found'],
+    ['/demos/conversion-1-4', 'Page not found'],
+    ['/es/demos/conversion-1-2', 'Página no encontrada'],
+    ['/es/demos/conversion-1-4', 'Página no encontrada'],
+  ] as const) {
+    const response = await request.get(path, {maxRedirects: 0});
+    const html = await response.text();
+    expect(response.status(), path).toBe(404);
+    expect(response.headers()['x-robots-tag'], path).toBe('noindex, nofollow');
+    expect(response.headers()['content-type'], path).toContain('text/html');
+    expect(html, path).toContain(heading);
+  }
+
+  for (const asset of privateDemoAssets) {
+    const response = await request.get(asset, {maxRedirects: 0});
+    expect(response.status(), asset).toBe(404);
+    expect(response.headers()['x-robots-tag'], asset).toBe('noindex, nofollow');
+    expect(response.headers()['content-type'], asset).not.toContain('image/');
+  }
+
+  for (const optimizerPath of [
+    '/_next/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
+    '/_vercel/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
+  ] as const) {
+    const response = await request.get(optimizerPath, {maxRedirects: 0});
+    expect(response.status(), optimizerPath).not.toBe(200);
+    expect(response.headers()['content-type'] ?? '', optimizerPath).not.toContain('image/');
   }
 });
 
-test('unknown routes return a non-indexable 404 response', async ({page}) => {
-  const response = await page.goto('/route-that-does-not-exist', {waitUntil: 'networkidle'});
+test('unknown routes return a non-indexable branded 404 response', async ({page}) => {
+  for (const path of [
+    '/route-that-does-not-exist',
+    '/apiary',
+    '/_nextish',
+    '/_vercelish',
+  ] as const) {
+    const response = await page.goto(path, {waitUntil: 'networkidle'});
+
+    expect(response?.status(), path).toBe(404);
+    expect(response?.headers()['x-robots-tag'], path).toBe('noindex, nofollow');
+    expect(response?.headers()['content-type'], path).toContain('text/html');
+    await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
+    await expect(page.getByRole('link', {name: 'Return home'})).toHaveAttribute('href', '/');
+    const languageLinks = page.locator('a.language-switcher');
+    await expect(languageLinks).toHaveCount(2);
+    await expect(languageLinks.nth(0)).toHaveAttribute('href', '/es');
+    await expect(languageLinks.nth(1)).toHaveAttribute('href', '/es');
+    await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
+    await expect(page).toHaveTitle('Page not found · HELP Math');
+  }
+});
+
+test('Spanish unknown routes keep localized navigation and a non-indexable 404', async ({page}) => {
+  const response = await page.goto('/es/ruta/que-no-existe', {waitUntil: 'networkidle'});
 
   expect(response?.status()).toBe(404);
   expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow');
-  await expect(page.locator('body')).toHaveText('Not Found');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(page.getByRole('heading', {level: 1, name: 'Página no encontrada'})).toBeVisible();
+  await expect(page.getByRole('link', {name: 'Volver al inicio'})).toHaveAttribute('href', '/es');
+  const languageLinks = page.locator('a.language-switcher');
+  await expect(languageLinks).toHaveCount(2);
+  await expect(languageLinks.nth(0)).toHaveAttribute('href', '/');
+  await expect(languageLinks.nth(1)).toHaveAttribute('href', '/');
+  await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
+  await expect(page).toHaveTitle('Página no encontrada · HELP Math');
+});
+
+test('unknown files return one branded non-indexable 404 policy', async ({page}) => {
+  const response = await page.goto('/missing-historical-document.pdf', {waitUntil: 'networkidle'});
+
+  expect(response?.status()).toBe(404);
+  expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow');
+  expect(response?.headers()['content-type']).toContain('text/html');
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(1);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
 });
 
 test('audited legacy pages and document directories redirect permanently', async ({request}) => {
@@ -198,6 +311,8 @@ test('audited legacy pages and document directories redirect permanently', async
     ['/Contact.htm', '/contact'],
     ['/Ped.htm', '/approach'],
     ['/Kf.htm', '/about'],
+    ['/Mph.htm', '/about'],
+    ['/Sheltered.htm', '/approach'],
     ['/Sheltered%20Instruction.wmv', '/approach'],
     ['/Demo.htm', '/demos'],
     ['/HELP%20Math%20Privacy%20Policy%203.12.07.pdf', '/privacy'],
@@ -205,7 +320,10 @@ test('audited legacy pages and document directories redirect permanently', async
     ['/HELP%20evaluation%20white%20paper%20June%202005.pdf', '/research'],
     ['/HELP%20Math%20Correlations%20CCS%206%207%208.pdf', '/curriculum'],
     ['/student_login.aspx', '/login'],
+    ['/Project_Admin_Login.aspx', '/login'],
     ['/trial_register.aspx', '/contact'],
+    ['/PR.htm', '/research'],
+    ['/DDI%206-22-09NEWS%20RELEASE%20(final).pdf', '/research'],
     ['/PR/historical-study.pdf', '/research'],
     ['/DealerDocs/historical-guide.pdf', '/resources'],
     ['/teacher_guide/historical-guide.pdf', '/resources'],
@@ -232,6 +350,59 @@ test('audited legacy pages and document directories redirect permanently', async
   });
   expect(queryResponse.status()).toBe(308);
   expect(queryResponse.headers().location).toBe('/contact?source=cutover&campaign=legacy');
+
+  for (const [englishPrefix, canonical] of [
+    ['/en', '/'],
+    ['/en/about?source=explicit-prefix', '/about?source=explicit-prefix'],
+    ['/en/demos/conversion-1-2', '/demos/conversion-1-2'],
+  ] as const) {
+    const response = await request.get(englishPrefix, {maxRedirects: 0});
+    expect(response.status(), englishPrefix).toBe(308);
+    expect(response.headers().location, englishPrefix).toBe(canonical);
+  }
+
+  const spoofedInternalHeader = await request.get('/en/about', {
+    headers: {'x-helpmath-internal-locale': 'en'},
+    maxRedirects: 0,
+  });
+  expect(spoofedInternalHeader.status()).toBe(308);
+  expect(spoofedInternalHeader.headers().location).toBe('/about');
+});
+
+test('every sitemap page has one heading, canonical metadata, and the expected language', async ({request}) => {
+  const sitemap = await request.get('/sitemap.xml');
+  const sitemapText = await sitemap.text();
+  const urls = [...sitemapText.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  expect(urls).toHaveLength(20);
+
+  for (const absoluteUrl of urls) {
+    const parsed = new URL(absoluteUrl);
+    const response = await request.get(`${parsed.pathname}${parsed.search}`);
+    const html = await response.text();
+    const expectedLanguage = parsed.pathname === '/es' || parsed.pathname.startsWith('/es/') ? 'es' : 'en';
+    expect(response.status(), absoluteUrl).toBe(200);
+    expect((html.match(/<h1\b/gi) ?? []).length, absoluteUrl).toBe(1);
+    expect(html, absoluteUrl).toMatch(new RegExp(`<html[^>]+lang=["']${expectedLanguage}["']`, 'i'));
+    expect(html, absoluteUrl).toContain(`rel="canonical" href="${absoluteUrl.replace(/\/$/, '') || absoluteUrl}"`);
+  }
+});
+
+test('representative content and status pages do not overflow a phone viewport', async ({page}) => {
+  await page.setViewportSize({width: 390, height: 844});
+  for (const path of [
+    '/',
+    '/es',
+    '/research',
+    '/es/research',
+    '/resources',
+    '/es/resources',
+    '/demos',
+    '/es/demos',
+  ] as const) {
+    await expectDocument(page, path, path.startsWith('/es') ? 'es' : 'en');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, `${path} overflows horizontally`).toBeLessThanOrEqual(1);
+  }
 });
 
 test('robots and sitemap publish crawl policy and both locale variants', async ({request}) => {
@@ -249,8 +420,9 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   const sitemapText = await sitemap.text();
   expect(sitemapText).toContain('<loc>https://www.helpmath.ai/</loc>');
   expect(sitemapText).toContain('<loc>https://www.helpmath.ai/es</loc>');
-  expect(sitemapText).toContain('https://www.helpmath.ai/demos/conversion-1-2');
-  expect(sitemapText).toContain('https://www.helpmath.ai/es/demos/conversion-1-4');
+  expect(sitemapText).toContain('hreflang="x-default"');
+  expect(sitemapText).not.toContain('https://www.helpmath.ai/demos/conversion-1-2');
+  expect(sitemapText).not.toContain('https://www.helpmath.ai/es/demos/conversion-1-4');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/privacy');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/terms');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/es/privacy');
@@ -278,8 +450,6 @@ for (const path of [
   '/login',
   '/contact',
   '/demos',
-  '/demos/conversion-1-2?frame=1',
-  '/demos/conversion-1-4?frame=1',
 ] as const) {
   test(`${path} has no serious or critical axe violations`, async ({page}) => {
     const issues = monitorRuntimeIssues(page);

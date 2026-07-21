@@ -2,22 +2,115 @@
   "schemaVersion": 1,
   "capturedAt": "2026-07-21",
   "validationStatus": "conditional",
+  "publicationPolicy": {
+    "defaultAccess": "private",
+    "publicAccessRequires": [
+      "publication-rights approval"
+    ],
+    "indexingRequires": [
+      "strict-complete validation",
+      "technical acceptance",
+      "publication-rights approval"
+    ]
+  },
   "sources": {
     "conversion-1-2": {
+      "public": false,
+      "route": "/demos/conversion-1-2",
+      "workbenchMigrationId": "formula-elementary-conversion-01-02",
       "flaSha256": "7c59923ebd200f4fb951e1c9a7683861c21af7688d537fa5fca370acf6d9291d",
-      "swfSha256": "91d63f9f045d2097cd0f46c59ceacd4faefd95851f9039003589d8052c39e758"
+      "swfSha256": "91d63f9f045d2097cd0f46c59ceacd4faefd95851f9039003589d8052c39e758",
+      "runtimeMovie": {
+        "stage": {"width": 780, "height": 379},
+        "fps": 12,
+        "frameCount": 109,
+        "durationMs": 9083
+      },
+      "maturity": "legacy-prototype",
+      "validationStatus": "conditional",
+      "evidenceStatus": {
+        "workbenchStatus": "preserved",
+        "machineAudit": "partial",
+        "actionScriptVersion": "AS1/2",
+        "backgroundColor": "#e4e4e4",
+        "languages": ["en", "es"],
+        "scenarios": ["default"],
+        "audioRequired": true,
+        "audioImplemented": false,
+        "externalDependencies": [],
+        "keyframeRows": 0,
+        "rmseStatus": "not-run",
+        "strictValidator": "not-passed"
+      },
+      "publication": {
+        "access": "private",
+        "indexable": false,
+        "technicalAcceptance": "pending",
+        "rightsApproval": "pending"
+      },
+      "knownExceptions": [
+        "The private workbench record is preserved but its audit, baseline, RMSE evidence, strict validator, and owner acceptance are incomplete.",
+        "Matching English and Spanish source audio is cataloged privately but is not implemented in this public prototype.",
+        "The review runtime is a prototype and must not be described as one-to-one, faithful, or complete.",
+        "The route and extracted image assets must remain private until JavaScript-derivative and publication rights are approved."
+      ]
     },
     "conversion-1-4": {
+      "public": false,
+      "route": "/demos/conversion-1-4",
+      "workbenchMigrationId": "formula-elementary-conversion-01-04",
       "flaSha256": "d661c776e239fb59c44278c6e4d5fd75812599eb2dc9fa758b1ba37a59251b1c",
-      "swfSha256": "cbb7f3f529c8c5ca679da864c7c49ab472cac4d0feb2392eed5aa04d21a4e1a9"
+      "swfSha256": "cbb7f3f529c8c5ca679da864c7c49ab472cac4d0feb2392eed5aa04d21a4e1a9",
+      "runtimeMovie": {
+        "stage": {"width": 780, "height": 379},
+        "fps": 12,
+        "frameCount": 67,
+        "durationMs": 5583
+      },
+      "maturity": "legacy-prototype",
+      "validationStatus": "conditional",
+      "evidenceStatus": {
+        "workbenchStatus": "preserved",
+        "machineAudit": "partial",
+        "actionScriptVersion": "AS1/2",
+        "backgroundColor": "#e4e4e4",
+        "languages": ["en", "es"],
+        "scenarios": ["default"],
+        "audioRequired": true,
+        "audioImplemented": false,
+        "externalDependencies": [],
+        "keyframeRows": 0,
+        "rmseStatus": "not-run",
+        "strictValidator": "not-passed"
+      },
+      "publication": {
+        "access": "private",
+        "indexable": false,
+        "technicalAcceptance": "pending",
+        "rightsApproval": "pending"
+      },
+      "knownExceptions": [
+        "The private workbench record is preserved but its audit, baseline, RMSE evidence, strict validator, and owner acceptance are incomplete.",
+        "Matching English and Spanish source audio is cataloged privately but is not implemented in this public prototype.",
+        "The review runtime is a prototype and must not be described as one-to-one, faithful, or complete.",
+        "The route and extracted image assets must remain private until JavaScript-derivative and publication rights are approved."
+      ]
     }
   },
   "files": {
+    "demos/animation-registry.ts": "50f5e4874e227591cb14677121ac60c2524eb4c11cf47a55be567e1ded7ff136",
+    "demos/catalog.ts": "ae394ad30777cba9b47666fe9c6deb4260490fa546baee1501378a6cdc29f036",
+    "demos/contract.ts": "bb02930ff8ff2c798aa7e87342a57bb57e3b438224076d66ffd7132776fc9653",
+    "demos/legacy-accessible-frame.tsx": "8c7e2db90b5b5187f04e4d3c3a7936194c7d7a12cffcf84272a2e0005990dcfd",
+    "demos/lib/conversionTimeline.js": "5ffef75269fff6c28c360f3a75303d739b2e509590d2bf1c9d80791b83f752f8",
+    "demos/modules/conversion-1-2.tsx": "32c6f23a861b1bfcdd76a8c1cf57a3cce1d8afb00d923de551666983d6c04bfc",
+    "demos/modules/conversion-1-4.tsx": "0f0cd7f90d283ddbb5b49abc0eb4fdad3126c43b641f4479c3e915158f929c02",
+    "demos/registry.generated.ts": "1a2101867e2e3e8cda4bdeac6216aef8d5a3ec3fb3418b8f6188e30c1182e68c",
+    "demos/runtime.ts": "323de3f8023e506467dea4c43c9f9b6d18c149817295843a815280fa480aff3c",
     "demos/vendor/FlashBauhausFormula.jsx": "8216b35a1ca0c9230a58fa7245d64ec9d549a61e86f481b8f3762f0ff35b7b71",
     "demos/vendor/FlashBauhausGallon.jsx": "48564432846793dd54b9abfd3e04a3f38fb2529a3b261f7d3c133f3e2498d0a6",
-    "demos/vendor/GallonConversionAnimation.jsx": "bebc6758f5b06b5cafd65994cb88aa26adc8536ba42a30b2bc695d89ac0c0073",
-    "demos/vendor/LiterConversionAnimation.jsx": "b5de640446f4e89f80f5382ea4245c8e0264d547627f90fe9f6e415ddd2225bb",
-    "demos/lib/conversionTimeline.js": "5ffef75269fff6c28c360f3a75303d739b2e509590d2bf1c9d80791b83f752f8",
+    "demos/vendor/GallonConversionAnimation.jsx": "0a8be5229d3a2a760996e9ac3f17a049da07f1fe18f3c46bb2d529641e13536e",
+    "demos/vendor/LiterConversionAnimation.jsx": "98a9c6506d96d24be57b28a002f894d18c43a3a98df041340897e8eb567f46c8",
     "public/flash-assets/conversion-1-2/gallon-0.png": "ee08cc634e0c8d9019e4e75161e4c1782de82fc74a5fb4fe14e67d2cd2c9ca6d",
     "public/flash-assets/conversion-1-2/gallon-32.png": "067605176a72fd410471c78b3b518bf3a566e6417488996e4d30856fdd3eca0b",
     "public/flash-assets/conversion-1-2/gallon-64.png": "1f8f38e5d64ad6f64d7b86ca547f84eac2d632de0187873e1e5ff6cff89f187c",
@@ -30,5 +123,17 @@
     "public/flash-assets/cylinder-base.png": "97578297f09956d47cf4c34009122810c6054c7d8d44b681b214eb7e4ba867e8",
     "public/flash-assets/pitcher-back.png": "7018dc94cfd9c5126b044770ff806dcbc53332792e72782b21f15f5ba1074792",
     "public/flash-assets/pitcher-front.png": "ca0cd95d7142fc375e6b5a5cc16c56b0402e1586a0bb9881ecd3eb6286df1622"
+  },
+  "integrationFiles": {
+    "app/[locale]/demos/[id]/page.tsx": "9ec81a576413ed7b5675cf55463abee37489d624c0a29aedb16b0bcb4730644b",
+    "app/[locale]/demos/page.tsx": "ac89f7bb55ff00781e2d703623b35949aa243f1605bd4d44a095c5086179d84f",
+    "app/sitemap.ts": "1440ece1c0ea36cc730fd336aec64eff8e81eca30e5f1512a91ae0e7dfac31ed",
+    "components/demo-player.tsx": "89a5c62953002b7d42f3f3f12e2d66bfcedc8e5e17154f2e8272b14cb383de4e",
+    "components/demos-pages.tsx": "68aadb5b6861a6488b9cbfa8d31f2821e3d3d85248fbedfc7ea3a80b71c98558",
+    "components/home-page.tsx": "64e3d88592d47b43cc07c747fcc5f295ceae61ae63175ba3b87d7d9f2c5d6992",
+    "lib/public-paths.ts": "50699bb5a18167cc06631a02972a20472039cb5c419b328e8b4987d997a18af7",
+    "next.config.ts": "6bd26f678dadb38b5d230690b7c6a094fd81a0a90b78be8b4d9f337ff445823f",
+    "proxy.ts": "5d9c614a870e7f960e330de9a8ed3b57ad706b644e9eb040181ddfc88374bb33",
+    "scripts/generate-registry.mjs": "dff90e5e6105ece559c7254afb167d1bc1c80d3a746c6694e12ef2474a01f5db"
   }
 }

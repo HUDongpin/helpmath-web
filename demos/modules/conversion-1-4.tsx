@@ -11,7 +11,7 @@ const scenarios = Object.freeze([{id: 'default', label: 'Default timeline'}]);
 
 function Renderer({frame, lang, onReplay}: AnimationRendererProps) {
   return (
-    <AccessibleLegacyFrame kind="liter" lang={lang} onReplay={onReplay}>
+    <AccessibleLegacyFrame frame={frame} kind="liter" lang={lang} onReplay={onReplay}>
       <LiterConversionAnimation captureFrame={frame} spanishFormulaFlag={lang === 'es' ? 'on' : 'off'} />
     </AccessibleLegacyFrame>
   );

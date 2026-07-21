@@ -52,6 +52,10 @@ function request(body: unknown, headers: Record<string, string> = {}) {
   });
 }
 
+function assertNoStore(response: Response) {
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+}
+
 beforeEach(() => {
   setEnv('NEXT_PUBLIC_CONTACT_ENABLED', 'true');
 });
@@ -84,6 +88,7 @@ describe('POST /api/contact', () => {
     const response = await POST(request(validRequest()));
     const body = await response.json();
     assert.equal(response.status, 503);
+    assertNoStore(response);
     assert.equal(body.error.code, 'CONTACT_DISABLED');
   });
 
@@ -91,6 +96,7 @@ describe('POST /api/contact', () => {
     const response = await POST(request('{not json'));
     const body = await response.json();
     assert.equal(response.status, 400);
+    assertNoStore(response);
     assert.equal(body.ok, false);
     assert.equal(body.error.code, 'BAD_REQUEST');
     assert.equal(typeof body.error.message, 'string');
@@ -101,10 +107,12 @@ describe('POST /api/contact', () => {
       request(JSON.stringify(validRequest()), {'content-type': 'text/plain'}),
     );
     assert.equal(unsupported.status, 415);
+    assertNoStore(unsupported);
     assert.equal((await unsupported.json()).error.code, 'UNSUPPORTED_MEDIA_TYPE');
 
     const oversized = await POST(request(`"${'x'.repeat(17_000)}"`));
     assert.equal(oversized.status, 413);
+    assertNoStore(oversized);
     assert.equal((await oversized.json()).error.code, 'PAYLOAD_TOO_LARGE');
   });
 
@@ -122,6 +130,7 @@ describe('POST /api/contact', () => {
     delete process.env.TURNSTILE_SECRET_KEY;
     const response = await POST(request(validRequest({website: 'https://bot.example'})));
     assert.equal(response.status, 200);
+    assertNoStore(response);
     assert.deepEqual(await response.json(), {ok: true});
   });
 

@@ -1095,11 +1095,19 @@ svg {
 }
 
 .demo-player__controls {
+  align-items: center;
   background: var(--white);
   border-top: 2px solid var(--ink);
   display: flex;
-  justify-content: flex-end;
+  gap: 1rem;
+  justify-content: space-between;
   padding: 0.7rem;
+}
+
+.demo-player__buttons {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.55rem;
 }
 
 .demo-player__controls button {
@@ -1112,7 +1120,63 @@ svg {
   font-size: 0.84rem;
   font-weight: 900;
   gap: 0.45rem;
+  min-height: 44px;
   padding: 0.55rem 0.8rem;
+}
+
+.demo-player__scrubber {
+  align-items: center;
+  display: flex;
+  flex: 1 1 320px;
+  gap: 0.7rem;
+  justify-content: flex-end;
+}
+
+.demo-player__scrubber input {
+  accent-color: var(--blue);
+  cursor: pointer;
+  max-width: 360px;
+  min-height: 44px;
+  width: 100%;
+}
+
+.demo-player__scrubber output {
+  color: var(--ink-soft);
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  min-width: 9.5rem;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .demo-player__controls,
+  .demo-player__scrubber {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .demo-player__buttons {
+    flex-wrap: wrap;
+  }
+
+  .demo-player__controls button {
+    justify-content: center;
+  }
+
+  .demo-player__scrubber {
+    flex-basis: auto;
+  }
+
+  .demo-player__scrubber input {
+    max-width: none;
+  }
+
+  .demo-player__scrubber output {
+    min-width: 0;
+    text-align: left;
+  }
 }
 
 .demo-unavailable {

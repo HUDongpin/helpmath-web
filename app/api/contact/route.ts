@@ -30,6 +30,10 @@ interface SuccessBody {
   ok: true;
 }
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store',
+} as const;
+
 function errorResponse(
   status: number,
   code: ErrorCode,
@@ -45,7 +49,7 @@ function errorResponse(
     },
   };
 
-  return NextResponse.json(body, {status});
+  return NextResponse.json(body, {status, headers: NO_STORE_HEADERS});
 }
 
 function clientIp(request: Request) {
@@ -239,7 +243,7 @@ export async function POST(request: Request) {
   // Do not reveal the trap to bots and do not verify or deliver their content.
   if (parsed.data.website) {
     const body: SuccessBody = {ok: true};
-    return NextResponse.json(body);
+    return NextResponse.json(body, {headers: NO_STORE_HEADERS});
   }
 
   const turnstile = await verifyTurnstile(parsed.data.turnstileToken, clientIp(request));
@@ -273,5 +277,5 @@ export async function POST(request: Request) {
   }
 
   const success: SuccessBody = {ok: true};
-  return NextResponse.json(success);
+  return NextResponse.json(success, {headers: NO_STORE_HEADERS});
 }
