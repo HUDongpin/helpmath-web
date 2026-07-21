@@ -119,10 +119,11 @@ DNS. Do not store registrar credentials or mail secrets in the repository.
 | Local and UTC cutover window | Pending |
 | Expected monitoring window | Pending |
 | DNS export and prior website A/AAAA/CNAME values | Pending |
+| Public DNS, HTTP, and TLS observation | `docs/DOMAIN_PUBLIC_BASELINE.md` and `docs/evidence/domain-public-baseline-2026-07-21.json`; the 2026-07-21 snapshot records the old host still serving four direct `200` responses, the visible website records, seven Google MX records, two TXT values, and both certificate fingerprints. This does not satisfy the complete-zone export, administrator/control, mail-continuity, Vercel alias-binding, or Search Console gates. |
 | Prior TTL and any planned TTL reduction time | Pending |
 | MX/SPF/DKIM/DMARC and ownership-record comparison | Pending |
 | Old mailbox continuity test | Pending |
-| Release commit and Vercel deployment evidence | Pre-cutover baseline: `ed1bad4cd5f84759cf816995fab00d002abf85ce`; GitHub deployment `5537444603`; Vercel deployment locator `G8KErBhE2BdgwQtPhEoSJsSRYWZG`; see `docs/releases/2026-07-21-pr9.md`. Replace with the final reviewed cutover candidate before DNS changes. |
+| Release commit and Vercel deployment evidence | Pre-cutover baseline: `3b2d78f0727cb11749d30160de96425fb4da4279`; GitHub deployment `5538707729`; Vercel deployment locator `2r291UXTui7bX3cJ1GF6yESVQKvS`; successful same-commit Quality run `29833169515`; successful production-smoke run `29832453636`; see `docs/releases/2026-07-21-pr10.md`. Replace with the final reviewed cutover candidate before DNS changes. |
 | Chosen one-hop or temporary two-hop topology | Pending |
 | Legacy source archive manifest and hash record | Local pre-cutover capture: 23/23 governed locators, 23 content-addressed objects, 14,280,549 bytes. Metadata evidence is in `docs/evidence/legacy-source-crawl-2026-07-21.{json,csv,sha256}`; JSON SHA-256 `9e12d758ff2b0d37805da1d1f34cfcfad4a45e517c86831248df59015882927a`. Archive closure passed for 27 files. A deterministic restricted local recovery package and fresh-directory same-machine restore drill passed; bundle SHA-256 `bcc030474eda6d99aade0b9012c5645b47f819b244acc22da0069c4e0736928e`, receipt `docs/evidence/legacy-source-recovery-2026-07-21.json`. Original bytes and the recovery package remain local. Encrypted off-device custody and an independent restore remain pending. |
 | Rights/accessibility disposition for owner-held PDFs | Pending |

@@ -69,6 +69,7 @@ export default async function ExecutivePreviewRoute({
   return (
     <ExecutivePreviewPage
       error={first(query.error) === '1'}
+      expiresAt={config?.expiresAt}
       locale={locale}
       returnTo={returnTo}
       state={!config ? 'unavailable' : authenticated ? 'authenticated' : 'login'}

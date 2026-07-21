@@ -40,6 +40,9 @@ Use `npm run smoke:production` for the repeatable post-deployment contract and
 record the authenticated GitHub/Vercel identity described in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md). The private repository
 commit is deliberately not exposed through a public health endpoint.
+The time-bounded, unauthenticated DNS/HTTP/TLS snapshot for both domains is in
+[`docs/DOMAIN_PUBLIC_BASELINE.md`](docs/DOMAIN_PUBLIC_BASELINE.md); it is not a
+substitute for an authenticated zone export or mail-continuity test.
 
 The publicly readable Privacy and Terms pages are explicitly marked as drafts,
 send `noindex, follow`, and remain outside the sitemap until owner/legal review

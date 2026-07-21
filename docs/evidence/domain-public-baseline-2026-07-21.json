@@ -1,0 +1,367 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "help-math-public-domain-baseline",
+  "captureDate": "2026-07-21",
+  "observationWindows": {
+    "dns": {
+      "startedAt": "2026-07-21T13:19:31Z",
+      "completedAt": "2026-07-21T13:20:31Z"
+    },
+    "http": {
+      "startedAt": "2026-07-21T13:20:52Z",
+      "completedAt": "2026-07-21T13:21:19Z"
+    },
+    "tls": {
+      "startedAt": "2026-07-21T13:21:37Z",
+      "completedAt": "2026-07-21T13:21:46Z"
+    }
+  },
+  "methodology": {
+    "dns": {
+      "publicRecursiveResolverCount": 2,
+      "answersConsistentAcrossResolvers": true,
+      "resolverIdentitiesRetained": false
+    },
+    "http": {
+      "requestClass": "public unauthenticated requests",
+      "redirectsRecordedPerHop": true
+    },
+    "tls": {
+      "certificateMetadataOnly": true,
+      "privateKeyMaterialCollected": false
+    }
+  },
+  "dns": {
+    "domains": {
+      "helpmath.ai": {
+        "records": {
+          "A": [
+            {
+              "ttlSeconds": 1800,
+              "value": "216.150.16.129"
+            },
+            {
+              "ttlSeconds": 1800,
+              "value": "216.150.1.129"
+            }
+          ],
+          "NS": [
+            {
+              "ttlSeconds": 86400,
+              "value": "ns1.vercel-dns.com."
+            },
+            {
+              "ttlSeconds": 86400,
+              "value": "ns2.vercel-dns.com."
+            }
+          ],
+          "CAA": [
+            {
+              "ttlSeconds": 60,
+              "flags": 0,
+              "tag": "issue",
+              "value": "letsencrypt.org"
+            },
+            {
+              "ttlSeconds": 60,
+              "flags": 0,
+              "tag": "issue",
+              "value": "pki.goog"
+            },
+            {
+              "ttlSeconds": 60,
+              "flags": 0,
+              "tag": "issue",
+              "value": "sectigo.com"
+            }
+          ]
+        },
+        "notFoundRecordTypesDuringWindow": [
+          "AAAA",
+          "CNAME",
+          "MX",
+          "TXT"
+        ]
+      },
+      "www.helpmath.ai": {
+        "records": {
+          "A": [
+            {
+              "ttlSeconds": 1800,
+              "value": "216.150.1.1"
+            },
+            {
+              "ttlSeconds": 1800,
+              "value": "216.150.1.193"
+            }
+          ]
+        },
+        "notFoundRecordTypesDuringWindow": [
+          "AAAA",
+          "CNAME",
+          "MX",
+          "TXT"
+        ]
+      },
+      "helpprogram.net": {
+        "records": {
+          "A": [
+            {
+              "ttlSeconds": 900,
+              "value": "69.13.40.229"
+            }
+          ],
+          "NS": [
+            {
+              "ttlSeconds": 86400,
+              "value": "custns1.dal.corespace.com."
+            },
+            {
+              "ttlSeconds": 86400,
+              "value": "custns2.dal.corespace.com."
+            }
+          ],
+          "MX": [
+            {
+              "ttlSeconds": 900,
+              "priority": 1,
+              "exchange": "aspmx.l.google.com."
+            },
+            {
+              "ttlSeconds": 900,
+              "priority": 5,
+              "exchange": "alt1.aspmx.l.google.com."
+            },
+            {
+              "ttlSeconds": 900,
+              "priority": 5,
+              "exchange": "alt2.aspmx.l.google.com."
+            },
+            {
+              "ttlSeconds": 900,
+              "priority": 10,
+              "exchange": "aspmx2.googlemail.com."
+            },
+            {
+              "ttlSeconds": 900,
+              "priority": 10,
+              "exchange": "aspmx3.googlemail.com."
+            },
+            {
+              "ttlSeconds": 900,
+              "priority": 10,
+              "exchange": "aspmx4.googlemail.com."
+            },
+            {
+              "ttlSeconds": 900,
+              "priority": 10,
+              "exchange": "aspmx5.googlemail.com."
+            }
+          ],
+          "TXT": [
+            {
+              "ttlSeconds": 900,
+              "value": "google-site-verification=BPNsu71vya6smTxbkCcRxs6g8cwYVw_YRcqJxvMSmfc "
+            },
+            {
+              "ttlSeconds": 900,
+              "value": "v=spf1 mx a ip4:69.13.40.229 include:_spf.google.com ~all "
+            }
+          ]
+        }
+      },
+      "www.helpprogram.net": {
+        "records": {
+          "A": [
+            {
+              "ttlSeconds": 900,
+              "value": "69.13.40.229"
+            }
+          ]
+        }
+      }
+    },
+    "mailPolicySignals": {
+      "helpmath.ai": {
+        "dmarc": {
+          "ownerName": "_dmarc.helpmath.ai",
+          "recordType": "TXT",
+          "result": "not-found-during-window"
+        },
+        "mtaSts": {
+          "ownerName": "_mta-sts.helpmath.ai",
+          "recordType": "TXT",
+          "result": "not-found-during-window"
+        },
+        "tlsReporting": {
+          "ownerName": "_smtp._tls.helpmath.ai",
+          "recordType": "TXT",
+          "result": "not-found-during-window"
+        },
+        "dkim": {
+          "result": "not-enumerable",
+          "reason": "DKIM records require a selector; DNS does not provide a complete selector inventory."
+        }
+      },
+      "helpprogram.net": {
+        "dmarc": {
+          "ownerName": "_dmarc.helpprogram.net",
+          "recordType": "TXT",
+          "result": "not-found-during-window"
+        },
+        "mtaSts": {
+          "ownerName": "_mta-sts.helpprogram.net",
+          "recordType": "TXT",
+          "result": "not-found-during-window"
+        },
+        "tlsReporting": {
+          "ownerName": "_smtp._tls.helpprogram.net",
+          "recordType": "TXT",
+          "result": "not-found-during-window"
+        },
+        "dkim": {
+          "result": "not-enumerable",
+          "reason": "DKIM records require a selector; DNS does not provide a complete selector inventory."
+        }
+      }
+    }
+  },
+  "http": {
+    "observations": [
+      {
+        "url": "http://helpmath.ai/",
+        "status": 308,
+        "location": "https://helpmath.ai/",
+        "server": "Vercel",
+        "strictTransportSecurity": null
+      },
+      {
+        "url": "https://helpmath.ai/",
+        "status": 308,
+        "location": "https://www.helpmath.ai/",
+        "server": "Vercel",
+        "strictTransportSecurity": "max-age=63072000"
+      },
+      {
+        "url": "http://www.helpmath.ai/",
+        "status": 308,
+        "location": "https://www.helpmath.ai/",
+        "server": "Vercel",
+        "strictTransportSecurity": null
+      },
+      {
+        "url": "https://www.helpmath.ai/",
+        "status": 200,
+        "location": null,
+        "server": "Vercel",
+        "strictTransportSecurity": "max-age=63072000; includeSubDomains; preload"
+      },
+      {
+        "url": "http://helpprogram.net/",
+        "status": 200,
+        "location": null,
+        "server": "Apache",
+        "strictTransportSecurity": null
+      },
+      {
+        "url": "https://helpprogram.net/",
+        "status": 200,
+        "location": null,
+        "server": "Apache",
+        "strictTransportSecurity": null
+      },
+      {
+        "url": "http://www.helpprogram.net/",
+        "status": 200,
+        "location": null,
+        "server": "Apache",
+        "strictTransportSecurity": null
+      },
+      {
+        "url": "https://www.helpprogram.net/",
+        "status": 200,
+        "location": null,
+        "server": "Apache",
+        "strictTransportSecurity": null
+      }
+    ],
+    "canonicalHelpMathChain": [
+      "http://helpmath.ai/",
+      "https://helpmath.ai/",
+      "https://www.helpmath.ai/"
+    ],
+    "legacyCutoverObserved": false
+  },
+  "tls": {
+    "certificates": {
+      "helpmath.ai": {
+        "namesObserved": [
+          "helpmath.ai",
+          "www.helpmath.ai"
+        ],
+        "negotiatedProtocol": "TLSv1.3",
+        "issuerOrganization": "Let's Encrypt",
+        "subjectAltNames": [
+          "*.helpmath.ai",
+          "helpmath.ai"
+        ],
+        "notBeforeDate": "2026-07-20",
+        "notAfterDate": "2026-10-18",
+        "sha256Fingerprint": "A3:94:45:17:11:85:6A:01:10:26:88:42:AA:C1:A2:23:F6:B8:26:EB:00:7B:1F:76:92:DD:24:E9:43:79:61:23",
+        "validDuringObservation": true
+      },
+      "helpprogram.net": {
+        "namesObserved": [
+          "helpprogram.net",
+          "www.helpprogram.net"
+        ],
+        "subjectAltNames": [
+          "helpprogram.net",
+          "mail.helpprogram.net",
+          "www.helpprogram.net"
+        ],
+        "notBeforeDate": "2026-07-01",
+        "notAfterDate": "2026-09-29",
+        "sha256Fingerprint": "72:85:A4:C0:1C:5E:B1:27:71:CE:BF:B4:3B:94:76:34:C9:30:A2:F5:81:63:C5:DC:AC:93:21:72:EC:0C:5F:6E",
+        "validDuringObservation": true
+      }
+    }
+  },
+  "cutoverGuardrail": {
+    "preserveLegacyMailRecordsVerbatim": true,
+    "recordSource": "dns.domains.helpprogram.net.records.MX and dns.domains.helpprogram.net.records.TXT",
+    "instruction": "Before changing helpprogram.net hosting or DNS, preserve all seven observed MX records and both observed TXT values exactly, including the trailing space in each TXT value; then verify real inbound and outbound mail separately."
+  },
+  "sensitiveData": {
+    "containsPrivateCredentials": false,
+    "containsPrivateKeyMaterial": false,
+    "containsPublicDnsVerificationValue": true
+  },
+  "evidenceBoundary": {
+    "publicObservationOnly": true,
+    "doesNotEstablish": [
+      {
+        "code": "complete-zone-export",
+        "detail": "This is not an authoritative or complete DNS zone export."
+      },
+      {
+        "code": "registrar-or-control",
+        "detail": "Public NS and response data do not prove registrar identity, account access, administrative control, or change authority."
+      },
+      {
+        "code": "mail-continuity",
+        "detail": "Visible MX, SPF, and verification records do not prove mailbox ownership, inbound or outbound delivery, DKIM configuration, or continuity through a cutover."
+      },
+      {
+        "code": "vercel-alias-binding",
+        "detail": "Vercel DNS, HTTP headers, and certificates do not prove which Vercel project or immutable deployment the production aliases target."
+      },
+      {
+        "code": "search-console",
+        "detail": "The public Google verification TXT value does not prove current Search Console ownership, access, property configuration, or indexing state."
+      }
+    ],
+    "negativeAnswerMeaning": "A record marked not found was not returned during the stated observation window; it is not a perpetual absence claim.",
+    "dkimMeaning": "No conclusion about DKIM presence or absence is made because selectors cannot be enumerated from DNS."
+  }
+}
