@@ -1,4 +1,4 @@
-import {BookOpenText, MessageCircleMore, MousePointer2} from 'lucide-react';
+import {BookOpenText, MessageCircleMore, Shapes} from 'lucide-react';
 
 export function MathPlayground({locale}: {locale: 'en' | 'es'}) {
   const copy =
@@ -7,13 +7,13 @@ export function MathPlayground({locale}: {locale: 'en' | 'es'}) {
           prompt: 'Construye ¾',
           language: 'tres cuartos',
           success: '¡Lo lograste!',
-          hint: 'Arrastra una pieza'
+          hint: 'Modelo visual de ejemplo'
         }
       : {
           prompt: 'Build ¾',
           language: 'three fourths',
           success: 'You got it!',
-          hint: 'Drag a piece'
+          hint: 'Example visual model'
         };
 
   return (
@@ -41,7 +41,7 @@ export function MathPlayground({locale}: {locale: 'en' | 'es'}) {
         </div>
         <div className="math-playground__success">{copy.success}</div>
         <div className="math-playground__hint">
-          <MousePointer2 aria-hidden="true" size={17} />
+          <Shapes aria-hidden="true" size={17} />
           {copy.hint}
         </div>
       </div>

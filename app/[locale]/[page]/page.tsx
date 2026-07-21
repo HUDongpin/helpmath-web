@@ -36,9 +36,19 @@ function isSupported(value: string): value is SupportedPage {
   return supported.some((page) => page === value);
 }
 
+export function generateStaticParams() {
+  return (['en', 'es'] as const).flatMap((locale) =>
+    supported.map((page) => ({locale, page})),
+  );
+}
+
 export async function generateMetadata({params}: {params: Promise<{locale: 'en' | 'es'; page: string}>}): Promise<Metadata> {
   const {locale, page} = await params;
-  if (!isSupported(page)) return {};
+  if (!isSupported(page)) {
+    return {
+      title: locale === 'es' ? 'Página no encontrada' : 'Page not found',
+    };
+  }
   const metadata = createPageMetadata(locale, getSiteContent(locale).pages[page].metadata, `/${page}`);
   if (!isDraftLegalPage(page)) return metadata;
 

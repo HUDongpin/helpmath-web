@@ -17,15 +17,15 @@ build.
 | Historical path | Canonical destination |
 | --- | --- |
 | `/Home.htm`, `/Index.htm` | `/` |
-| `/About.htm`, `/ProgramInfo.htm`, `/Kf.htm` | `/about` |
-| `/AcademicLanguage.htm`, `/Ped.htm`, `/SIOP.htm`, `/Sheltered Instruction.wmv` | `/approach` |
-| `/Content.htm`, `/Standards.htm`, the root CCS correlation PDFs, `/HELP_Alignment_CO.pdf` | `/curriculum` |
-| `/Evidence.htm`, `/Awards.htm`, `/Testimonials.htm`, the root evaluation/research PDFs | `/research` |
-| `/Resources.htm` | `/resources` |
-| `/Sales.htm`, `/Trial.htm`, `/Purchasing.htm`, `/PurchaseInfo.htm`, `/Contact.htm`, `/trial_register.aspx` | `/contact` |
-| `/Login.htm`, `/district_login.aspx`, `/school_login.aspx`, `/student_login.aspx`, `/teacher_login.aspx`, `/user_studentlogin.aspx` | `/login` |
-| `/TechSpecs.htm` | `/support` |
-| `/HELP Math Privacy Policy 3.12.07.pdf` and `.doc` | `/privacy` |
+| `/About.htm`, `/ProgramInfo.htm`, `/Kf.htm`, `/Mph.htm`, `/Mth.htm`, `/Csh.htm`, `/Bah.htm`, `/Bdh.htm` | `/about` |
+| `/AcademicLanguage.htm`, `/Ped.htm`, `/SIOP.htm`, `/Sheltered.htm`, `/Sheltered Instruction.wmv` | `/approach` |
+| `/Content.htm`, `/Standards.htm`, `/As.htm`, the root CCS correlation PDFs, `/HELP_Alignment_CO.pdf` | `/curriculum` |
+| `/Evidence.htm`, `/Awards.htm`, `/Testimonials.htm`, `/PR.htm`, `/Rb.htm`, `/onlineprogram.html`, the root evaluation/research/award PDFs | `/research` |
+| `/Resources.htm`, `/Tst.htm`, `/Pd.htm` | `/resources` |
+| `/Sales.htm`, `/Trial.htm`, `/Purchasing.htm`, `/PurchaseInfo.htm`, `/Contact.htm`, `/Pricing.htm`, `/Gfs.htm`, `/trial_register.aspx` | `/contact` |
+| `/Login.htm`, `/district_login.aspx`, `/school_login.aspx`, `/student_login.aspx`, `/teacher_login.aspx`, `/user_studentlogin.aspx`, `/student_register.aspx`, `/teacher_register.aspx`, `/trialuser_login.aspx`, `/Project_Admin_Login.aspx` | `/login` |
+| `/TechSpecs.htm`, `/Ti.htm` | `/support` |
+| `/Privacy.htm`, `/HELP Math Privacy Policy 3.12.07.pdf` and `.doc` | `/privacy` |
 | `/Demo.htm`, `/shortdemo/*` | `/demos` |
 | `/PR/*` | `/research` |
 | `/DealerDocs/*`, `/teacher_guide/*` | `/resources` |
@@ -39,6 +39,13 @@ The crawl intentionally keeps two exceptions out of production redirects:
   broken `404` on the historical host and has no unambiguous modern target.
   Record an editorial decision in `LAUNCH_DECISIONS.md` before adding a
   permanent redirect.
+
+This mapping was expanded on 2026-07-21 by auditing 44 historical page
+endpoints and 92 same-origin navigation or embedded-object references,
+including the dynamic entries in `/Menu.js` and links in `/PR.htm`. `/Bdh.htm`
+is retained as a defensive mapping because its old endpoint still returns
+`200`, although its menu entry was commented out. Unknown paths remain true
+non-indexable `404` responses rather than being redirected to the home page.
 
 ## Redirect topology
 

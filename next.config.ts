@@ -1,6 +1,8 @@
 import type {NextConfig} from 'next';
 
 import {DRAFT_LEGAL_PATHS} from './lib/legal-publishing';
+import {publicPagePaths} from './lib/public-paths';
+import {demoRoutes, indexableDemoRoutes} from './demos/catalog';
 
 const securityHeaders = [
   {
@@ -32,6 +34,15 @@ const draftLegalHeaders = DRAFT_LEGAL_PATHS.map((source) => ({
   headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]
 }));
 
+const indexableDemoRouteSet = new Set(indexableDemoRoutes);
+const conditionalDemoHeaders = demoRoutes
+  .filter((route) => !indexableDemoRouteSet.has(route))
+  .flatMap((route) => [route, `/es${route}`])
+  .map((source) => ({
+    source,
+    headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]
+  }));
+
 const nonIndexableLegacyPaths = [
   '/Images/Help_Slideshow.swf',
   '/0214%20Sunburst%20and%20BLI%20Form%20partnership%20for%20HELP%20Math2.pdf'
@@ -48,12 +59,19 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
   {source: '/About.htm', destination: '/about', permanent: true},
   {source: '/ProgramInfo.htm', destination: '/about', permanent: true},
   {source: '/Kf.htm', destination: '/about', permanent: true},
+  {source: '/Mph.htm', destination: '/about', permanent: true},
+  {source: '/Mth.htm', destination: '/about', permanent: true},
+  {source: '/Csh.htm', destination: '/about', permanent: true},
+  {source: '/Bah.htm', destination: '/about', permanent: true},
+  {source: '/Bdh.htm', destination: '/about', permanent: true},
   {source: '/AcademicLanguage.htm', destination: '/approach', permanent: true},
   {source: '/Ped.htm', destination: '/approach', permanent: true},
   {source: '/SIOP.htm', destination: '/approach', permanent: true},
+  {source: '/Sheltered.htm', destination: '/approach', permanent: true},
   {source: '/Sheltered%20Instruction.wmv', destination: '/approach', permanent: true},
   {source: '/Content.htm', destination: '/curriculum', permanent: true},
   {source: '/Standards.htm', destination: '/curriculum', permanent: true},
+  {source: '/As.htm', destination: '/curriculum', permanent: true},
   {
     source: '/HELP%20Math%20Correlations%20CCS%203-4-5%209%2028%2010%20v2.pdf',
     destination: '/curriculum',
@@ -68,6 +86,20 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
   {source: '/Evidence.htm', destination: '/research', permanent: true},
   {source: '/Awards.htm', destination: '/research', permanent: true},
   {source: '/Testimonials.htm', destination: '/research', permanent: true},
+  {source: '/PR.htm', destination: '/research', permanent: true},
+  {source: '/Rb.htm', destination: '/research', permanent: true},
+  {source: '/onlineprogram.html', destination: '/research', permanent: true},
+  {
+    source: '/CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf',
+    destination: '/research',
+    permanent: true
+  },
+  {source: '/Codie%20Release%20DDI.pdf', destination: '/research', permanent: true},
+  {
+    source: '/DDI%206-22-09NEWS%20RELEASE%20\\(final\\).pdf',
+    destination: '/research',
+    permanent: true
+  },
   {
     source: '/HELP%20evaluation%20white%20paper%20June%202005.pdf',
     destination: '/research',
@@ -85,11 +117,15 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
     permanent: true
   },
   {source: '/Resources.htm', destination: '/resources', permanent: true},
+  {source: '/Tst.htm', destination: '/resources', permanent: true},
+  {source: '/Pd.htm', destination: '/resources', permanent: true},
   {source: '/Sales.htm', destination: '/contact', permanent: true},
   {source: '/Trial.htm', destination: '/contact', permanent: true},
   {source: '/Purchasing.htm', destination: '/contact', permanent: true},
   {source: '/PurchaseInfo.htm', destination: '/contact', permanent: true},
   {source: '/Contact.htm', destination: '/contact', permanent: true},
+  {source: '/Pricing.htm', destination: '/contact', permanent: true},
+  {source: '/Gfs.htm', destination: '/contact', permanent: true},
   {source: '/trial_register.aspx', destination: '/contact', permanent: true},
   {source: '/Login.htm', destination: '/login', permanent: true},
   {source: '/district_login.aspx', destination: '/login', permanent: true},
@@ -97,7 +133,13 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
   {source: '/student_login.aspx', destination: '/login', permanent: true},
   {source: '/teacher_login.aspx', destination: '/login', permanent: true},
   {source: '/user_studentlogin.aspx', destination: '/login', permanent: true},
+  {source: '/student_register.aspx', destination: '/login', permanent: true},
+  {source: '/teacher_register.aspx', destination: '/login', permanent: true},
+  {source: '/trialuser_login.aspx', destination: '/login', permanent: true},
+  {source: '/Project_Admin_Login.aspx', destination: '/login', permanent: true},
   {source: '/TechSpecs.htm', destination: '/support', permanent: true},
+  {source: '/Ti.htm', destination: '/support', permanent: true},
+  {source: '/Privacy.htm', destination: '/privacy', permanent: true},
   {
     source: '/HELP%20Math%20Privacy%20Policy%203.12.07.pdf',
     destination: '/privacy',
@@ -117,16 +159,29 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    globalNotFound: true,
+  },
+  images: {
+    localPatterns: [],
+  },
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {
     return [
       ...draftLegalHeaders,
+      ...conditionalDemoHeaders,
       ...nonIndexableLegacyHeaders,
       {source: '/(.*)', headers: securityHeaders}
     ];
   },
-  redirects: legacyRedirects
+  redirects: legacyRedirects,
+  async rewrites() {
+    return publicPagePaths.map((source) => ({
+      source,
+      destination: `/en${source === '/' ? '' : source}`,
+    }));
+  },
 };
 
 export default nextConfig;

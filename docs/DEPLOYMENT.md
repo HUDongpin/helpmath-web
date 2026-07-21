@@ -12,10 +12,21 @@
 5. Configure a provider or edge rate limit for `/api/contact`; the route also
    validates Turnstile action and hostname and rejects non-JSON or oversized
    bodies.
-6. Deploy a protected Preview and run the browser suite against the exact
-   commit.
-7. Promote manually only after contact delivery, bilingual navigation, both
-   demos, metadata, accessibility, and the raw-Flash 404 probes pass.
+6. Deploy a protected Preview, bind it to the exact private-repository commit
+   using the authenticated checks in `RELEASE_EVIDENCE.md`, and run the browser
+   suite and release smoke against that Preview with the automation bypass
+   secret supplied only through the local environment.
+7. Promote manually only after the closed contact contract, bilingual
+   navigation, private-demo route/asset boundary, metadata, accessibility, and
+   raw-Flash 404 probes pass.
+
+After promotion, run `npm run smoke:production` against the canonical domain.
+This checks the exact sitemap set, metadata and reciprocal language alternates,
+internal links, legacy and `/en` redirects, branded 404 policy, draft indexing,
+private demo routes/assets/optimizer paths, static assets, security headers,
+the closed contact contract,
+and the apex/www HTTP/HTTPS matrix. Keep the JSON result with the release
+record; a successful Preview result does not replace the Production run.
 
 Record the owner inputs and approvals in
 [`LAUNCH_DECISIONS.md`](./LAUNCH_DECISIONS.md). Secret values belong only in
@@ -57,7 +68,8 @@ flag and preview credentials to that named preview branch/environment, or use a
 separate preview project; do not enable them for every dynamic Preview.
 
 Run general browser and accessibility checks on both the commit and branch
-Preview URLs. Run real contact delivery on the stable contact-test Preview,
+Preview URLs using the protected-preview commands in `RELEASE_EVIDENCE.md`.
+Run real contact delivery on the stable contact-test Preview,
 then repeat on production `www` after promotion. Retain the rate-limit provider,
 threshold, expected `429` behavior, and a verification result in the launch
 decision record.
@@ -78,6 +90,15 @@ keep that behavior in `LAUNCH_DECISIONS.md`. If manual promotion is selected,
 disable automatic assignment in the Vercel project, redeploy a harmless test
 commit, and verify that `www` remains on the previously approved deployment
 before using that workflow for release.
+
+When a release withdraws a route or asset, changing the Production alias is not
+enough: older immutable `*.vercel.app` deployment URLs may still contain the
+previous artifact. Enumerate those deployments after promotion and confirm
+that project-wide Deployment Protection covers every non-current generated
+URL. If protection cannot cover an old artifact, remove that exact deployment
+only through an owner-approved, rollback-aware procedure. Recheck the current
+`www` alias directly to confirm the withdrawn routes and assets no longer
+return their former content.
 
 ## Domain cutover
 

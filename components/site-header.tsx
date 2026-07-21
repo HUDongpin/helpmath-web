@@ -1,7 +1,10 @@
-import {Menu, Sparkles} from 'lucide-react';
+'use client';
+
+import {Menu, Sparkles, X} from 'lucide-react';
+import {useState, type SyntheticEvent} from 'react';
 
 import type {Locale, SharedContent} from '@/content/types';
-import {Link} from '@/i18n/navigation';
+import {Link, stripLocalePrefix, usePathname} from '@/i18n/navigation';
 
 import {LanguageSwitcher} from './language-switcher';
 
@@ -19,8 +22,43 @@ export function Brand({homeLabel}: {homeLabel: string}) {
   );
 }
 
-export function SiteHeader({content, locale}: {content: SharedContent; locale: Locale}) {
+function normalizePathname(href: string): string {
+  const pathname = stripLocalePrefix(href).split(/[?#]/, 1)[0] || '/';
+
+  return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
+}
+
+function isCurrentHref(pathname: string, href: string): boolean {
+  const currentPathname = normalizePathname(pathname);
+  const targetPathname = normalizePathname(href);
+
+  return (
+    currentPathname === targetPathname ||
+    (targetPathname !== '/' && currentPathname.startsWith(`${targetPathname}/`))
+  );
+}
+
+export function SiteHeader({
+  content,
+  languageSwitcherPath,
+  locale,
+}: {
+  content: SharedContent;
+  languageSwitcherPath?: string;
+  locale: Locale;
+}) {
   const {navigation} = content;
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuLabel = isMobileMenuOpen ? navigation.closeMenuLabel : navigation.openMenuLabel;
+
+  function handleMobileMenuToggle(event: SyntheticEvent<HTMLDetailsElement>) {
+    setIsMobileMenuOpen(event.currentTarget.open);
+  }
+
+  function closeMobileMenu() {
+    setIsMobileMenuOpen(false);
+  }
 
   return (
     <header className="site-header">
@@ -38,7 +76,11 @@ export function SiteHeader({content, locale}: {content: SharedContent; locale: L
         <Brand homeLabel={navigation.homeLabel} />
         <nav aria-label={navigation.ariaLabel} className="desktop-nav">
           {navigation.links.map((link) => (
-            <Link href={link.href} key={link.href}>
+            <Link
+              aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
+              href={link.href}
+              key={link.href}
+            >
               {link.label}
             </Link>
           ))}
@@ -48,27 +90,61 @@ export function SiteHeader({content, locale}: {content: SharedContent; locale: L
             label={navigation.languageLabel}
             locale={locale}
             names={navigation.languageNames}
+            pathnameOverride={languageSwitcherPath}
           />
-          <Link className="header-support" href={navigation.supportAction.href}>
+          <Link
+            aria-current={
+              isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
+            }
+            className="header-support"
+            href={navigation.supportAction.href}
+          >
             {navigation.supportAction.label}
           </Link>
         </div>
-        <details className="mobile-nav">
-          <summary aria-label={navigation.openMenuLabel}>
-            <Menu aria-hidden="true" size={24} />
-            <span>{navigation.openMenuLabel}</span>
+        <details
+          className="mobile-nav"
+          onToggle={handleMobileMenuToggle}
+          open={isMobileMenuOpen}
+        >
+          <summary
+            aria-controls="mobile-navigation-panel"
+            aria-expanded={isMobileMenuOpen}
+            aria-label={menuLabel}
+          >
+            {isMobileMenuOpen ? (
+              <X aria-hidden="true" size={24} />
+            ) : (
+              <Menu aria-hidden="true" size={24} />
+            )}
+            <span>{menuLabel}</span>
           </summary>
-          <div className="mobile-nav__panel">
+          <div className="mobile-nav__panel" id="mobile-navigation-panel">
             {navigation.links.map((link) => (
-              <Link href={link.href} key={link.href}>
+              <Link
+                aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
+                href={link.href}
+                key={link.href}
+                onClick={closeMobileMenu}
+              >
                 {link.label}
               </Link>
             ))}
-            <Link href={navigation.supportAction.href}>{navigation.supportAction.label}</Link>
+            <Link
+              aria-current={
+                isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
+              }
+              href={navigation.supportAction.href}
+              onClick={closeMobileMenu}
+            >
+              {navigation.supportAction.label}
+            </Link>
             <LanguageSwitcher
               label={navigation.languageLabel}
               locale={locale}
               names={navigation.languageNames}
+              onNavigate={closeMobileMenu}
+              pathnameOverride={languageSwitcherPath}
             />
           </div>
         </details>

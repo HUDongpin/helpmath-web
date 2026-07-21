@@ -1,6 +1,7 @@
 import type {MetadataRoute} from 'next';
 
 import {getSiteUrl, localizedPath} from '@/lib/site';
+import {indexableDemoRoutes} from '@/demos/catalog';
 
 const routes = [
   '/',
@@ -10,8 +11,7 @@ const routes = [
   '/research',
   '/resources',
   '/demos',
-  '/demos/conversion-1-2',
-  '/demos/conversion-1-4',
+  ...indexableDemoRoutes,
   '/support',
   '/login',
   '/contact'
@@ -30,7 +30,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: {
         languages: {
           en: new URL(localizedPath('en', route), siteUrl).toString(),
-          es: new URL(localizedPath('es', route), siteUrl).toString()
+          es: new URL(localizedPath('es', route), siteUrl).toString(),
+          'x-default': new URL(localizedPath('en', route), siteUrl).toString()
         }
       }
     }))

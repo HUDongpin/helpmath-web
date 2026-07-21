@@ -2,12 +2,9 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 
 import {DemoDetailPage} from '@/components/demos-pages';
-import {demoIds, getSiteContent, isLocale, type DemoId} from '@/content';
+import {demoIds, getSiteContent, isDemoId, isLocale} from '@/content';
+import {isIndexableDemo} from '@/demos/catalog';
 import {createPageMetadata} from '@/lib/metadata';
-
-function isDemoId(value: string): value is DemoId {
-  return demoIds.includes(value as DemoId);
-}
 
 export function generateStaticParams() {
   return demoIds.map((id) => ({id}));
@@ -21,7 +18,17 @@ export async function generateMetadata({
   const {locale, id} = await params;
   if (!isLocale(locale) || !isDemoId(id)) notFound();
   const content = getSiteContent(locale).pages.demoDetails[id];
-  return createPageMetadata(locale, content.metadata, `/demos/${id}`);
+  const metadata = createPageMetadata(locale, content.metadata, `/demos/${id}`);
+  if (isIndexableDemo(id)) return metadata;
+
+  return {
+    ...metadata,
+    robots: {
+      index: false,
+      follow: true,
+      googleBot: {index: false, follow: true},
+    },
+  };
 }
 
 export default async function DemoPage({

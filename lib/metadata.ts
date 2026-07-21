@@ -13,9 +13,10 @@ export function createPageMetadata(
   const canonical = new URL(localizedPath(locale, path), siteUrl).toString();
   const english = new URL(localizedPath('en', path), siteUrl).toString();
   const spanish = new URL(localizedPath('es', path), siteUrl).toString();
+  const socialTitle = path === '/' ? `${SITE_NAME} · ${page.title}` : page.title;
 
   return {
-    title: page.title,
+    title: path === '/' ? {absolute: socialTitle} : page.title,
     description: page.description,
     alternates: {
       canonical,
@@ -26,7 +27,7 @@ export function createPageMetadata(
       }
     },
     openGraph: {
-      title: page.title,
+      title: socialTitle,
       description: page.description,
       locale: locale === 'es' ? 'es_US' : 'en_US',
       alternateLocale: locale === 'es' ? ['en_US'] : ['es_US'],
@@ -44,7 +45,7 @@ export function createPageMetadata(
     },
     twitter: {
       card: 'summary_large_image',
-      title: page.title,
+      title: socialTitle,
       description: page.description,
       images: ['/opengraph-image.png']
     }

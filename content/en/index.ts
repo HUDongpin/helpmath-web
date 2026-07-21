@@ -8,7 +8,7 @@ export const enContent = {
     skipToContent: "Skip to main content",
     statusLabel: "Modernization in progress",
     statusMessage:
-      "HELP Math is being carefully restored for today’s web. Public demos and support are available; student accounts are not yet active.",
+      "HELP Math is being carefully modernized for today’s web. Project information is available; demos, contact intake, and student accounts are not yet public.",
     externalLinkLabel: "Opens in a new tab",
     requiredFieldLabel: "Required",
     navigation: {
@@ -37,7 +37,7 @@ export const enContent = {
         { label: "Our approach", href: "/approach" },
         { label: "Curriculum", href: "/curriculum" },
         { label: "Research archive", href: "/research" },
-        { label: "JavaScript demos", href: "/demos" },
+        { label: "Demo status", href: "/demos" },
       ],
       helpLinks: [
         { label: "Support", href: "/support" },
@@ -55,17 +55,17 @@ export const enContent = {
       metadata: {
         title: "Math language made visible",
         description:
-          "Meet the modern HELP Math project: bilingual math support, research context, restored interactive demonstrations, and help for returning educators and students.",
+          "Meet the modern HELP Math project: bilingual math support, research context, modernization status, and help for returning educators and students.",
       },
       hero: {
         eyebrow: "Welcome back to HELP Math",
         title: "See the language inside every math idea.",
         summary:
           "HELP Math connects visual models, clear explanations, academic vocabulary, and guided practice so multilingual learners can make sense of both the mathematics and the words used to describe it.",
-        primaryAction: { label: "Explore the demos", href: "/demos" },
+        primaryAction: { label: "Check demo status", href: "/demos" },
         secondaryAction: { label: "Get project support", href: "/support" },
         supportingNote:
-          "The new website is a public preview. Restored activities are for demonstration while the wider learning platform is evaluated.",
+          "The new informational website is a public preview. JavaScript prototypes remain private while validation and publication-rights review are incomplete.",
       },
       status: {
         label: "Project status",
@@ -78,7 +78,7 @@ export const enContent = {
         eyebrow: "Built around real learning needs",
         title: "A clearer path into mathematical meaning",
         intro:
-          "Different learners need different entry points. HELP Math’s restored public experience focuses on explanation, language, and supportive representations.",
+          "Different learners need different entry points. The current public site explains how HELP Math historically connected explanation, language, and supportive representations.",
         cards: [
           {
             id: "multilingual-learners",
@@ -96,7 +96,7 @@ export const enContent = {
             id: "educators",
             title: "For educators",
             description:
-              "Review the instructional approach, explore restored examples, and help shape responsible next steps for the project.",
+              "Review the archived instructional approach and the evidence gates for responsible future modernization.",
           },
         ],
       },
@@ -104,7 +104,7 @@ export const enContent = {
         eyebrow: "How HELP Math teaches",
         title: "Words, representations, and reasoning work together",
         intro:
-          "The historic program paired mathematics instruction with language supports. The modernization keeps that core idea visible in every restored activity.",
+          "The historic program paired mathematics instruction with language supports. The modernization documents that core idea while new implementations remain under review.",
         cards: [
           {
             id: "make-language-explicit",
@@ -128,36 +128,19 @@ export const enContent = {
         action: { label: "See the instructional approach", href: "/approach" },
       },
       demos: {
-        eyebrow: "Restored learning objects",
-        title: "Try two early JavaScript demonstrations",
+        eyebrow: "Demo publication status",
+        title: "Prototypes stay private until evidence and rights are complete",
         intro:
-          "These small activities show how legacy HELP Math material can become crisp, browser-native, keyboard-friendly learning experiences.",
-        items: [
-          {
-            id: "conversion-1-2",
-            title: "Conversion 1.2",
-            description:
-              "Explore a carefully reconstructed sequence with deterministic timing and responsive vector graphics.",
-            detail: "Modern JavaScript demonstration",
-            action: { label: "Open Conversion 1.2", href: "/demos/conversion-1-2" },
-          },
-          {
-            id: "conversion-1-4",
-            title: "Conversion 1.4",
-            description:
-              "View another restored activity and compare how motion, labels, and replay behavior support explanation.",
-            detail: "Modern JavaScript demonstration",
-            action: { label: "Open Conversion 1.4", href: "/demos/conversion-1-4" },
-          },
-        ],
+          "Two browser-native reconstruction prototypes are preserved in the private repository for review. Their public routes and extracted images are closed in this release.",
+        items: [],
         note:
-          "A demo is published only after its source, timeline, behavior, and key visual states have been reviewed. Demos do not collect student work.",
+          "Publication requires written rights approval plus baseline, keyframe, behavior, visual-difference, accessibility, and technical acceptance evidence. No current prototype has passed that gate.",
       },
       closing: {
         title: "Returning to HELP Math? We want to point you in the right direction.",
         body:
-          "Tell us whether you are looking for an old account, program materials, research information, or a future collaboration. Please do not include student records or passwords.",
-        action: { label: "Contact the project", href: "/contact" },
+          "The contact-status page explains whether adult project requests are currently being accepted. Never send student records or passwords through another channel.",
+        action: { label: "Check contact availability", href: "/contact" },
       },
     },
     about: {
@@ -190,15 +173,15 @@ export const enContent = {
           title: "Instructional structure before technical nostalgia",
           paragraphs: [
             "The project archive includes lesson sources, interactive media, program descriptions, and research materials from different periods of HELP Math’s history.",
-            "The restoration treats those files as evidence. It preserves meaningful explanations, pacing, language supports, and learner interactions while replacing obsolete browser technology.",
+            "The migration process treats those files as evidence. It must verify explanations, pacing, language supports, and interactions before claiming that a new implementation preserves them.",
           ],
         },
         {
           id: "today",
           eyebrow: "Where we are today",
-          title: "A public website and demonstration phase",
+          title: "A public information site and private prototype phase",
           paragraphs: [
-            "This release introduces the project, makes selected evidence easier to review, and publishes a small set of review-stage JavaScript demonstrations.",
+            "This release introduces the project and makes selected historical context easier to review. JavaScript prototypes and extracted assets remain private while validation and rights decisions are open.",
             "It is not yet a replacement for the former learning platform. There are no active student accounts, classes, assignments, purchases, or progress reports on this site.",
           ],
         },
@@ -237,7 +220,7 @@ export const enContent = {
         title: "Help us understand how HELP Math was used",
         body:
           "Former educators, partners, and researchers can share non-confidential context about the program’s history. Please do not send student names, records, credentials, or copyrighted materials you are not authorized to share.",
-        action: { label: "Contact the restoration team", href: "/contact?topic=project-history" },
+        action: { label: "Check project contact status", href: "/contact?topic=project-history" },
       },
     },
     approach: {
@@ -251,7 +234,7 @@ export const enContent = {
         title: "Make the mathematics—and its language—easier to see",
         summary:
           "HELP Math’s archived design draws on sheltered instruction: make meaning explicit, connect language to representations, segment complex reasoning, and give learners supported opportunities to engage with the same mathematical goal.",
-        primaryAction: { label: "Try a restored demo", href: "/demos" },
+        primaryAction: { label: "Review demo status", href: "/demos" },
         secondaryAction: { label: "Review curriculum context", href: "/curriculum" },
       },
       foundations: {
@@ -290,7 +273,7 @@ export const enContent = {
         eyebrow: "A learning sequence",
         title: "From orientation to independent reasoning",
         intro:
-          "Exact lesson patterns vary, but the restored experience follows a transparent instructional arc.",
+          "Exact lesson patterns varied, but archived program descriptions identify a transparent instructional arc.",
         steps: [
           {
             id: "orient",
@@ -340,8 +323,8 @@ export const enContent = {
       teacherRole: {
         title: "Technology supports instruction; educators shape its use.",
         body:
-          "The public demos show learning objects, not a complete course or an automated teaching system. Educators remain essential for choosing appropriate tasks, listening to student reasoning, and connecting activities to classroom goals.",
-        action: { label: "Ask an instructional question", href: "/contact?topic=instruction" },
+          "Any future public demo would show only a limited learning object, not a complete course or an automated teaching system. Educators remain essential for choosing tasks, listening to student reasoning, and connecting activities to classroom goals.",
+        action: { label: "Check question availability", href: "/contact?topic=instruction" },
       },
     },
     curriculum: {
@@ -354,9 +337,9 @@ export const enContent = {
         eyebrow: "Curriculum context",
         title: "A broad archive, returning one carefully reviewed piece at a time",
         summary:
-          "Historic materials describe HELP Math configurations for upper-elementary and middle-grade mathematics, with additional uses for remediation. The current website publishes selected demonstrations—not the full historical curriculum.",
-        primaryAction: { label: "View current demos", href: "/demos" },
-        secondaryAction: { label: "Request curriculum information", href: "/contact?topic=curriculum" },
+          "Historic materials describe HELP Math configurations for upper-elementary and middle-grade mathematics, with additional uses for remediation. The current website publishes context and demo status—not the historical curriculum or lesson prototypes.",
+        primaryAction: { label: "Review demo status", href: "/demos" },
+        secondaryAction: { label: "Check curriculum request status", href: "/contact?topic=curriculum" },
       },
       archiveNotice: {
         title: "Why we do not publish a single lesson or hour count",
@@ -397,7 +380,7 @@ export const enContent = {
       },
       lessonFlow: {
         eyebrow: "Learning-object design",
-        title: "How a restored lesson can unfold",
+        title: "How an archived lesson pattern can unfold",
         steps: [
           {
             id: "goal-language",
@@ -432,17 +415,17 @@ export const enContent = {
       availability: {
         id: "availability",
         eyebrow: "What is available now",
-        title: "Demonstrations, not enrollment",
+        title: "Information, not enrollment or lesson access",
         paragraphs: [
-          "The modern site currently offers public learning-object demonstrations and project information. It does not provide full lessons, placement testing, teacher dashboards, class assignments, or student progress storage.",
+          "The modern site currently offers project information and publication status. It does not provide public lesson demos, full lessons, placement testing, teacher dashboards, class assignments, or student progress storage.",
           "Future curriculum publication depends on source audit, rights review, instructional review, accessibility work, and validation against original behavior.",
         ],
       },
       closing: {
         title: "Looking for a specific lesson or historical scope document?",
         body:
-          "Send an adult contact request with the topic and intended use. We will confirm what can be shared and whether an accessible copy is available.",
-        action: { label: "Request curriculum information", href: "/contact?topic=curriculum" },
+          "Check whether adult contact intake is open before preparing a request. Availability also depends on source, rights, and accessibility review.",
+        action: { label: "Check request availability", href: "/contact?topic=curriculum" },
       },
     },
     research: {
@@ -456,7 +439,7 @@ export const enContent = {
         title: "Keep the history visible—and the claims precise",
         summary:
           "HELP Math’s archive includes research descriptions, grant materials, reviews, and awards from different periods. This page identifies them as historical evidence until each source and its present-day relevance can be independently checked.",
-        primaryAction: { label: "Request a source", href: "/contact?topic=research" },
+        primaryAction: { label: "Check source-request status", href: "/contact?topic=research" },
         secondaryAction: { label: "Read about the project", href: "/about" },
       },
       evidenceNotice: {
@@ -534,28 +517,28 @@ export const enContent = {
       request: {
         title: "Do you hold a primary report or citation from HELP Math’s history?",
         body:
-          "Researchers and former partners may contact the project with bibliographic details or an authorized copy. Do not send student-level records or materials you do not have permission to share.",
-        action: { label: "Contact the research archive", href: "/contact?topic=research" },
+          "Researchers and former partners can check whether adult contact intake is open before preparing bibliographic details or an authorized copy. Do not send student-level records or materials you do not have permission to share.",
+        action: { label: "Check archive contact status", href: "/contact?topic=research" },
       },
     },
     resources: {
       metadata: {
         title: "Resources",
         description:
-          "Find reviewed HELP Math program, research, and modernization resources, or request an accessible copy from the project team.",
+          "Find reviewed HELP Math program, research, and modernization context and check the status of future resource requests.",
       },
       hero: {
         eyebrow: "Resource library",
         title: "Project materials with their context attached",
         summary:
           "The archive contains useful program and planning documents, but not every file is cleared or accessible for public download. Each item states what it is and how it should—and should not—be interpreted.",
-        primaryAction: { label: "Request a resource", href: "/contact?topic=resources" },
+        primaryAction: { label: "Check resource availability", href: "/contact?topic=resources" },
         secondaryAction: { label: "View research context", href: "/research" },
       },
       archiveNotice: {
         title: "Accessible publication is in progress",
         body:
-          "Source PDFs are being checked for ownership, sensitive content, accurate metadata, readable text order, headings, and image descriptions. Until that review is complete, request access through the project team.",
+          "Source PDFs are being checked for ownership, sensitive content, accurate metadata, readable text order, headings, and image descriptions. Contact intake and file availability are shown separately and may remain closed during review.",
       },
       filters: {
         ariaLabel: "Filter resources by category",
@@ -571,10 +554,10 @@ export const enContent = {
           format: "Archived PDF · Program",
           dateLabel: "Created in 2014",
           status: "request",
-          statusLabel: "Available by request",
+          statusLabel: "Publication pending",
           description:
             "Historical overview of intended learners, instructional design, curriculum descriptions, and the program’s evidence narrative. Counts and claims refer to a past product state.",
-          action: { label: "Request this document", href: "/contact?topic=resource-about-help-math" },
+          action: { label: "Check request availability", href: "/contact?topic=resource-about-help-math" },
         },
         {
           id: "html5-phase-one",
@@ -585,7 +568,7 @@ export const enContent = {
           statusLabel: "Accessibility review",
           description:
             "Historical proposal for a browser-technology update grounded in multimedia learning and sheltered-instruction concepts. Proposed work should not be read as completed functionality.",
-          action: { label: "Ask about this proposal", href: "/contact?topic=resource-html5-proposal" },
+          action: { label: "Check question availability", href: "/contact?topic=resource-html5-proposal" },
         },
         {
           id: "help-math-two-scope",
@@ -593,10 +576,10 @@ export const enContent = {
           format: "Archived PDF · Program",
           dateLabel: "Created in 2020",
           status: "request",
-          statusLabel: "Available by request",
+          statusLabel: "Publication pending",
           description:
             "A planning document for expanded content, diagnostics, learner supports, and platform capabilities. It represents a proposed scope rather than this site’s current feature set.",
-          action: { label: "Request this document", href: "/contact?topic=resource-help-math-2-scope" },
+          action: { label: "Check request availability", href: "/contact?topic=resource-help-math-2-scope" },
         },
         {
           id: "modernization-notes",
@@ -604,31 +587,31 @@ export const enContent = {
           format: "Web resource · Modernization",
           dateLabel: "Living project documentation",
           status: "available",
-          statusLabel: "Available on request",
+          statusLabel: "Access pending",
           description:
             "An overview of source preservation, learning-object recovery, validation, accessibility, and staged product planning.",
-          action: { label: "Request the current notes", href: "/contact?topic=modernization-notes" },
+          action: { label: "Check notes availability", href: "/contact?topic=modernization-notes" },
         },
       ],
       accessibleCopies: {
         title: "Need a different format?",
         body:
-          "Tell us which resource you need and the format that would make it usable. We will respond with what is currently available; we cannot guarantee immediate conversion of every archived file.",
-        action: { label: "Request an accessible copy", href: "/contact?topic=accessible-resource" },
+          "Check whether adult contact intake is open before preparing the resource name and format needed. Immediate conversion of archived files is not guaranteed.",
+        action: { label: "Check accessible-copy status", href: "/contact?topic=accessible-resource" },
       },
     },
     support: {
       metadata: {
         title: "Support",
         description:
-          "Get current HELP Math project status, answers for returning users, demo troubleshooting, and a safe route to contact the team.",
+          "Get current HELP Math project status, answers for returning users, demo-publication status, and a safe route to contact the team.",
       },
       hero: {
         eyebrow: "HELP Math support",
         title: "Start with what is available today",
         summary:
-          "The modern site offers project information and public JavaScript demos. Former student and educator accounts have not been reactivated, and this site cannot recover old passwords or learning records.",
-        primaryAction: { label: "Contact support", href: "/contact?topic=support" },
+          "The modern site offers project information and demo-publication status. JavaScript prototypes, former accounts, and contact intake are not public, and this site cannot recover old passwords or learning records.",
+        primaryAction: { label: "Check support availability", href: "/contact?topic=support" },
         secondaryAction: { label: "Check login status", href: "/login" },
       },
       currentStatus: {
@@ -646,8 +629,8 @@ export const enContent = {
             id: "demos",
             title: "JavaScript demos",
             description:
-              "Selected restored activities run in a modern browser and do not require Flash or a student account.",
-            detail: "Public preview",
+              "Review prototypes and extracted images remain private until rights and technical acceptance are documented.",
+            detail: "Not publicly available",
           },
           {
             id: "accounts",
@@ -664,44 +647,44 @@ export const enContent = {
           id: "old-login",
           question: "Can I use my old HELP Math username and password?",
           answer:
-            "No. The modern public site is not connected to the former account system. Do not enter or email an old password. An adult may contact support with an organization name and non-sensitive account context.",
+            "No. The modern public site is not connected to the former account system. Do not enter or email an old password. An adult may check the contact-status page using only an organization name and non-sensitive account context when intake opens.",
         },
         {
           id: "flash",
           question: "Do I need Flash or a special browser plug-in?",
           answer:
-            "No. Public activities on this site are modern JavaScript demonstrations. Original Flash files are preserved privately for restoration evidence and are not required for visitors.",
+            "No. Flash is not required to browse the public information site. Original Flash files and JavaScript review prototypes remain private evidence and are not served to visitors.",
         },
         {
           id: "full-course",
           question: "Is the full HELP Math course available?",
           answer:
-            "Not yet. The current release includes project information and selected demonstrations. Curriculum availability will be described only after source, rights, instructional, and accessibility reviews are complete.",
+            "Not yet. The current release includes project information but no public lesson demonstrations. Curriculum or demo availability will be described only after source, rights, instructional, and accessibility reviews are complete.",
         },
         {
           id: "student-help",
           question: "I am a student. How should I ask for help?",
           answer:
-            "Ask a teacher, parent, guardian, or another trusted adult to contact the project. Never send your password, birthday, student ID, grades, or class records through the form.",
+            "Ask a teacher, parent, guardian, or another trusted adult to check the project’s contact availability. Never send your password, birthday, student ID, grades, or class records through any public channel.",
         },
         {
           id: "purchase",
           question: "Can my school purchase HELP Math on this site?",
           answer:
-            "No. Online purchasing and public pricing are not part of this launch. An authorized school or organization representative may contact the project to discuss future access or collaboration.",
+            "No. Online purchasing and public pricing are not part of this launch. An authorized school or organization representative may check contact availability for future access or collaboration questions.",
         },
         {
           id: "demo-problem",
-          question: "What should I include in a demo problem report?",
+          question: "What should I include in a future demo problem report?",
           answer:
-            "Share the demo name, page address, device and browser, what you expected, and what happened. A screenshot without personal information can help. Do not include student work or credentials.",
+            "If demos are approved later, share the name, page address, device and browser, what you expected, and what happened. A screenshot without personal information can help. Do not include student work or credentials.",
         },
       ],
       contact: {
         title: "Still need help?",
         body:
-          "Send a short adult support request. We will use the email address you provide only to respond and manage the request as described in the privacy notice.",
-        action: { label: "Open the contact form", href: "/contact?topic=support" },
+          "The contact-status page states whether adult support requests are currently being accepted and what information must never be submitted.",
+        action: { label: "Check contact availability", href: "/contact?topic=support" },
       },
     },
     login: {
@@ -715,8 +698,8 @@ export const enContent = {
         title: "The former HELP Math login is not active here",
         summary:
           "This site is a public modernization preview. It has no student or educator sign-in form and is not connected to the historical account database.",
-        primaryAction: { label: "Contact account support", href: "/contact?topic=account-access" },
-        secondaryAction: { label: "Use the public demos", href: "/demos" },
+        primaryAction: { label: "Check account-support status", href: "/contact?topic=account-access" },
+        secondaryAction: { label: "Review demo status", href: "/demos" },
       },
       alert: {
         title: "Protect your old credentials",
@@ -731,22 +714,22 @@ export const enContent = {
             id: "student",
             title: "I am a student",
             description:
-              "Use the public demos without signing in. Ask a parent, guardian, teacher, or another trusted adult to contact us about an old account.",
-            action: { label: "Explore demos", href: "/demos" },
+              "Browse the public project information without signing in. Ask a parent, guardian, teacher, or another trusted adult to check contact availability about an old account.",
+            action: { label: "Review project status", href: "/about" },
           },
           {
             id: "educator",
             title: "I am an educator or school representative",
             description:
-              "Contact the project using your work email and organization name. Describe the kind of access or historical account information you need without sharing student data.",
-            action: { label: "Request support", href: "/contact?topic=account-access" },
+              "Check whether adult contact intake is open. If it is, use a work email and organization name and describe the need without sharing student data.",
+            action: { label: "Check support availability", href: "/contact?topic=account-access" },
           },
           {
             id: "family",
             title: "I am a parent or guardian",
             description:
-              "Tell us the school or organization connected with the former program and how we can help. Leave out passwords and student records.",
-            action: { label: "Contact the project", href: "/contact?topic=family-support" },
+              "Check whether adult contact intake is open before preparing the school or organization name. Leave out passwords and student records.",
+            action: { label: "Check contact availability", href: "/contact?topic=family-support" },
           },
         ],
       },
@@ -755,20 +738,20 @@ export const enContent = {
     },
     contact: {
       metadata: {
-        title: "Contact HELP Math",
+        title: "HELP Math Contact Availability",
         description:
-          "Send an adult support, resource, research, access, or collaboration request without sharing student records or account credentials.",
+          "Check whether HELP Math is accepting adult support, resource, research, access, or collaboration requests.",
       },
       hero: {
-        eyebrow: "Contact the project",
-        title: "Tell us what you are looking for",
+        eyebrow: "Contact availability",
+        title: "Check whether project requests are open",
         summary:
-          "Use this form for support, historical program questions, resource requests, research information, accessibility feedback, or future collaboration. It is not a student help desk or a secure channel for education records.",
+          "This page shows the current intake status for adult support, historical program questions, resources, research, accessibility feedback, and future collaboration. It is not a student help desk or a secure channel for education records.",
       },
       responseNote: {
-        title: "A small restoration team reviews each request",
+        title: "The status shown below is authoritative",
         body:
-          "We review legitimate messages as project capacity allows. Sending the form does not create an account, purchase, service agreement, or guarantee of access or a response by a particular date.",
+          "When verified intake is open, a small restoration team reviews legitimate adult messages as capacity allows. A message does not create an account, purchase, service agreement, or guaranteed response date.",
       },
       form: {
         title: "Send a message",
@@ -800,7 +783,7 @@ export const enContent = {
           { value: "other-adult", label: "Other adult" },
         ],
         topicOptions: [
-          { value: "support", label: "Website or demo support" },
+          { value: "support", label: "Website or future demo support" },
           { value: "account-access", label: "Historical account question" },
           { value: "curriculum", label: "Curriculum information" },
           { value: "resources", label: "Resource request" },
@@ -831,58 +814,35 @@ export const enContent = {
           "Do not include grades, assessment answers, disability information, birth dates, student IDs, class lists, usernames, passwords, or other education records. If a request requires protected information, an authorized representative must first arrange an approved secure process.",
       },
       studentNote:
-        "Students: please ask a teacher, parent, guardian, or another trusted adult to contact us for you.",
+        "Students: please ask a teacher, parent, guardian, or another trusted adult to check this page for you.",
     },
     demos: {
       metadata: {
-        title: "JavaScript Demonstrations",
+        title: "Demonstration Status",
         description:
-          "Explore review-stage browser-native restorations of selected HELP Math learning objects without Flash, sign-in, or student-data collection.",
+          "See the publication status of HELP Math browser-native prototypes while technical validation and rights review remain open.",
       },
       hero: {
-        eyebrow: "Restored demonstrations",
-        title: "Small learning objects, rebuilt with care",
+        eyebrow: "Demonstration review",
+        title: "Demos remain private while review is incomplete",
         summary:
-          "Each demonstration translates a selected legacy interaction into modern JavaScript while preserving the instructional sequence, visible language, timing, and replay behavior supported by the source evidence.",
-        primaryAction: { label: "Open the first demo", href: "/demos/conversion-1-2" },
-        secondaryAction: { label: "How restoration works", href: "/about#preservation" },
+          "The current JavaScript prototypes are kept in the private repository. No demo or extracted image is available on this public site until publication rights are documented and the required technical review is accepted.",
+        primaryAction: { label: "Read the preservation approach", href: "/about#preservation" },
+        secondaryAction: { label: "View project status", href: "/about" },
       },
       previewNotice: {
-        title: "These are public previews, not the complete HELP Math course",
+        title: "No public demo is currently approved",
         body:
-          "The demonstrations do not include enrollment, placement, assignments, scoring, or progress records. They collect no answers or student work and should not be used as a diagnostic assessment.",
+          "Source provenance alone does not establish publication rights or fidelity. Each prototype must receive written rights approval, complete the required validation, and record technical acceptance before its route and extracted assets can open.",
       },
-      listLabel: "Available demonstrations",
-      items: [
-        {
-          id: "conversion-1-2",
-          title: "Conversion 1.2",
-          summary:
-            "A frame-timed reconstruction that coordinates mathematical labels, visual change, and a repeatable explanatory sequence.",
-          conceptLabel: "Restoration focus",
-          concept: "Timeline, layout, text, and Replay fidelity",
-          statusLabel: "Conditional review preview",
-          statusDetail: "Available without sign-in",
-          action: { label: "Launch Conversion 1.2", href: "/demos/conversion-1-2" },
-        },
-        {
-          id: "conversion-1-4",
-          title: "Conversion 1.4",
-          summary:
-            "A second restored sequence showing how browser-native animation can preserve pacing and explanatory relationships.",
-          conceptLabel: "Restoration focus",
-          concept: "Responsive vector animation and Replay behavior",
-          statusLabel: "Conditional review preview",
-          statusDetail: "Available without sign-in",
-          action: { label: "Launch Conversion 1.4", href: "/demos/conversion-1-4" },
-        },
-      ],
+      listLabel: "Approved demonstrations",
+      items: [],
       quality: {
         id: "quality",
-        eyebrow: "Before a demo is published",
-        title: "Source evidence, behavior checks, and visual review",
+        eyebrow: "Required before publication",
+        title: "Rights approval, source evidence, behavior checks, and visual review",
         paragraphs: [
-          "A restoration is reviewed against the original authoring and runtime evidence available to the project. The team records the native stage, timeline, visible states, interactions, and known exceptions instead of treating approximate playback as proof of fidelity.",
+          "No current prototype has passed this gate. A future review must compare it with the original authoring and runtime evidence, record the native stage, timeline, visible states, interactions, and known exceptions, and never treat approximate playback as proof of fidelity.",
         ],
         bullets: [
           "Deterministic key-frame capture and visual comparison",
@@ -893,10 +853,10 @@ export const enContent = {
         ],
       },
       accessibility: {
-        title: "Need help using a demonstration?",
+        title: "Questions about future accessible demos?",
         body:
-          "Tell us which demonstration, browser, device, and interaction caused difficulty. Do not include student work or personal records.",
-        action: { label: "Send accessibility feedback", href: "/contact?topic=accessibility" },
+          "Check whether contact intake is open for questions about the planned review process. Do not include student work, personal records, or source files you are not authorized to share.",
+        action: { label: "Check feedback availability", href: "/contact?topic=accessibility" },
       },
     },
     demoDetails: {
@@ -904,19 +864,19 @@ export const enContent = {
         metadata: {
           title: "Conversion 1.2 Demonstration",
           description:
-            "Run the review-stage Conversion 1.2 HELP Math JavaScript restoration, review usage guidance, and learn the limits of this public preview.",
+            "Private review copy for the unvalidated Conversion 1.2 JavaScript reconstruction prototype.",
         },
-        eyebrow: "Restored learning object",
+        eyebrow: "Unvalidated reconstruction prototype",
         title: "Conversion 1.2",
         summary:
-          "This browser-native reconstruction preserves a compact explanatory sequence from the HELP Math archive with frame-based timing, scalable vector graphics, and deterministic Replay behavior.",
-        statusLabel: "Conditional review preview",
-        statusDetail: "Validation incomplete · No sign-in · No student-data collection",
+          "This browser-native prototype is an attempted reconstruction of an archived sequence. Its controls and frame states can be reviewed privately, but source fidelity has not been established by the required baseline, keyframe, or RMSE evidence.",
+        statusLabel: "Private review prototype",
+        statusDetail: "Not publicly released · Validation incomplete · Rights approval pending",
         instructionsTitle: "Before you begin",
         instructions: [
           "Watch how the labels and visual elements change together across the sequence.",
-          "Use Replay to return to the first frame and run the same sequence again.",
-          "Keyboard users can move focus to the Replay control and activate it with Enter or Space.",
+          "Use Play or Pause at any time, or Restart to return to the first frame and run the sequence again.",
+          "Use the frame control with a pointer or the arrow keys to inspect any instructional state without automatic motion.",
         ],
         playerLabel: "Conversion 1.2 interactive demonstration",
         loadingLabel: "Loading the demonstration…",
@@ -927,37 +887,38 @@ export const enContent = {
         restartLabel: "Restart from the beginning",
         pauseLabel: "Pause animation",
         playLabel: "Play animation",
+        frameLabel: "Animation frame",
         reducedMotionNote:
           "When reduced motion is enabled, the experience may limit automatic motion while keeping the instructional states available.",
         accessibilityTitle: "Access notes",
         accessibilityNotes: [
-          "The activity scales within the page while preserving its original stage proportions.",
+          "The activity uses the stage dimensions recorded by the partial machine audit.",
           "Visible controls support keyboard focus and activation.",
           "Important text remains part of the modern rendered experience rather than a plug-in surface.",
         ],
-        disclaimerTitle: "Demonstration limits",
+        disclaimerTitle: "Prototype limits",
         disclaimer:
-          "This is one restored learning object, not a complete lesson, course, assessment, or current claim of instructional effectiveness. It does not save responses, scores, or progress. Original Flash material remains private restoration evidence and is not served to visitors.",
+          "This private review implementation is not a completed or faithful migration, lesson, course, assessment, or current claim of instructional effectiveness. It does not save responses, scores, or progress. Original Flash material remains private evidence and is not served to visitors.",
         backAction: { label: "Back to all demonstrations", href: "/demos" },
-        supportAction: { label: "Report a problem", href: "/contact?topic=support" },
+        supportAction: { label: "Check problem-report status", href: "/contact?topic=support" },
       },
       "conversion-1-4": {
         metadata: {
           title: "Conversion 1.4 Demonstration",
           description:
-            "Run the Conversion 1.4 HELP Math JavaScript restoration, review usage guidance, and learn the limits of this public preview.",
+            "Private review copy for the unvalidated Conversion 1.4 JavaScript reconstruction prototype.",
         },
-        eyebrow: "Restored learning object",
+        eyebrow: "Unvalidated reconstruction prototype",
         title: "Conversion 1.4",
         summary:
-          "This second browser-native example demonstrates the project’s approach to translating instructional motion, labels, and timing into maintainable JavaScript.",
-        statusLabel: "Conditional review preview",
-        statusDetail: "Validation incomplete · No sign-in · No student-data collection",
+          "This second browser-native prototype is an attempted translation of archived motion, labels, and timing into maintainable JavaScript. Required visual and behavioral fidelity evidence is still incomplete.",
+        statusLabel: "Private review prototype",
+        statusDetail: "Not publicly released · Validation incomplete · Rights approval pending",
         instructionsTitle: "Before you begin",
         instructions: [
           "Follow the sequence from its opening state to the final explanatory state.",
-          "Use Replay to restart the activity after the sequence finishes.",
-          "Keyboard users can move focus to the Replay control and activate it with Enter or Space.",
+          "Use Play or Pause at any time, or Restart to return to the opening state.",
+          "Use the frame control with a pointer or the arrow keys to inspect any instructional state without automatic motion.",
         ],
         playerLabel: "Conversion 1.4 interactive demonstration",
         loadingLabel: "Loading the demonstration…",
@@ -968,32 +929,33 @@ export const enContent = {
         restartLabel: "Restart from the beginning",
         pauseLabel: "Pause animation",
         playLabel: "Play animation",
+        frameLabel: "Animation frame",
         reducedMotionNote:
           "When reduced motion is enabled, the experience may limit automatic motion while keeping the instructional states available.",
         accessibilityTitle: "Access notes",
         accessibilityNotes: [
-          "The activity maintains its intended proportions at different page sizes.",
+          "The activity uses the stage dimensions recorded by the partial machine audit.",
           "Visible controls support keyboard focus and activation.",
           "Text and controls are presented by the modern page rather than an obsolete plug-in.",
         ],
-        disclaimerTitle: "Demonstration limits",
+        disclaimerTitle: "Prototype limits",
         disclaimer:
-          "This is one restored learning object, not a complete lesson, course, assessment, or current claim of instructional effectiveness. It does not save responses, scores, or progress. Original Flash material remains private restoration evidence and is not served to visitors.",
+          "This private review implementation is not a completed or faithful migration, lesson, course, assessment, or current claim of instructional effectiveness. It does not save responses, scores, or progress. Original Flash material remains private evidence and is not served to visitors.",
         backAction: { label: "Back to all demonstrations", href: "/demos" },
-        supportAction: { label: "Report a problem", href: "/contact?topic=support" },
+        supportAction: { label: "Check problem-report status", href: "/contact?topic=support" },
       },
     },
     privacy: {
       metadata: {
         title: "Privacy Notice",
         description:
-          "Learn what the HELP Math public website collects, why contact information is used, and why visitors must not submit student records.",
+          "Learn what the HELP Math public website processes, what may be processed if verified contact intake opens, and why visitors must not submit student records.",
       },
       hero: {
         eyebrow: "Privacy notice",
         title: "A public preview designed to collect less",
         summary:
-          "The launch website provides information and demonstrations without student accounts or learning-data storage. This notice explains the limited data used to operate the site and respond to adult contact requests.",
+          "The website provides information and demo-publication status without student accounts or learning-data storage. This notice explains current operations and the limited data that would be used if verified adult contact intake opens.",
       },
       effectiveDateLabel: "Last updated",
       effectiveDate: "July 21, 2026",
@@ -1004,7 +966,7 @@ export const enContent = {
           id: "scope",
           title: "1. Scope",
           paragraphs: [
-            "This notice applies to the public HELP Math website at helpmath.ai, including informational pages, public demonstrations, and the contact form.",
+            "This notice applies to the public HELP Math website at helpmath.ai, including informational pages, demo-publication status, the contact-status page, and the verified form if intake is enabled.",
             "It does not describe a student learning platform, because accounts, classes, assignments, purchases, and student progress storage are not part of this launch.",
           ],
         },
@@ -1012,20 +974,20 @@ export const enContent = {
           id: "information",
           title: "2. Information we process",
           paragraphs: [
-            "You can browse the public content and use the demonstrations without giving us your name or creating an account.",
+            "You can browse the public informational content without giving us your name or creating an account.",
           ],
           bullets: [
-            "Contact information and message content you choose to submit, including role, name, email address, organization, topic, and message.",
+            "If verified contact intake is enabled, contact information and message content you choose to submit, including role, name, email address, organization, topic, and message.",
             "Limited technical information processed by our hosting, security, and performance services, such as request time, page, browser or device information, approximate network location, and IP address.",
-            "Anti-abuse signals needed to protect the contact form from automated submissions.",
+            "If the form is enabled, anti-abuse signals needed to protect it from automated submissions.",
           ],
         },
         {
           id: "use",
           title: "3. How we use information",
           paragraphs: [
-            "We use submitted and technical information to operate and secure the website, respond to requests, troubleshoot errors, understand aggregate site performance, and maintain an appropriate record of project correspondence.",
-            "We do not use the public contact form to create learner profiles, score student work, or make automated education decisions.",
+            "We use technical information to operate and secure the website, troubleshoot errors, and understand aggregate site performance. If intake opens, submitted information would also be used to respond and maintain an appropriate correspondence record.",
+            "Any public contact form is not used to create learner profiles, score student work, or make automated education decisions.",
           ],
         },
         {
@@ -1033,14 +995,14 @@ export const enContent = {
           title: "4. Student and sensitive information",
           paragraphs: [
             "Do not submit student names, grades, assessment responses, disability information, birthdays, student IDs, class lists, usernames, passwords, or other education records. The contact form is not an approved secure channel for this information.",
-            "Students should ask a teacher, parent, guardian, or another trusted adult to contact the project. If protected information is ever needed for a legitimate request, an authorized organization must first arrange a separate, reviewed process.",
+            "Students should ask a teacher, parent, guardian, or another trusted adult to check contact availability. If protected information is ever needed for a legitimate request, an authorized organization must first arrange a separate, reviewed process.",
           ],
         },
         {
           id: "sharing",
           title: "5. Service providers and disclosure",
           paragraphs: [
-            "We expect to use Vercel to host and monitor the website, Cloudflare Turnstile to reduce form abuse, and Resend to deliver contact messages. These providers may process limited information on our behalf under their own contractual and privacy terms.",
+            "We expect to use Vercel to host and monitor the website. If verified contact intake opens, Cloudflare Turnstile and Resend are expected to protect and deliver messages. These providers may process limited information on our behalf under their own terms.",
             "We do not sell personal information. We may disclose information when needed to provide support, protect the site or people, comply with law, or complete an organizational transition subject to appropriate safeguards.",
           ],
         },
@@ -1048,7 +1010,7 @@ export const enContent = {
           id: "retention",
           title: "6. Retention and security",
           paragraphs: [
-            "We retain contact messages only as long as reasonably needed to respond, maintain project records, resolve disputes, and meet legal or operational obligations. Hosting and security logs follow the configured retention periods of the relevant services.",
+            "If messages are accepted, they would be retained only as long as reasonably needed to respond, maintain project records, resolve disputes, and meet legal or operational obligations. Hosting and security logs follow the configured retention periods of the relevant services.",
             "We use reasonable administrative and technical safeguards, but no email, form, or internet transmission is guaranteed to be completely secure. This is another reason not to send sensitive records.",
           ],
         },
@@ -1056,14 +1018,14 @@ export const enContent = {
           id: "choices",
           title: "7. Your choices",
           paragraphs: [
-            "You may browse without using the contact form. You may also contact us to ask about access to, correction of, or deletion of information you submitted. We will respond as required by applicable law and may need to verify the request.",
+            "You may browse without using contact intake. If you previously submitted information through an enabled form, check the contact-status page for an available route to request access, correction, or deletion. Applicable verification may be required.",
           ],
         },
         {
           id: "international",
           title: "8. International visitors",
           paragraphs: [
-            "Our service providers may process information in the United States and other locations. Privacy rights and transfer requirements vary by location; contact us if you have a region-specific question.",
+            "Our service providers may process information in the United States and other locations. Privacy rights and transfer requirements vary by location; check contact availability for a region-specific question.",
           ],
         },
         {
@@ -1077,21 +1039,21 @@ export const enContent = {
       contact: {
         title: "Privacy question or request?",
         body:
-          "Use the contact form and choose Privacy question. Do not include sensitive records in the request.",
-        action: { label: "Contact the project", href: "/contact?topic=privacy" },
+          "Check whether verified contact intake is open. If it is, choose Privacy question and do not include sensitive records.",
+        action: { label: "Check contact availability", href: "/contact?topic=privacy" },
       },
     },
     terms: {
       metadata: {
         title: "Terms of Use",
         description:
-          "Read the terms for using the HELP Math public website, informational content, archived context, and JavaScript demonstrations.",
+          "Read the draft terms for using the HELP Math public website, informational content, archived context, and any future demonstrations.",
       },
       hero: {
         eyebrow: "Terms of use",
         title: "Use the public preview thoughtfully",
         summary:
-          "These terms cover the informational website and public demonstrations. They do not create a student account, school subscription, purchase, license to archived materials, or guarantee of future access.",
+          "These terms cover the informational website and would also apply to any future public demonstration unless a resource states otherwise. They do not create an account, subscription, purchase, license, or guarantee of future access.",
       },
       effectiveDateLabel: "Last updated",
       effectiveDate: "July 21, 2026",
@@ -1103,14 +1065,14 @@ export const enContent = {
           title: "1. Acceptance and eligibility",
           paragraphs: [
             "By using this website, you agree to these terms and the privacy notice. If you do not agree, do not use the site.",
-            "The contact form is intended for adults. Students should use public content with guidance appropriate to their setting and ask a teacher, parent, guardian, or another trusted adult to make contact requests.",
+            "Any enabled contact form is intended for adults. Students should use public content with appropriate guidance and ask a trusted adult to check contact availability.",
           ],
         },
         {
           id: "service",
           title: "2. What this site provides",
           paragraphs: [
-            "The site provides project information, historical context, support information, and selected JavaScript demonstrations during an active modernization effort.",
+            "The site currently provides project information, historical context, support status, and demo-publication status during an active modernization effort.",
             "It does not currently provide enrollment, student or educator accounts, classes, assignments, assessment, progress reporting, payments, or guaranteed access to the historical program.",
           ],
         },
@@ -1118,11 +1080,11 @@ export const enContent = {
           id: "acceptable-use",
           title: "3. Acceptable use",
           paragraphs: [
-            "You may access the public pages and demonstrations for personal evaluation, teaching review, and ordinary educational reference, subject to these terms and any notice shown with a resource.",
+            "You may access the public pages for personal evaluation, teaching review, and ordinary educational reference, subject to these terms and any notice shown with a resource.",
           ],
           bullets: [
             "Do not interfere with the site, bypass security or access controls, or overload its services.",
-            "Do not use automated systems to scrape, copy, or redistribute the archive or demonstrations at scale without written permission.",
+            "Do not use automated systems to scrape, copy, or redistribute the archive or any future demonstrations at scale without written permission.",
             "Do not upload malicious code, impersonate another person, or use the contact form for spam or unlawful activity.",
             "Do not submit student records, passwords, or other sensitive information.",
           ],
@@ -1131,15 +1093,15 @@ export const enContent = {
           id: "intellectual-property",
           title: "4. Intellectual property and archival material",
           paragraphs: [
-            "The website, project name, restored demonstrations, text, artwork, source materials, and other content may be protected by copyright, trademark, contract, or other rights. Public access does not transfer ownership or grant a right to republish, sell, modify, extract, or create a competing archive.",
-            "Historical names and materials may reflect rights held by their respective owners. Contact the project before using content beyond ordinary viewing or classroom evaluation.",
+            "The website, project name, any future demonstrations, text, artwork, source materials, and other content may be protected by copyright, trademark, contract, or other rights. Public access does not transfer ownership or grant a right to republish, sell, modify, extract, or create a competing archive.",
+            "Historical names and materials may reflect rights held by their respective owners. Check permissions-contact status before using content beyond ordinary viewing or classroom evaluation.",
           ],
         },
         {
           id: "educational-use",
           title: "5. Educational context",
           paragraphs: [
-            "The demonstrations are examples of restored instructional interactions, not a complete curriculum, diagnostic instrument, individualized intervention, or substitute for an educator’s judgment.",
+            "Any future demonstrations would be limited instructional examples, not a complete curriculum, diagnostic instrument, individualized intervention, or substitute for an educator’s judgment.",
             "Descriptions of historical research, awards, standards alignment, scope, or features are identified as archival context unless the site expressly states that a current claim has been verified.",
           ],
         },
@@ -1176,8 +1138,8 @@ export const enContent = {
       contact: {
         title: "Questions about permitted use?",
         body:
-          "Contact the project before copying, publishing, licensing, or distributing HELP Math materials beyond ordinary use of the public website.",
-        action: { label: "Ask about use or permissions", href: "/contact?topic=permissions" },
+          "Check permissions-contact status before copying, publishing, licensing, or distributing HELP Math materials beyond ordinary use of the public website.",
+        action: { label: "Check permissions-contact status", href: "/contact?topic=permissions" },
       },
     },
   },

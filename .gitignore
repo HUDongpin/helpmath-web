@@ -3,6 +3,7 @@ node_modules/
 .vercel/
 playwright-report/
 test-results/
+.playwright-cli/
 coverage/
 artifacts/
 *.tsbuildinfo

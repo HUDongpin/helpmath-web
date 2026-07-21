@@ -15,9 +15,9 @@ not a legal safe harbor or evidence that public demo rights have been cleared.
   and stay outside the sitemap.
 - The contact form remains unavailable and the API fails closed.
 - `helpprogram.net` remains on its existing host.
-- Public demo status remains `conditional`. Because those routes are already
-  public, the owner must promptly cite existing publication authority or
-  approve removal until that authority is documented.
+- Demo prototypes and extracted assets remain private. Their former public
+  routes now return non-indexable `404` responses until written publication
+  rights and technical acceptance are documented.
 - The private legacy payload remains local until unused Git LFS capacity is
   confirmed separately in the archive repository.
 
@@ -105,9 +105,11 @@ adaptation, Spanish localization, PNG derivatives, and Vercel/CDN distribution:
 | `conversion-1-2` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
 | `conversion-1-4` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
 
-For the two demos already online, record either the pre-existing authorization
-evidence or an explicit temporary-removal decision. A `conditional` technical
-validation label does not resolve copyright or license questions.
+The application implements the temporary-removal state for both previously
+online demos. Record pre-existing authorization evidence or a new approval
+before changing `public`, `publication.access`, or either approval field in
+`demos/SNAPSHOT.json`. A `conditional` technical label does not resolve
+copyright or license questions.
 
 Source hashes and fidelity evidence prove provenance and behavior; they do not
 by themselves prove publication rights.

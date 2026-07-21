@@ -8,6 +8,7 @@ describe('legacy HELP Program redirects', () => {
     const destinations = new Map(
       redirects.map((redirect) => [redirect.source, redirect.destination]),
     );
+    assert.equal(redirects.length, 65);
 
     assert.equal(destinations.get('/Home.htm'), '/');
     assert.equal(destinations.get('/Index.htm'), '/');
@@ -39,12 +40,48 @@ describe('legacy HELP Program redirects', () => {
       ],
       ['/HELP%20Math%20Correlations%20CCS%206%207%208.pdf', '/curriculum'],
       ['/HELP_Alignment_CO.pdf', '/curriculum'],
+      ['/About.htm', '/about'],
+      ['/Mph.htm', '/about'],
+      ['/Mth.htm', '/about'],
+      ['/Csh.htm', '/about'],
+      ['/Bah.htm', '/about'],
+      ['/Bdh.htm', '/about'],
+      ['/AcademicLanguage.htm', '/approach'],
+      ['/SIOP.htm', '/approach'],
+      ['/Sheltered.htm', '/approach'],
+      ['/Content.htm', '/curriculum'],
+      ['/Standards.htm', '/curriculum'],
+      ['/As.htm', '/curriculum'],
+      ['/Evidence.htm', '/research'],
+      ['/Awards.htm', '/research'],
+      ['/PR.htm', '/research'],
+      ['/Rb.htm', '/research'],
+      ['/onlineprogram.html', '/research'],
+      ['/CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf', '/research'],
+      ['/Codie%20Release%20DDI.pdf', '/research'],
+      ['/DDI%206-22-09NEWS%20RELEASE%20\\(final\\).pdf', '/research'],
+      ['/Tst.htm', '/resources'],
+      ['/Pd.htm', '/resources'],
+      ['/Resources.htm', '/resources'],
+      ['/Sales.htm', '/contact'],
+      ['/Trial.htm', '/contact'],
+      ['/Purchasing.htm', '/contact'],
+      ['/Pricing.htm', '/contact'],
+      ['/Gfs.htm', '/contact'],
       ['/district_login.aspx', '/login'],
       ['/school_login.aspx', '/login'],
       ['/student_login.aspx', '/login'],
       ['/teacher_login.aspx', '/login'],
       ['/user_studentlogin.aspx', '/login'],
+      ['/student_register.aspx', '/login'],
+      ['/teacher_register.aspx', '/login'],
+      ['/trialuser_login.aspx', '/login'],
+      ['/Project_Admin_Login.aspx', '/login'],
       ['/trial_register.aspx', '/contact'],
+      ['/Login.htm', '/login'],
+      ['/TechSpecs.htm', '/support'],
+      ['/Ti.htm', '/support'],
+      ['/Privacy.htm', '/privacy'],
     ] as const) {
       assert.equal(destinations.get(source), destination, source);
     }

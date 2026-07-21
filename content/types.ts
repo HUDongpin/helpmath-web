@@ -1,3 +1,7 @@
+import {demoIds, isDemoId, type DemoId} from '@/demos/catalog';
+
+export {demoIds, isDemoId, type DemoId};
+
 export const pageKeys = [
   "home",
   "about",
@@ -16,10 +20,6 @@ export const pageKeys = [
 export type PageKey = (typeof pageKeys)[number];
 
 export type Locale = "en" | "es";
-
-export const demoIds = ["conversion-1-2", "conversion-1-4"] as const;
-
-export type DemoId = (typeof demoIds)[number];
 
 export interface PageMetadata {
   title: string;
@@ -294,6 +294,7 @@ export interface DemoDetailContent {
   restartLabel: string;
   pauseLabel: string;
   playLabel: string;
+  frameLabel: string;
   reducedMotionNote: string;
   accessibilityTitle: string;
   accessibilityNotes: string[];

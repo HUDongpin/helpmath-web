@@ -204,6 +204,14 @@ function ReplayButton({ opacity, onReplay }) {
       onKeyDown={onKeyDown}
     >
       <rect
+        fill="transparent"
+        height="28"
+        pointerEvents="all"
+        width="94.5"
+        x="676.4"
+        y="5.4"
+      />
+      <rect
         x="678.4"
         y="9.2"
         width="90.5"
