@@ -186,6 +186,60 @@ export const enContent = {
           ],
         },
       ],
+      lineage: {
+        eyebrow: "Program lineage and collaborators",
+        title: "From HELP Math 1.0 to a proposed next generation",
+        intro:
+          "The links below distinguish historical program records, Boulder Learning’s current product context, and modernization relationships supplied by the HELP Math project team.",
+        items: [
+          {
+            id: "help-math-1",
+            period: "HELP Math 1.0 · Grades 3–8",
+            title: "A pre-pandemic online mathematics intervention",
+            paragraphs: [
+              "The archived HELP Math website described HELP Math 1.0 as a U.S. Department of Education-supported, research-based online intervention for English language learners, students with special needs, and other learners struggling with mathematics mastery.",
+              "That wording is historical context, not a claim that the former Flash-based service or its student accounts remain available today. The research record and important limitations are summarized on our Research page.",
+            ],
+            actions: [
+              {label: "Visit the HELP Math 1.0 archive", href: "https://www.helpprogram.net/"},
+              {label: "Read the archived awards page", href: "https://www.helpprogram.net/Awards.htm"},
+            ],
+            sourceNote:
+              "Source status: archived HELP Math pages. Descriptions such as “leading” are legacy self-descriptions and are not repeated here as current comparative claims.",
+          },
+          {
+            id: "boulder-learning",
+            period: "Boulder Learning · HELP Math 2.0 roadmap",
+            title: "The proposed upgrade builds on HELP Math 1.0",
+            paragraphs: [
+              "Boulder Learning currently lists HELP Math among its products. The company was created in 2017 through the merger of Boulder Language Technologies and Digital Directions International, bringing together work in speech, language, artificial intelligence, research, data science, and education technology.",
+              "Boulder Learning has publicly described HELP Math 2.0 as a planned next phase in updating and relaunching the original HELP Math platform—not as a completed product that is publicly available today.",
+            ],
+            actions: [
+              {label: "Explore Boulder Learning products", href: "https://www.boulderlearning.com/products"},
+              {label: "Read Boulder Learning’s history", href: "https://www.boulderlearning.com/about-us"},
+              {label: "Review the public 2.0 roadmap", href: "https://solve.mit.edu/solutions/88712"},
+            ],
+            sourceNote:
+              "Source status: Boulder Learning product/about pages and its MIT Solve submission. Proposed features remain a development roadmap until separately approved, built, and validated.",
+          },
+          {
+            id: "pedanova",
+            period: "Strategic modernization partnership",
+            title: "PedaNova and Dr. Peter Hu",
+            paragraphs: [
+              "Boulder Learning and PedaNova are strategic partners in the modernization of HELP Math 1.0 into HELP Math 2.0. PedaNova contributes educational research and application-development expertise to the collaboration.",
+              "PedaNova’s public website identifies Dr. Peter Hu (Hu Dongpin) as its founder and CEO. The partnership describes this HELP Math modernization initiative; it does not mean that every proposed HELP Math 2.0 feature has already been built or released.",
+            ],
+            actions: [
+              {label: "Visit PedaNova", href: "https://www.pedanova.tech/"},
+              {label: "Meet the PedaNova team", href: "https://www.pedanova.tech/team/"},
+            ],
+            sourceNote:
+              "Relationship status: bilateral strategic partnership confirmed for this project by Dr. Peter Hu, CEO of PedaNova, on July 21, 2026. Company and founder details come from PedaNova’s public website.",
+          },
+        ],
+      },
       principles: {
         eyebrow: "Modernization principles",
         title: "What guides each decision",
@@ -438,14 +492,14 @@ export const enContent = {
         eyebrow: "Research and evidence",
         title: "Keep the history visible—and the claims precise",
         summary:
-          "HELP Math’s archive includes research descriptions, grant materials, reviews, and awards from different periods. This page identifies them as historical evidence until each source and its present-day relevance can be independently checked.",
+          "HELP Math 1.0 has a substantial historical evidence record, including one randomized study that the U.S. Department of Education’s What Works Clearinghouse found met standards without reservations. Each result below is tied to its version, source, and limitations.",
         primaryAction: { label: "Check source-request status", href: "/contact?topic=research" },
         secondaryAction: { label: "Read about the project", href: "/about" },
       },
       evidenceNotice: {
-        title: "An archived statement is not a current effectiveness claim",
+        title: "Strong historical evidence—stated at the level the sources support",
         body:
-          "Dates, study populations, comparison conditions, outcome measures, product versions, and original reports matter. We do not reuse phrases such as “only,” “leading,” “highest rated,” or “research proven” without current, directly reviewable support.",
+          "The WWC rating applies to one HELP Math 1.0 study, not to every historical result or to the proposed HELP Math 2.0. Pilot percentages and awards remain clearly attributed to archived program records, and later peer-reviewed findings are included even when they are less favorable.",
       },
       entriesLabel: "Evidence register",
       entries: [
@@ -486,16 +540,67 @@ export const enContent = {
           sourceLabel: "Local archive: HELP Math 2.0 Scope.pdf",
         },
         {
-          id: "historical-review-records",
-          title: "Historical external reviews and awards",
-          dateLabel: "Dates and records under review",
-          status: "verification",
-          statusLabel: "Verification needed",
+          id: "wwc-tran-study",
+          title: "What Works Clearinghouse review of the Tran study",
+          dateLabel: "WWC single-study review · October 2012",
+          status: "verified",
+          statusLabel: "Official source verified",
           summary:
-            "Legacy pages refer to federal research review materials, education grants, media coverage, and industry awards.",
+            "The U.S. Department of Education’s What Works Clearinghouse reviewed a randomized controlled study of 146 English language learners in Grade 6 and higher. WWC found that the study met evidence standards without reservations and reported a statistically significant positive effect on mathematics achievement.",
           interpretation:
-            "These references will be dated and linked to primary records before they are presented as verified achievements on the modern site.",
-          sourceLabel: "Legacy website and project archive",
+            "WWC reported an effect size of 0.89 and an improvement index of +31. This is the strongest verified statement: one well-implemented HELP Math 1.0 study met WWC standards without reservations. It should not be restated as an award or a blanket product rating, and WWC did not validate the study’s grade-subgroup percentages.",
+          sourceLabel: "Primary source: U.S. Department of Education, Institute of Education Sciences, What Works Clearinghouse",
+          sourceActions: [
+            {label: "Open the WWC study record", href: "https://ies.ed.gov/ncee/wwc/Study/72999"},
+            {label: "Read the WWC review (PDF)", href: "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf"},
+          ],
+        },
+        {
+          id: "help-math-pilot",
+          title: "Archived Colorado pilot evaluation",
+          dateLabel: "Program evaluation white paper · May 2013",
+          status: "archived",
+          statusLabel: "Author-reported outcomes",
+          summary:
+            "The archived evaluation reports a 42.1% score increase for HELP Math students versus 4.6% for the control group. It reports Grade 6 gains of 75% versus 13% and Grade 7 gains of 71% versus 3%—figures summarized in legacy materials as averages of 73% versus 8%.",
+          interpretation:
+            "These percentages come from the program’s archived evaluation white paper and describe students retained in its final analytic sample. They are not additional WWC-validated subgroup findings and should not be generalized to HELP Math 2.0.",
+          sourceLabel: "Historical source: HELP Math Evaluation White Paper (May 2013)",
+          sourceActions: [
+            {label: "Read the archived evaluation (PDF)", href: "https://www.helpprogram.net/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf"},
+          ],
+        },
+        {
+          id: "crawford-2013",
+          title: "A larger randomized study adds important context",
+          dateLabel: "Computers in the Schools · 2013",
+          status: "verified",
+          statusLabel: "Peer-reviewed context",
+          summary:
+            "A separate randomized study of 396 English language learners found that both HELP Math and comparison groups improved, but it did not find an overall between-group main effect; reported subgroup patterns were not statistically significant.",
+          interpretation:
+            "Including this result prevents selective reporting. The historical evidence is promising and includes a WWC-qualified study, but it is not uniform across every evaluation, population, or outcome.",
+          sourceLabel: "Bibliographic source: ERIC record EJ1023032",
+          sourceActions: [
+            {label: "View the ERIC record", href: "https://eric.ed.gov/?id=EJ1023032"},
+          ],
+        },
+        {
+          id: "historical-awards-funding",
+          title: "2011 education-technology award and federal support",
+          dateLabel: "Legacy program pages · 2008–2013",
+          status: "verified",
+          statusLabel: "Sources reconciled",
+          summary:
+            "EdTech Digest’s official winners list identifies HELP Math as a 2011 Cool Tool Award winner in the special-needs category. HELP Math development was also supported in part through U.S. Department of Education funding.",
+          interpretation:
+            "The legacy site calls this a “National Award for Excellence in Education,” but that is not the award’s official name. Archived pages also conflict on the federal share—40% versus 46%—so the modern site does not select either percentage.",
+          sourceLabel: "Primary context: EdTech Digest winners list and U.S. Department of Education program/grant records",
+          sourceActions: [
+            {label: "View the EdTech Digest winners", href: "https://www.edtechdigest.com/winners/"},
+            {label: "Read the federal program report (PDF)", href: "https://files.eric.ed.gov/fulltext/ED530966.pdf"},
+            {label: "View the related IES grant", href: "https://ies.ed.gov/use-work/awards/math-learning-companion-individualized-intervention-students-math-learning-disabilities"},
+          ],
         },
       ],
       reviewPolicy: {

@@ -1,8 +1,8 @@
 import type {NextConfig} from 'next';
 
 import {DRAFT_LEGAL_PATHS} from './lib/legal-publishing';
-import {publicPagePaths} from './lib/public-paths';
-import {demoRoutes, indexableDemoRoutes} from './demos/catalog';
+import {routablePagePaths} from './lib/public-paths';
+import {demoRoutes, indexableDemoRoutes, reviewDemoRoutes} from './demos/catalog';
 
 const securityHeaders = [
   {
@@ -42,6 +42,22 @@ const conditionalDemoHeaders = demoRoutes
     source,
     headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]
   }));
+
+const executivePreviewHeaders = [
+  '/executive-preview',
+  '/es/executive-preview',
+  ...reviewDemoRoutes,
+  ...reviewDemoRoutes.map((route) => `/es${route}`),
+  '/api/executive-preview/:path*',
+  '/flash-assets/:path*',
+].map((source) => ({
+  source,
+  headers: [
+    {key: 'Cache-Control', value: 'private, no-store, max-age=0'},
+    {key: 'Vary', value: 'Cookie'},
+    {key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive'},
+  ],
+}));
 
 const nonIndexableLegacyPaths = [
   '/Images/Help_Slideshow.swf',
@@ -167,17 +183,24 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   reactStrictMode: true,
+  outputFileTracingIncludes: {
+    '/api/executive-preview/assets/[...asset]': ['./private-demo-assets/**/*'],
+    '/api/executive-preview/runtime/[id]': [
+      './.next-private/executive-demo-runtime/*.js',
+    ],
+  },
   async headers() {
     return [
       ...draftLegalHeaders,
       ...conditionalDemoHeaders,
+      ...executivePreviewHeaders,
       ...nonIndexableLegacyHeaders,
       {source: '/(.*)', headers: securityHeaders}
     ];
   },
   redirects: legacyRedirects,
   async rewrites() {
-    return publicPagePaths.map((source) => ({
+    return routablePagePaths.map((source) => ({
       source,
       destination: `/en${source === '/' ? '' : source}`,
     }));

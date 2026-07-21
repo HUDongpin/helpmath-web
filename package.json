@@ -5,17 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:executive-runtime && next build && npm run check:private-demo-traces && npm run check:private-demo-leaks",
+    "build:executive-runtime": "node scripts/build-executive-demo-runtime.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "npm run build:executive-runtime && tsx --test tests/**/*.test.ts",
     "test:e2e": "playwright test",
     "smoke:production": "node scripts/release-smoke.mjs",
     "generate:demos": "node scripts/generate-registry.mjs",
-    "check:generated": "npm run generate:demos && git diff --exit-code -- demos/registry.generated.ts"
+    "check:generated": "npm run generate:demos && git diff --exit-code -- demos/registry.generated.ts",
+    "check:private-demo-leaks": "node scripts/check-private-demo-leaks.mjs",
+    "check:private-demo-traces": "node scripts/verify-private-demo-traces.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/fredoka": "^5.3.0",
+    "@fontsource-variable/nunito-sans": "^5.3.0",
     "@marsidev/react-turnstile": "^1.5.3",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
@@ -31,6 +36,7 @@
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "esbuild": "0.28.1",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4.3.3",

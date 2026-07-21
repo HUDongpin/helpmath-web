@@ -20,12 +20,14 @@ npm audit --audit-level=high
 
 Two browser-native reconstruction prototypes are retained for private review.
 Original FLA/SWF evidence, Ruffle, migration catalogs, and the Flash workbench
-are not part of this repository or its deployment artifact. Review runtime
-files and image derivatives are pinned in `demos/SNAPSHOT.json`, but their
-public routes and direct assets return non-indexable `404` responses, while
-image-optimizer requests are rejected without image content. Publication
-requires documented rights plus the technical and visual acceptance recorded
-by that manifest.
+are not part of this repository or its deployment artifact. Reviewed runtime
+sources and image derivatives are pinned in `demos/SNAPSHOT.json`. Build-time
+runtime bundles and PNG derivatives are served only by authenticated,
+non-cacheable API handlers; unauthenticated demo pages return a non-indexable
+branded HTML `404`, while runtime and asset requests return empty `404`
+responses. Image-optimizer requests are rejected without image content.
+Publication requires documented rights plus
+the technical and visual acceptance recorded by that manifest.
 
 ## Deployment
 

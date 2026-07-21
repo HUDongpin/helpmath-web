@@ -128,12 +128,27 @@ export interface AboutContent {
   metadata: PageMetadata;
   hero: HeroContent;
   story: TextSection[];
+  lineage: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    items: ProgramLineageItem[];
+  };
   principles: {
     eyebrow: string;
     title: string;
     cards: FeatureCard[];
   };
   today: CalloutContent;
+}
+
+export interface ProgramLineageItem {
+  id: string;
+  period: string;
+  title: string;
+  paragraphs: string[];
+  actions: LinkContent[];
+  sourceNote: string;
 }
 
 export interface ApproachContent {
@@ -174,7 +189,7 @@ export interface CurriculumContent {
   closing: CalloutContent;
 }
 
-export type EvidenceStatus = "archived" | "verification" | "context";
+export type EvidenceStatus = "archived" | "verification" | "context" | "verified";
 
 export interface EvidenceEntry {
   id: string;
@@ -185,6 +200,7 @@ export interface EvidenceEntry {
   summary: string;
   interpretation: string;
   sourceLabel: string;
+  sourceActions?: LinkContent[];
 }
 
 export interface ResearchContent {

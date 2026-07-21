@@ -30,7 +30,7 @@ export default async function globalSetup(config: FullConfig) {
   });
 
   try {
-    const response = await context.get('/');
+    const response = await context.get('/', {maxRedirects: 0});
     if (!response.ok()) {
       throw new Error(`Protected Preview authentication returned HTTP ${response.status()}.`);
     }

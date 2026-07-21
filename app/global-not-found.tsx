@@ -1,5 +1,4 @@
 import type {Metadata} from 'next';
-import {Fredoka, Nunito_Sans} from 'next/font/google';
 import {headers} from 'next/headers';
 
 import {NotFoundPage} from '@/components/not-found-page';
@@ -12,18 +11,6 @@ import {LocaleProvider} from '@/i18n/navigation';
 import './globals.css';
 
 const INTERNAL_LOCALE_HEADER = 'x-helpmath-internal-locale';
-
-const displayFont = Fredoka({
-  display: 'swap',
-  subsets: ['latin'],
-  variable: '--font-fredoka',
-});
-
-const bodyFont = Nunito_Sans({
-  display: 'swap',
-  subsets: ['latin'],
-  variable: '--font-nunito',
-});
 
 async function getNotFoundLocale(): Promise<Locale> {
   return (await headers()).get(INTERNAL_LOCALE_HEADER) === 'es' ? 'es' : 'en';
@@ -49,7 +36,7 @@ export default async function GlobalNotFound() {
 
   return (
     <html lang={locale}>
-      <body className={`${displayFont.variable} ${bodyFont.variable}`}>
+      <body>
         <LocaleProvider locale={locale}>
           <a className="skip-link" href="#main-content">
             {content.skipToContent}

@@ -9,9 +9,9 @@ import {frameToElapsedMs} from '../runtime';
 
 const scenarios = Object.freeze([{id: 'default', label: 'Default timeline'}]);
 
-function Renderer({frame, lang, onReplay}: AnimationRendererProps) {
+function Renderer({frame, lang}: AnimationRendererProps) {
   return (
-    <AccessibleLegacyFrame frame={frame} kind="gallon" lang={lang} onReplay={onReplay}>
+    <AccessibleLegacyFrame frame={frame} kind="gallon" lang={lang}>
       <GallonConversionAnimation captureFrame={frame} spanishFormulaFlag={lang === 'es' ? 'on' : 'off'} />
     </AccessibleLegacyFrame>
   );

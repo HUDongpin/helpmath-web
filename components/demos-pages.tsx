@@ -1,79 +1,52 @@
-import {ArrowLeft, CheckCircle2, FlaskConical, ShieldCheck} from 'lucide-react';
+import {ArrowLeft, CheckCircle2, ShieldCheck} from 'lucide-react';
 
-import type {DemoDetailContent, DemoId, DemosContent, Locale} from '@/content/types';
+import type {DemoDetailContent, DemoId, Locale} from '@/content/types';
 import {Link} from '@/i18n/navigation';
 
 import {DemoPlayer} from './demo-player';
-import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
-import {PageHero} from './page-hero';
-import {TextSection} from './text-section';
-
-export function DemosPage({content}: {content: DemosContent}) {
-  return (
-    <>
-      <PageHero content={content.hero} tone="coral" />
-      <Section className="section--compact">
-        <Container>
-          <Callout {...content.previewNotice} tone="yellow" />
-        </Container>
-      </Section>
-      {content.items.length > 0 ? (
-        <Section>
-          <Container>
-            <Eyebrow>{content.listLabel}</Eyebrow>
-            <div className="demo-library">
-              {content.items.map((item, index) => (
-                <article className="demo-library__item" key={item.id}>
-                  <div className={`demo-library__number demo-library__number--${index + 1}`}>
-                    <FlaskConical aria-hidden="true" size={30} strokeWidth={1.9} />
-                    <span>0{index + 1}</span>
-                  </div>
-                  <div className="demo-library__copy">
-                    <div className="demo-library__meta">
-                      <span className="status-badge status-badge--verification">
-                        {item.statusLabel}
-                      </span>
-                      <span>{item.conceptLabel}: {item.concept}</span>
-                    </div>
-                    <h2>{item.title}</h2>
-                    <p>{item.summary}</p>
-                    <p className="demo-library__status">{item.statusDetail}</p>
-                  </div>
-                  <Action action={item.action} kind="secondary" />
-                </article>
-              ))}
-            </div>
-          </Container>
-        </Section>
-      ) : null}
-      <Section className="surface-blue">
-        <Container>
-          <TextSection content={content.quality} />
-          <Callout {...content.accessibility} tone="paper" />
-        </Container>
-      </Section>
-    </>
-  );
-}
+import {ExecutiveDemoRuntimeLoader} from './executive-demo-runtime-loader';
+import {Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
 export function DemoDetailPage({
   content,
   id,
   locale,
-  requestedFrame
+  requestedFrame,
+  reviewMode = false,
 }: {
   content: DemoDetailContent;
   id: DemoId;
   locale: Locale;
   requestedFrame?: number;
+  reviewMode?: boolean;
 }) {
+  const reviewNotice = locale === 'es'
+    ? 'Revisión ejecutiva interna. Este prototipo heredado no está validado como fiel o completo. El audio, la aceptación técnica y la revisión de derechos siguen pendientes. No se autoriza su distribución ni republicación pública.'
+    : 'Internal executive review. This legacy prototype is not validated as faithful or complete. Audio, technical acceptance, and rights review remain pending. Public distribution or republication is not approved.';
+  const backHref = reviewMode
+    ? (locale === 'es' ? '/es/executive-preview' : '/executive-preview')
+    : content.backAction.href;
+  const backLabel = reviewMode
+    ? (locale === 'es' ? 'Volver a la vista previa ejecutiva' : 'Back to executive preview')
+    : content.backAction.label;
+
   return (
     <>
+      {reviewMode ? (
+        <aside className="section--compact surface-yellow" role="note">
+          <Container>
+            <p className="eyebrow">
+              {locale === 'es' ? 'Solo revisión interna' : 'Internal review only'}
+            </p>
+            <p>{reviewNotice}</p>
+          </Container>
+        </aside>
+      ) : null}
       <header className="demo-detail-header">
         <Container>
-          <Link className="back-link" href={content.backAction.href}>
+          <Link className="back-link" href={backHref}>
             <ArrowLeft aria-hidden="true" size={18} />
-            {content.backAction.label}
+            {backLabel}
           </Link>
           <div className="demo-detail-header__grid">
             <div>
@@ -96,12 +69,21 @@ export function DemoDetailPage({
               <span>{content.playerLabel}</span>
               <span>{id.replace('conversion-', 'Conversion ')}</span>
             </div>
-            <DemoPlayer
-              content={content}
-              demoId={id}
-              locale={locale}
-              requestedFrame={requestedFrame}
-            />
+            {reviewMode ? (
+              <ExecutiveDemoRuntimeLoader
+                content={content}
+                demoId={id}
+                locale={locale}
+                requestedFrame={requestedFrame}
+              />
+            ) : (
+              <DemoPlayer
+                content={content}
+                demoId={id}
+                locale={locale}
+                requestedFrame={requestedFrame}
+              />
+            )}
           </div>
           <p className="demo-reduced-note">{content.reducedMotionNote}</p>
         </Container>

@@ -1,5 +1,4 @@
 import type {Metadata, Viewport} from 'next';
-import {Fredoka, Nunito_Sans} from 'next/font/google';
 import {notFound} from 'next/navigation';
 
 import {SiteFooter} from '@/components/site-footer';
@@ -11,18 +10,6 @@ import {routing} from '@/i18n/routing';
 import {getSiteUrl, SITE_DESCRIPTION, SITE_NAME} from '@/lib/site';
 
 import '../globals.css';
-
-const displayFont = Fredoka({
-  display: 'swap',
-  subsets: ['latin'],
-  variable: '--font-fredoka'
-});
-
-const bodyFont = Nunito_Sans({
-  display: 'swap',
-  subsets: ['latin'],
-  variable: '--font-nunito'
-});
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
@@ -63,7 +50,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${displayFont.variable} ${bodyFont.variable}`}>
+      <body>
         <LocaleProvider locale={appLocale}>
           <a className="skip-link" href="#main-content">
             {content.skipToContent}

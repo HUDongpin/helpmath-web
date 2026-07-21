@@ -3,7 +3,7 @@ import {expect, test, type Page} from '@playwright/test';
 
 type RuntimeIssue = {kind: 'console' | 'page'; message: string};
 
-const privateDemoAssets = [
+const closedLegacyDemoAssets = [
   '/flash-assets/conversion-1-2/gallon-0.png',
   '/flash-assets/conversion-1-2/gallon-32.png',
   '/flash-assets/conversion-1-2/gallon-64.png',
@@ -17,6 +17,26 @@ const privateDemoAssets = [
   '/flash-assets/pitcher-back.png',
   '/flash-assets/pitcher-front.png',
 ] as const;
+const executivePreviewAssets = [
+  '/api/executive-preview/assets/conversion-1-2/gallon-0.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-32.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-64.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-96.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-128.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-empty-stage.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-full-stage.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-pouring-empty.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-pouring-full.png',
+  '/api/executive-preview/assets/conversion-1-4/cylinder-base.png',
+  '/api/executive-preview/assets/conversion-1-4/pitcher-back.png',
+  '/api/executive-preview/assets/conversion-1-4/pitcher-front.png',
+] as const;
+const executivePreviewRuntimes = [
+  '/api/executive-preview/runtime/conversion-1-2.js',
+  '/api/executive-preview/runtime/conversion-1-4.js',
+] as const;
+const executivePreviewAccessKey =
+  process.env.PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
 
 function monitorRuntimeIssues(page: Page): RuntimeIssue[] {
   const issues: RuntimeIssue[] = [];
@@ -140,6 +160,53 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
 });
 
+test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  await expectDocument(page, '/about', 'en');
+
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'From HELP Math 1.0 to a proposed next generation'}),
+  ).toBeVisible();
+  for (const href of [
+    'https://www.helpprogram.net/',
+    'https://www.boulderlearning.com/products',
+    'https://www.boulderlearning.com/about-us',
+    'https://solve.mit.edu/solutions/88712',
+    'https://www.pedanova.tech/',
+    'https://www.pedanova.tech/team/',
+  ]) {
+    await expect(page.locator(`a[href="${href}"]`), href).toHaveCount(1);
+  }
+  await expect(page.getByText(/are strategic partners in the modernization of HELP Math 1\.0 into HELP Math 2\.0/i)).toBeVisible();
+  await expect(page.getByText(/planned next phase in updating and relaunching/i)).toBeVisible();
+
+  await expectDocument(page, '/es/about', 'es');
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'De HELP Math 1.0 a una nueva generación propuesta'}),
+  ).toBeVisible();
+  await expect(page.locator('a[href="https://www.boulderlearning.com/products"]')).toHaveCount(1);
+  await expect(page.locator('a[href="https://www.pedanova.tech/"]')).toHaveCount(1);
+  await expect(page.getByText(/son socios estratégicos en la modernización de HELP Math 1\.0 hacia HELP Math 2\.0/i)).toBeVisible();
+  expectNoRuntimeIssues(issues);
+});
+
+test('research register cites WWC and preserves both positive and limiting historical evidence', async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  await expectDocument(page, '/research', 'en');
+
+  await expect(page.getByRole('heading', {level: 2, name: /What Works Clearinghouse review/i})).toBeVisible();
+  await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
+  await expect(page.locator('a[href="https://eric.ed.gov/?id=EJ1023032"]')).toHaveCount(1);
+  await expect(page.getByText(/42\.1% score increase/i)).toBeVisible();
+  await expect(page.getByText(/did not find an overall between-group main effect/i)).toBeVisible();
+  await expect(page.getByText(/should not be restated as an award/i)).toBeVisible();
+
+  await expectDocument(page, '/es/research', 'es');
+  await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
+  await expect(page.getByText(/no encontró un efecto principal general/i)).toBeVisible();
+  expectNoRuntimeIssues(issues);
+});
+
 test('mobile navigation opens at a phone viewport and reaches a primary route', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await page.setViewportSize({width: 390, height: 844});
@@ -234,26 +301,191 @@ test('private demo routes and extracted assets fail closed', async ({request}) =
     const response = await request.get(path, {maxRedirects: 0});
     const html = await response.text();
     expect(response.status(), path).toBe(404);
-    expect(response.headers()['x-robots-tag'], path).toBe('noindex, nofollow');
+    expect(response.headers()['x-robots-tag'], path).toContain('noindex');
+    expect(response.headers()['x-robots-tag'], path).toContain('nofollow');
+    expect(response.headers()['cache-control'], path).toContain('no-store');
     expect(response.headers()['content-type'], path).toContain('text/html');
     expect(html, path).toContain(heading);
   }
 
-  for (const asset of privateDemoAssets) {
+  for (const asset of [...closedLegacyDemoAssets, ...executivePreviewAssets]) {
     const response = await request.get(asset, {maxRedirects: 0});
     expect(response.status(), asset).toBe(404);
-    expect(response.headers()['x-robots-tag'], asset).toBe('noindex, nofollow');
-    expect(response.headers()['content-type'], asset).not.toContain('image/');
+    expect(response.headers()['x-robots-tag'], asset).toContain('noindex');
+    expect(response.headers()['x-robots-tag'], asset).toContain('nofollow');
+    expect(response.headers()['cache-control'], asset).toContain('no-store');
+    expect(response.headers()['content-type'] ?? '', asset).not.toContain('image/');
+  }
+
+  for (const runtime of executivePreviewRuntimes) {
+    const response = await request.get(runtime, {maxRedirects: 0});
+    expect(response.status(), runtime).toBe(404);
+    expect(response.headers()['x-robots-tag'], runtime).toContain('noindex');
+    expect(response.headers()['cache-control'], runtime).toContain('no-store');
+    expect(response.headers()['content-type'] ?? '', runtime).not.toContain('javascript');
   }
 
   for (const optimizerPath of [
     '/_next/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
     '/_vercel/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
+    '/_next/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
+    '/_vercel/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
   ] as const) {
     const response = await request.get(optimizerPath, {maxRedirects: 0});
     expect(response.status(), optimizerPath).not.toBe(200);
     expect(response.headers()['content-type'] ?? '', optimizerPath).not.toContain('image/');
   }
+});
+
+test('executive preview grants a short-lived private session for both JavaScript demos', async ({
+  page,
+}) => {
+  test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
+  const issues = monitorRuntimeIssues(page);
+  await page.emulateMedia({reducedMotion: 'no-preference'});
+
+  const entryResponse = await page.goto(
+    '/executive-preview?returnTo=/demos/conversion-1-2',
+    {waitUntil: 'networkidle'},
+  );
+  expect(entryResponse?.status()).toBe(200);
+  expect(entryResponse?.headers()['x-robots-tag']).toContain('noindex');
+  expect(entryResponse?.headers()['cache-control']).toContain('no-store');
+  await expect(
+    page.getByRole('heading', {level: 1, name: 'HELP Math JavaScript demo preview'}),
+  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+
+  await page.getByLabel('Executive preview passphrase').fill(executivePreviewAccessKey!);
+  await Promise.all([
+    page.waitForURL((url) =>
+      url.pathname === '/demos/conversion-1-2' && url.search === ''
+    ),
+    page.getByRole('button', {name: 'Open private preview'}).click(),
+  ]);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByText('Internal review only', {exact: true})).toBeVisible();
+  await expect(page.getByRole('heading', {level: 1, name: 'Conversion 1.2'})).toBeVisible();
+  await expect(page.getByRole('link', {name: 'Back to executive preview'})).toHaveAttribute(
+    'href',
+    '/executive-preview',
+  );
+  await expect(page.locator('.demo-player')).toHaveAttribute('data-playback-state', 'paused');
+  const firstSlider = page.getByRole('slider', {name: 'Animation frame'});
+  await expect(firstSlider).toHaveAttribute('max', '109');
+  await page.getByRole('button', {name: 'Play animation'}).click();
+  await expect(page.locator('.demo-player')).toHaveAttribute('data-playback-state', 'playing');
+  await firstSlider.fill('109');
+  await expect(page.locator('.flash-replay')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.locator('.flash-replay')).toHaveAttribute('tabindex', '-1');
+  const restartButton = page.getByRole('button', {name: 'Restart from the beginning'});
+  await restartButton.focus();
+  const scrollBeforeRestart = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press('Space');
+  await expect(restartButton).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeRestart);
+
+  const authenticatedRequest = page.context().request;
+  for (const asset of executivePreviewAssets) {
+    const response = await authenticatedRequest.get(asset);
+    expect(response.status(), asset).toBe(200);
+    expect(response.headers()['content-type'], asset).toContain('image/png');
+    expect(response.headers()['cache-control'], asset).toContain('no-store');
+    expect(response.headers()['x-robots-tag'], asset).toContain('noindex');
+  }
+  for (const runtime of executivePreviewRuntimes) {
+    const response = await authenticatedRequest.get(runtime);
+    expect(response.status(), runtime).toBe(200);
+    expect(response.headers()['content-type'], runtime).toContain('javascript');
+    expect(response.headers()['cache-control'], runtime).toContain('no-store');
+    expect(response.headers()['x-robots-tag'], runtime).toContain('noindex');
+    expect((await response.body()).byteLength, runtime).toBeGreaterThan(0);
+  }
+
+  await page.getByRole('link', {name: 'Back to executive preview'}).click();
+  await expect(page).toHaveURL(/\/executive-preview$/);
+  await expect(page.getByRole('link', {name: 'Open prototype: Conversion 1.2'})).toBeVisible();
+  const secondDemoLink = page.getByRole('link', {name: 'Open prototype: Conversion 1.4'});
+  await expect(secondDemoLink).toHaveAttribute('href', '/demos/conversion-1-4');
+  await secondDemoLink.click();
+  await expect(page.getByRole('heading', {level: 1, name: 'Conversion 1.4'})).toBeVisible();
+  await expect(page.getByRole('slider', {name: 'Animation frame'})).toHaveAttribute('max', '67');
+
+  await page.goto('/executive-preview', {waitUntil: 'networkidle'});
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/executive-preview' && url.search === ''),
+    page.getByRole('button', {name: 'End private session'}).click(),
+  ]);
+  await expect(page.getByLabel('Executive preview passphrase')).toBeVisible();
+
+  await page.goto('/es/executive-preview?returnTo=/demos/conversion-1-4', {
+    waitUntil: 'networkidle',
+  });
+  await page.getByLabel('Frase de acceso para la vista previa ejecutiva').fill(
+    executivePreviewAccessKey!,
+  );
+  await Promise.all([
+    page.waitForURL((url) =>
+      url.pathname === '/es/demos/conversion-1-4' && url.search === ''
+    ),
+    page.getByRole('button', {name: 'Abrir vista previa privada'}).click(),
+  ]);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(page.getByText('Solo revisión interna', {exact: true})).toBeVisible();
+  await expect(page.locator('output').filter({hasText: 'Fotograma 1 de 67'})).toBeAttached();
+  await expect(page.locator('g[aria-label="1 liter = 1000 milliliters"]')).toHaveCount(0);
+  await page.setViewportSize({width: 390, height: 844});
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+  ).toBeLessThanOrEqual(1);
+  const authenticatedAccessibility = await new AxeBuilder({page})
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  expect(
+    authenticatedAccessibility.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+
+  await page.goto('/es/executive-preview', {waitUntil: 'networkidle'});
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/es/executive-preview' && url.search === ''),
+    page.getByRole('button', {name: 'Cerrar sesión privada'}).click(),
+  ]);
+  const deniedAfterLogout = await authenticatedRequest.get('/demos/conversion-1-2', {
+    maxRedirects: 0,
+  });
+  expect(deniedAfterLogout.status()).toBe(404);
+  expect((await authenticatedRequest.get(executivePreviewRuntimes[0])).status()).toBe(404);
+  expect((await authenticatedRequest.get(executivePreviewAssets[0])).status()).toBe(404);
+  expectNoRuntimeIssues(issues);
+});
+
+test('executive preview reports an invalid passphrase at the input', async ({page}) => {
+  test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
+
+  await page.goto('/executive-preview?returnTo=/demos/conversion-1-2', {
+    waitUntil: 'networkidle',
+  });
+  const passphrase = page.getByLabel('Executive preview passphrase');
+  await passphrase.fill('incorrect-executive-preview-key');
+  await Promise.all([
+    page.waitForURL((url) =>
+      url.pathname === '/executive-preview' && url.searchParams.get('error') === '1'
+    ),
+    page.getByRole('button', {name: 'Open private preview'}).click(),
+  ]);
+
+  await expect(page.locator('#executive-preview-login-error')).toContainText(
+    'Access could not be verified',
+  );
+  await expect(passphrase).toBeFocused();
+  await expect(passphrase).toHaveAttribute('aria-invalid', 'true');
+  await expect(passphrase).toHaveAttribute(
+    'aria-describedby',
+    'executive-preview-login-help executive-preview-login-error',
+  );
 });
 
 test('unknown routes return a non-indexable branded 404 response', async ({page}) => {
@@ -401,6 +633,8 @@ test('representative content and status pages do not overflow a phone viewport',
     '/es/resources',
     '/demos',
     '/es/demos',
+    '/executive-preview',
+    '/es/executive-preview',
   ] as const) {
     await expectDocument(page, path, path.startsWith('/es') ? 'es' : 'en');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -415,6 +649,9 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   const robotsText = await robots.text();
   expect(robotsText).toContain('User-Agent: *');
   expect(robotsText).toContain('Disallow: /api/');
+  expect(robotsText).toContain('Disallow: /executive-preview');
+  expect(robotsText).toContain('Disallow: /demos/conversion-1-2');
+  expect(robotsText).toContain('Disallow: /flash-assets/');
   expect(robotsText).toContain('Sitemap: https://www.helpmath.ai/sitemap.xml');
 
   const sitemap = await request.get('/sitemap.xml');
@@ -426,6 +663,7 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   expect(sitemapText).toContain('hreflang="x-default"');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/demos/conversion-1-2');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/es/demos/conversion-1-4');
+  expect(sitemapText).not.toContain('executive-preview');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/privacy');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/terms');
   expect(sitemapText).not.toContain('https://www.helpmath.ai/es/privacy');
@@ -453,6 +691,7 @@ for (const path of [
   '/login',
   '/contact',
   '/demos',
+  '/executive-preview',
 ] as const) {
   test(`${path} has no serious or critical axe violations`, async ({page}) => {
     const issues = monitorRuntimeIssues(page);

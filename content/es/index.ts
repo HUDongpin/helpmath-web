@@ -186,6 +186,60 @@ export const esContent = {
           ],
         },
       ],
+      lineage: {
+        eyebrow: "Historia del programa y colaboradores",
+        title: "De HELP Math 1.0 a una nueva generación propuesta",
+        intro:
+          "Los enlaces siguientes distinguen los registros históricos del programa, el contexto actual de Boulder Learning y las relaciones de modernización comunicadas por el equipo del proyecto HELP Math.",
+        items: [
+          {
+            id: "help-math-1",
+            period: "HELP Math 1.0 · Grados 3–8",
+            title: "Una intervención matemática en línea anterior a la pandemia",
+            paragraphs: [
+              "El sitio archivado describía HELP Math 1.0 como una intervención en línea basada en investigación y apoyada por el Departamento de Educación de Estados Unidos para estudiantes de inglés, alumnado con necesidades especiales y otras personas con dificultades para dominar las matemáticas.",
+              "Esta redacción ofrece contexto histórico; no afirma que el antiguo servicio basado en Flash ni sus cuentas estudiantiles sigan disponibles. La página de Investigación resume la evidencia y sus limitaciones importantes.",
+            ],
+            actions: [
+              {label: "Visitar el archivo de HELP Math 1.0", href: "https://www.helpprogram.net/"},
+              {label: "Leer la página histórica de premios", href: "https://www.helpprogram.net/Awards.htm"},
+            ],
+            sourceNote:
+              "Estado de las fuentes: páginas archivadas de HELP Math. Descripciones como «líder» son autoafirmaciones históricas y no se repiten aquí como comparaciones actuales.",
+          },
+          {
+            id: "boulder-learning",
+            period: "Boulder Learning · Hoja de ruta de HELP Math 2.0",
+            title: "La actualización propuesta parte de HELP Math 1.0",
+            paragraphs: [
+              "Boulder Learning incluye actualmente HELP Math entre sus productos. La empresa se creó en 2017 mediante la fusión de Boulder Language Technologies y Digital Directions International, reuniendo trabajo en habla, lenguaje, inteligencia artificial, investigación, ciencia de datos y tecnología educativa.",
+              "Boulder Learning ha descrito públicamente HELP Math 2.0 como una futura fase planificada para actualizar y relanzar la plataforma original, no como un producto terminado que ya esté disponible públicamente.",
+            ],
+            actions: [
+              {label: "Explorar los productos de Boulder Learning", href: "https://www.boulderlearning.com/products"},
+              {label: "Leer la historia de Boulder Learning", href: "https://www.boulderlearning.com/about-us"},
+              {label: "Revisar la hoja de ruta pública de 2.0", href: "https://solve.mit.edu/solutions/88712"},
+            ],
+            sourceNote:
+              "Estado de las fuentes: páginas de productos e historia de Boulder Learning y su propuesta en MIT Solve. Las funciones propuestas siguen siendo una hoja de ruta hasta su aprobación, construcción y validación independientes.",
+          },
+          {
+            id: "pedanova",
+            period: "Alianza estratégica de modernización",
+            title: "PedaNova y el Dr. Peter Hu",
+            paragraphs: [
+              "Boulder Learning y PedaNova son socios estratégicos en la modernización de HELP Math 1.0 hacia HELP Math 2.0. PedaNova aporta a la colaboración experiencia en investigación educativa y desarrollo de aplicaciones.",
+              "El sitio público de PedaNova identifica al Dr. Peter Hu (Hu Dongpin) como fundador y director ejecutivo. La alianza se refiere a esta iniciativa de modernización de HELP Math; no significa que todas las funciones propuestas de HELP Math 2.0 ya estén construidas o publicadas.",
+            ],
+            actions: [
+              {label: "Visitar PedaNova", href: "https://www.pedanova.tech/"},
+              {label: "Conocer al equipo de PedaNova", href: "https://www.pedanova.tech/team/"},
+            ],
+            sourceNote:
+              "Estado de la relación: alianza estratégica bilateral confirmada para este proyecto por el Dr. Peter Hu, director ejecutivo de PedaNova, el 21 de julio de 2026. Los datos de la empresa y su fundador proceden del sitio público de PedaNova.",
+          },
+        ],
+      },
       principles: {
         eyebrow: "Principios de modernización",
         title: "Qué orienta cada decisión",
@@ -438,14 +492,14 @@ export const esContent = {
         eyebrow: "Investigación y evidencia",
         title: "Mantener visible la historia y precisar las afirmaciones",
         summary:
-          "El archivo de HELP Math incluye descripciones de investigaciones, materiales de subvenciones, reseñas y premios de distintos periodos. Esta página los identifica como evidencia histórica hasta poder comprobar cada fuente y su relevancia actual de manera independiente.",
+          "HELP Math 1.0 cuenta con un registro histórico sustancial, incluido un estudio aleatorizado que el What Works Clearinghouse del Departamento de Educación de Estados Unidos consideró que cumplía sus normas sin reservas. Cada resultado se vincula con su versión, fuente y limitaciones.",
         primaryAction: { label: "Comprobar solicitudes de fuentes", href: "/es/contact?topic=research" },
         secondaryAction: { label: "Conocer el proyecto", href: "/es/about" },
       },
       evidenceNotice: {
-        title: "Una declaración archivada no es una afirmación actual de eficacia",
+        title: "Evidencia histórica sólida, expresada al nivel que permiten las fuentes",
         body:
-          "Importan las fechas, poblaciones del estudio, condiciones de comparación, medidas de resultados, versiones del producto e informes originales. No reutilizamos expresiones como «único», «líder», «mejor calificado» o «probado por la investigación» sin respaldo actual que pueda revisarse directamente.",
+          "La calificación de WWC se aplica a un estudio de HELP Math 1.0, no a todos los resultados históricos ni a HELP Math 2.0 propuesto. Los porcentajes piloto y los premios se atribuyen claramente a registros archivados, e incluimos resultados posteriores aunque sean menos favorables.",
       },
       entriesLabel: "Registro de evidencia",
       entries: [
@@ -486,16 +540,67 @@ export const esContent = {
           sourceLabel: "Archivo local: HELP Math 2.0 Scope.pdf",
         },
         {
-          id: "historical-review-records",
-          title: "Reseñas y premios externos históricos",
-          dateLabel: "Fechas y registros en revisión",
-          status: "verification",
-          statusLabel: "Requiere verificación",
+          id: "wwc-tran-study",
+          title: "Revisión del estudio de Tran por What Works Clearinghouse",
+          dateLabel: "Revisión de un estudio por WWC · octubre de 2012",
+          status: "verified",
+          statusLabel: "Fuente oficial verificada",
           summary:
-            "Las páginas antiguas aluden a materiales federales de revisión de investigaciones, subvenciones educativas, cobertura periodística y premios del sector.",
+            "What Works Clearinghouse, del Departamento de Educación de Estados Unidos, revisó un estudio aleatorizado de 146 estudiantes de inglés de sexto grado en adelante. WWC determinó que el estudio cumplía sus normas de evidencia sin reservas e informó un efecto positivo estadísticamente significativo en rendimiento matemático.",
           interpretation:
-            "Estas referencias se fecharán y vincularán con registros primarios antes de presentarlas como logros verificados en el sitio moderno.",
-          sourceLabel: "Sitio antiguo y archivo del proyecto",
+            "WWC informó un tamaño del efecto de 0,89 y un índice de mejora de +31. Esta es la afirmación verificada más sólida: un estudio bien implementado de HELP Math 1.0 cumplió las normas de WWC sin reservas. No debe presentarse como un premio ni como una calificación general del producto; WWC tampoco validó los porcentajes por grado.",
+          sourceLabel: "Fuente primaria: Departamento de Educación de Estados Unidos, Institute of Education Sciences, What Works Clearinghouse",
+          sourceActions: [
+            {label: "Abrir el registro del estudio en WWC", href: "https://ies.ed.gov/ncee/wwc/Study/72999"},
+            {label: "Leer la revisión de WWC (PDF)", href: "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf"},
+          ],
+        },
+        {
+          id: "help-math-pilot",
+          title: "Evaluación piloto archivada de Colorado",
+          dateLabel: "Informe de evaluación del programa · mayo de 2013",
+          status: "archived",
+          statusLabel: "Resultados declarados por los autores",
+          summary:
+            "La evaluación archivada informa un aumento del 42,1% para estudiantes de HELP Math frente al 4,6% del grupo de control. Informa aumentos de 75% frente a 13% en sexto grado y 71% frente a 3% en séptimo, cifras resumidas en materiales históricos como promedios de 73% frente a 8%.",
+          interpretation:
+            "Estos porcentajes proceden del informe de evaluación archivado y describen al alumnado retenido en la muestra analítica final. No son resultados de subgrupos validados adicionalmente por WWC ni deben generalizarse a HELP Math 2.0.",
+          sourceLabel: "Fuente histórica: HELP Math Evaluation White Paper (mayo de 2013)",
+          sourceActions: [
+            {label: "Leer la evaluación archivada (PDF)", href: "https://www.helpprogram.net/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf"},
+          ],
+        },
+        {
+          id: "crawford-2013",
+          title: "Un estudio aleatorizado mayor aporta contexto importante",
+          dateLabel: "Computers in the Schools · 2013",
+          status: "verified",
+          statusLabel: "Contexto revisado por pares",
+          summary:
+            "Otro estudio aleatorizado de 396 estudiantes de inglés halló que tanto HELP Math como los grupos de comparación mejoraron, pero no encontró un efecto principal general entre los grupos; los patrones por subgrupos comunicados no fueron estadísticamente significativos.",
+          interpretation:
+            "Incluir este resultado evita una selección parcial de la evidencia. El registro histórico es prometedor e incluye un estudio calificado por WWC, pero no es uniforme en todas las evaluaciones, poblaciones o medidas.",
+          sourceLabel: "Fuente bibliográfica: registro ERIC EJ1023032",
+          sourceActions: [
+            {label: "Ver el registro de ERIC", href: "https://eric.ed.gov/?id=EJ1023032"},
+          ],
+        },
+        {
+          id: "historical-awards-funding",
+          title: "Premio de tecnología educativa de 2011 y apoyo federal",
+          dateLabel: "Páginas históricas del programa · 2008–2013",
+          status: "verified",
+          statusLabel: "Fuentes conciliadas",
+          summary:
+            "La lista oficial de EdTech Digest identifica a HELP Math como ganador de un Cool Tool Award de 2011 en la categoría de necesidades especiales. El desarrollo de HELP Math también recibió apoyo parcial mediante fondos del Departamento de Educación de Estados Unidos.",
+          interpretation:
+            "El sitio antiguo lo denomina «National Award for Excellence in Education», pero ese no es el nombre oficial del premio. Las páginas archivadas también discrepan sobre la participación federal —40% o 46%—, por lo que el sitio moderno no elige ninguno de los porcentajes.",
+          sourceLabel: "Contexto primario: lista de ganadores de EdTech Digest y registros de programas y subvenciones del Departamento de Educación",
+          sourceActions: [
+            {label: "Ver ganadores de EdTech Digest", href: "https://www.edtechdigest.com/winners/"},
+            {label: "Leer el informe del programa federal (PDF)", href: "https://files.eric.ed.gov/fulltext/ED530966.pdf"},
+            {label: "Ver la subvención relacionada de IES", href: "https://ies.ed.gov/use-work/awards/math-learning-companion-individualized-intervention-students-math-learning-disabilities"},
+          ],
         },
       ],
       reviewPolicy: {

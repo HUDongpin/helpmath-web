@@ -5,6 +5,7 @@ const canonicalBaseUrl = new URL(
 const expectContactEnabled = process.env.EXPECT_CONTACT_ENABLED === 'true';
 const fetchTimeoutMs = Number(process.env.SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
 const vercelBypassSecret = process.env.SMOKE_VERCEL_BYPASS_SECRET?.trim();
+const executivePreviewAccessKey = process.env.SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
 
 for (const [name, value] of [
   ['SMOKE_BASE_URL', baseUrl],
@@ -26,6 +27,19 @@ const origin = baseUrl.origin;
 const canonicalOrigin = canonicalBaseUrl.origin;
 const failures = [];
 
+if (vercelBypassSecret && baseUrl.protocol !== 'https:') {
+  throw new Error('SMOKE_VERCEL_BYPASS_SECRET requires an HTTPS SMOKE_BASE_URL.');
+}
+if (
+  executivePreviewAccessKey &&
+  baseUrl.protocol !== 'https:' &&
+  !['localhost', '127.0.0.1', '[::1]'].includes(baseUrl.hostname)
+) {
+  throw new Error(
+    'SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY requires HTTPS unless SMOKE_BASE_URL is loopback.',
+  );
+}
+
 const contentRoutes = [
   '/',
   '/about',
@@ -46,7 +60,7 @@ const privateDemoRoutes = [
   '/es/demos/conversion-1-4',
 ];
 
-const privateDemoAssets = [
+const closedLegacyDemoAssets = [
   '/flash-assets/conversion-1-2/gallon-0.png',
   '/flash-assets/conversion-1-2/gallon-32.png',
   '/flash-assets/conversion-1-2/gallon-64.png',
@@ -59,6 +73,26 @@ const privateDemoAssets = [
   '/flash-assets/cylinder-base.png',
   '/flash-assets/pitcher-back.png',
   '/flash-assets/pitcher-front.png',
+];
+
+const executivePreviewAssets = [
+  '/api/executive-preview/assets/conversion-1-2/gallon-0.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-32.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-64.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-96.png',
+  '/api/executive-preview/assets/conversion-1-2/gallon-128.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-empty-stage.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-full-stage.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-pouring-empty.png',
+  '/api/executive-preview/assets/conversion-1-2/quart-pouring-full.png',
+  '/api/executive-preview/assets/conversion-1-4/cylinder-base.png',
+  '/api/executive-preview/assets/conversion-1-4/pitcher-back.png',
+  '/api/executive-preview/assets/conversion-1-4/pitcher-front.png',
+];
+
+const executivePreviewRuntimes = [
+  '/api/executive-preview/runtime/conversion-1-2.js',
+  '/api/executive-preview/runtime/conversion-1-4.js',
 ];
 
 function check(condition, message) {
@@ -86,7 +120,12 @@ async function fetchWithTimeout(target, init = {}) {
 
     try {
       const headers = new Headers(init.headers);
-      if (vercelBypassSecret) {
+      const targetUrl = new URL(target);
+      if (
+        vercelBypassSecret &&
+        targetUrl.protocol === 'https:' &&
+        targetUrl.origin === origin
+      ) {
         headers.set('x-vercel-protection-bypass', vercelBypassSecret);
       }
       return await fetch(target, {redirect: 'manual', ...init, headers, signal});
@@ -180,6 +219,36 @@ function hasRobotsMeta(html, expected) {
     const directives = robotsDirectives(attributes.content);
     return expected.every((directive) => directives.has(directive));
   });
+}
+
+function hasNoStore(response) {
+  return robotsDirectives(response.headers.get('cache-control')).has('no-store');
+}
+
+function checkExecutivePreviewHeaders(response, label) {
+  check(hasNoStore(response), `${label} is missing Cache-Control: no-store`);
+  check(
+    hasRobotsHeader(response, ['noindex', 'nofollow', 'noarchive']),
+    `${label} is missing X-Robots-Tag: noindex, nofollow, noarchive`,
+  );
+}
+
+function checkExecutivePreviewResourceHeaders(response, label) {
+  checkExecutivePreviewHeaders(response, label);
+  const vary = robotsDirectives(response.headers.get('vary'));
+  check(vary.has('cookie'), `${label} is missing Vary: Cookie`);
+  check(
+    response.headers.get('cross-origin-resource-policy')?.toLowerCase() === 'same-origin',
+    `${label} is missing Cross-Origin-Resource-Policy: same-origin`,
+  );
+  check(
+    response.headers.get('x-content-type-options')?.toLowerCase() === 'nosniff',
+    `${label} is missing X-Content-Type-Options: nosniff`,
+  );
+  check(
+    response.headers.get('x-vercel-cache')?.toLowerCase() !== 'hit',
+    `${label} was served as an x-vercel-cache HIT`,
+  );
 }
 
 function alternateLinksFrom(markup) {
@@ -281,6 +350,34 @@ for (const previewPath of privateDemoRoutes) {
     `${previewPath} must stay outside the sitemap until publication approval`,
   );
 }
+
+const executivePreviewEntryPaths = [
+  '/executive-preview?returnTo=/demos/conversion-1-2',
+  '/es/executive-preview?returnTo=/es/demos/conversion-1-2',
+];
+const executivePreviewEntries = await Promise.all(
+  executivePreviewEntryPaths.map(async (path) => {
+    const response = await get(path);
+    const html = await response.text();
+    check(response.status === 200, `${path} returned ${response.status}`);
+    checkExecutivePreviewHeaders(response, path);
+    check(
+      hasRobotsMeta(html, ['noindex', 'nofollow', 'noarchive']),
+      `${path} is missing noindex, nofollow, noarchive robots metadata`,
+    );
+    if (executivePreviewAccessKey) {
+      check(
+        /<form\b[^>]*action=["']\/api\/executive-preview\/session["'][^>]*method=["']post["']/i.test(html),
+        `${path} is missing its same-origin executive preview login form`,
+      );
+      check(
+        /<input\b[^>]*name=["']passphrase["']/i.test(html),
+        `${path} is missing its executive preview passphrase field`,
+      );
+    }
+    return {path, status: response.status};
+  }),
+);
 
 const internalLinks = new Map();
 const publicPages = await Promise.all(
@@ -453,27 +550,188 @@ for (const path of privateDemoRoutes) {
   const html = await response.text();
   check(response.status === 404, `${path} returned ${response.status}, expected private 404`);
   check(
-    hasRobotsHeader(response, ['noindex', 'nofollow']),
+    hasRobotsHeader(response, ['noindex', 'nofollow', 'noarchive']),
     `${path} is missing the private X-Robots-Tag boundary`,
   );
   check(hasRobotsMeta(html, ['noindex']), `${path} is missing a noindex robots meta tag`);
+  check(hasNoStore(response), `${path} is missing Cache-Control: no-store`);
 }
 
-for (const path of privateDemoAssets) {
+for (const path of [...closedLegacyDemoAssets, ...executivePreviewAssets]) {
   const response = await get(path);
   const contentType = response.headers.get('content-type') ?? '';
   await response.arrayBuffer();
   check(response.status === 404, `${path} returned ${response.status}, expected private 404`);
   check(!contentType.startsWith('image/'), `${path} exposed image content as ${contentType}`);
   check(
-    hasRobotsHeader(response, ['noindex', 'nofollow']),
+    hasRobotsHeader(response, ['noindex', 'nofollow', 'noarchive']),
     `${path} is missing the private X-Robots-Tag boundary`,
   );
+  check(hasNoStore(response), `${path} is missing Cache-Control: no-store`);
+  if (path.startsWith('/api/executive-preview/')) {
+    checkExecutivePreviewResourceHeaders(response, path);
+  }
+}
+
+for (const path of executivePreviewRuntimes) {
+  const response = await get(path);
+  const contentType = response.headers.get('content-type') ?? '';
+  await response.arrayBuffer();
+  check(response.status === 404, `${path} returned ${response.status}, expected private 404`);
+  check(!contentType.includes('javascript'), `${path} exposed JavaScript as ${contentType}`);
+  checkExecutivePreviewResourceHeaders(response, path);
+}
+
+for (const path of [executivePreviewAssets[0], executivePreviewRuntimes[0]]) {
+  const response = await get(path, {method: 'HEAD'});
+  const body = await response.arrayBuffer();
+  check(response.status === 404, `${path} unauthenticated HEAD returned ${response.status}`);
+  check(body.byteLength === 0, `${path} unauthenticated HEAD returned a body`);
+  checkExecutivePreviewResourceHeaders(response, `unauthenticated HEAD ${path}`);
+}
+
+let executivePreviewAuthenticatedDemoRoutes = 0;
+let executivePreviewAuthenticatedAssets = 0;
+let executivePreviewAuthenticatedRuntimes = 0;
+let executivePreviewAuthentication = executivePreviewAccessKey ? 'failed' : 'not-requested';
+
+if (executivePreviewAccessKey) {
+  const authenticationFailureStart = failures.length;
+  const form = new URLSearchParams({
+    locale: 'en',
+    passphrase: executivePreviewAccessKey,
+    returnTo: '/demos/conversion-1-2',
+  });
+  const loginResponse = await get('/api/executive-preview/session', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      origin,
+    },
+    body: form.toString(),
+  });
+  const loginLocation = relativeRedirectLocation(
+    loginResponse.headers.get('location'),
+    '/api/executive-preview/session',
+  );
+  const setCookie = loginResponse.headers.get('set-cookie') ?? '';
+  const cookieMatch = setCookie.match(/^([^=;\s]+)=([^;]*)/u);
+
+  check(loginResponse.status === 303, `executive preview login returned ${loginResponse.status}, expected 303`);
+  check(
+    loginLocation === '/demos/conversion-1-2',
+    `executive preview login redirected to ${loginLocation ?? 'missing'}, expected /demos/conversion-1-2`,
+  );
+  checkExecutivePreviewHeaders(loginResponse, 'executive preview login response');
+  check(Boolean(cookieMatch?.[2]), 'executive preview login did not return a session cookie');
+  check(/(?:^|;)\s*HttpOnly(?:;|$)/iu.test(setCookie), 'executive preview session cookie is missing HttpOnly');
+  check(/(?:^|;)\s*SameSite=Lax(?:;|$)/iu.test(setCookie), 'executive preview session cookie is missing SameSite=Lax');
+  if (baseUrl.protocol === 'https:') {
+    check(/(?:^|;)\s*Secure(?:;|$)/iu.test(setCookie), 'executive preview session cookie is missing Secure');
+  }
+
+  if (loginResponse.status === 303 && loginLocation === '/demos/conversion-1-2' && cookieMatch?.[2]) {
+    const sessionHeaders = {cookie: `${cookieMatch[1]}=${cookieMatch[2]}`};
+    const authenticatedDemoCases = [
+      {path: '/demos/conversion-1-2', locale: 'en', heading: 'Conversion 1.2'},
+      {path: '/demos/conversion-1-4', locale: 'en', heading: 'Conversion 1.4'},
+      {path: '/es/demos/conversion-1-4', locale: 'es', heading: 'Conversión 1.4'},
+    ];
+
+    for (const testCase of authenticatedDemoCases) {
+      const response = await get(testCase.path, {headers: sessionHeaders});
+      const html = await response.text();
+      const language = html.match(/<html[^>]+lang=["']([^"']+)/i)?.[1] ?? null;
+      const visibleText = visibleTextFrom(html);
+
+      check(response.status === 200, `${testCase.path} returned ${response.status} after executive login`);
+      checkExecutivePreviewHeaders(response, `authenticated ${testCase.path}`);
+      check(
+        hasRobotsMeta(html, ['noindex', 'nofollow', 'noarchive']),
+        `${testCase.path} is missing authenticated noindex, nofollow, noarchive metadata`,
+      );
+      check(language === testCase.locale, `${testCase.path} has lang=${language ?? 'missing'}`);
+      check(
+        visibleText.includes(testCase.heading),
+        `${testCase.path} is missing the expected demo heading`,
+      );
+      if (response.status === 200) executivePreviewAuthenticatedDemoRoutes += 1;
+    }
+
+    for (const path of executivePreviewAssets) {
+      const response = await get(path, {headers: sessionHeaders});
+      const contentType = response.headers.get('content-type') ?? '';
+      const body = await response.arrayBuffer();
+
+      check(response.status === 200, `${path} returned ${response.status} after executive login`);
+      check(contentType.startsWith('image/png'), `${path} has authenticated content-type ${contentType || 'missing'}`);
+      check(body.byteLength > 0, `${path} returned an empty authenticated image`);
+      checkExecutivePreviewResourceHeaders(response, `authenticated ${path}`);
+      if (response.status === 200 && contentType.startsWith('image/png') && body.byteLength > 0) {
+        executivePreviewAuthenticatedAssets += 1;
+      }
+    }
+
+    for (const path of executivePreviewRuntimes) {
+      const response = await get(path, {headers: sessionHeaders});
+      const contentType = response.headers.get('content-type') ?? '';
+      const body = await response.arrayBuffer();
+
+      check(response.status === 200, `${path} returned ${response.status} after executive login`);
+      check(contentType.includes('javascript'), `${path} has authenticated content-type ${contentType || 'missing'}`);
+      check(body.byteLength > 0, `${path} returned an empty authenticated runtime`);
+      checkExecutivePreviewResourceHeaders(response, `authenticated ${path}`);
+      if (response.status === 200 && contentType.includes('javascript') && body.byteLength > 0) {
+        executivePreviewAuthenticatedRuntimes += 1;
+      }
+    }
+
+    for (const path of [executivePreviewAssets[0], executivePreviewRuntimes[0]]) {
+      const fullResponse = await get(path, {headers: sessionHeaders});
+      const fullBody = await fullResponse.arrayBuffer();
+      const headResponse = await get(path, {method: 'HEAD', headers: sessionHeaders});
+      const headBody = await headResponse.arrayBuffer();
+      check(headResponse.status === 200, `${path} authenticated HEAD returned ${headResponse.status}`);
+      check(headBody.byteLength === 0, `${path} authenticated HEAD returned a body`);
+      check(
+        headResponse.headers.get('content-length') === String(fullBody.byteLength),
+        `${path} authenticated HEAD content-length does not match GET`,
+      );
+      checkExecutivePreviewResourceHeaders(headResponse, `authenticated HEAD ${path}`);
+    }
+
+    const tamperedValue = `${cookieMatch[2].slice(0, -1)}${cookieMatch[2].endsWith('A') ? 'B' : 'A'}`;
+    const tamperedHeaders = {cookie: `${cookieMatch[1]}=${tamperedValue}`};
+    const tamperedDemo = await get('/demos/conversion-1-2', {headers: tamperedHeaders});
+    check(tamperedDemo.status === 404, `tampered executive cookie opened a demo route`);
+    checkExecutivePreviewHeaders(tamperedDemo, 'tampered-cookie demo response');
+    const tamperedAsset = await get(executivePreviewAssets[0], {headers: tamperedHeaders});
+    check(tamperedAsset.status === 404, `tampered executive cookie opened an asset route`);
+    checkExecutivePreviewResourceHeaders(tamperedAsset, 'tampered-cookie asset response');
+
+    for (const path of [
+      `${executivePreviewRuntimes[0]}.map`,
+      '/api/executive-preview/runtime/package.json',
+      '/api/executive-preview/assets/conversion-1-2/package.json',
+    ]) {
+      const response = await get(path, {headers: sessionHeaders});
+      const body = await response.arrayBuffer();
+      check(response.status === 404, `${path} escaped the authenticated allowlist`);
+      check(body.byteLength === 0, `${path} returned bytes outside the authenticated allowlist`);
+      checkExecutivePreviewResourceHeaders(response, `authenticated allowlist rejection ${path}`);
+    }
+
+    executivePreviewAuthentication = failures.length === authenticationFailureStart
+      ? 'validated'
+      : 'failed';
+  }
 }
 
 for (const path of [
   '/_next/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
   '/_vercel/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
+  '/_next/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
+  '/_vercel/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
 ]) {
   const response = await get(path);
   const contentType = response.headers.get('content-type') ?? '';
@@ -642,8 +900,14 @@ const summary = {
   legacyRedirects: legacyRedirects.length,
   brandedNotFoundCases: brandedNotFoundCases.length,
   privateDemoRoutes: privateDemoRoutes.length,
-  privateDemoAssets: privateDemoAssets.length,
-  privateDemoOptimizerProbes: 2,
+  closedLegacyDemoAssets: closedLegacyDemoAssets.length,
+  executivePreviewAssets: executivePreviewAssets.length,
+  privateDemoOptimizerProbes: 4,
+  executivePreviewEntries: executivePreviewEntries.length,
+  executivePreviewAuthentication,
+  executivePreviewAuthenticatedDemoRoutes,
+  executivePreviewAuthenticatedAssets,
+  executivePreviewAuthenticatedRuntimes,
   staticAssets: staticAssets.length,
   legalDrafts: 4,
   domainMatrixCases,

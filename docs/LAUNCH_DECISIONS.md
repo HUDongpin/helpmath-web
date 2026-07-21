@@ -18,6 +18,9 @@ not a legal safe harbor or evidence that public demo rights have been cleared.
 - Demo prototypes and extracted assets remain private. Their former public
   routes now return non-indexable `404` responses until written publication
   rights and technical acceptance are documented.
+- An explicitly time-boxed CEO Executive Preview may temporarily expose only
+  the two named prototypes behind the signed-session boundary. This internal
+  review exception does not change either demo's public publication status.
 - The private legacy payload remains local until unused Git LFS capacity is
   confirmed separately in the archive repository.
 
@@ -113,6 +116,47 @@ copyright or license questions.
 
 Source hashes and fidelity evidence prove provenance and behavior; they do not
 by themselves prove publication rights.
+
+Public history, research, and collaborator statements are tracked in
+`docs/CONTENT_SOURCES.md`. Dr. Peter Hu, CEO of PedaNova, confirmed on
+2026-07-21 that Boulder Learning and PedaNova are bilateral strategic partners
+for the modernization of HELP Math 1.0 into HELP Math 2.0 and instructed that
+relationship to be stated publicly. This approval does not release Boulder
+Learning’s confidential two-module strategy; publishing those internal details
+still requires Boulder Learning’s separate written public-release approval.
+
+### CEO Executive Preview decision record
+
+Internal executive review authorization is not public-display permission,
+copyright or license clearance, strict fidelity validation, technical/product
+acceptance, or approval to forward, record, republish, or distribute the
+prototypes. Keep the two demos private after the meeting unless every public
+promotion gate in `DEMO_PROMOTION.md` is independently satisfied.
+
+Record references only; never record an access passphrase, signing secret, or
+session cookie here.
+
+| Decision | Owner answer or evidence reference | Approved by / date |
+| --- | --- | --- |
+| Named executive audience and purpose of the review | CEO and Chairman John Ramo; internal JavaScript prototype review | HELP Math project researcher/software engineer request / 2026-07-21 |
+| Approved demo scope: `conversion-1-2` and `conversion-1-4` only | Project-team-requested scope; public status remains unchanged | HELP Math project researcher/software engineer request / 2026-07-21 |
+| Review start and absolute expiry time | Configured for Production only; all dynamic Preview deployments fail closed. Production closes `2026-07-28T15:59:00Z` (`2026-07-28 23:59` China Standard Time) | Engineering configuration / 2026-07-21 |
+| Private channel used to deliver the access passphrase | Pending (channel name only; never the value) | Pending |
+| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented; unit, browser, and authenticated release-smoke checks passed | Engineering verification / 2026-07-21 |
+| Vercel WAF rate limit on executive session POST (IP, 15 requests / 10 minutes, default `429`) | Published rule `rule_executive_preview_session_post_limit_e7i95N`: exact path + POST, fixed window, IP, 15 requests / 600 seconds, default rate-limit action. Production `429` probe remains pending. Application defense in depth separately blocks the eighth failed attempt per warm instance. | Engineering configuration / 2026-07-21; runtime verification pending |
+| Post-meeting action: disable access or rotate passphrase and signing secret | Pending | Pending |
+| Confirm no recording, forwarding, republication, or public presentation was authorized | Pending | Pending |
+| Separate rights/publication approval | Pending; not granted by this executive review | Pending |
+| Separate technical and product acceptance | Pending; not granted by this executive review | Pending |
+
+The Vercel review environment requires four server-only settings:
+`EXECUTIVE_PREVIEW_ENABLED`, `EXECUTIVE_PREVIEW_ACCESS_KEY`,
+`EXECUTIVE_PREVIEW_SESSION_SECRET`, and `EXECUTIVE_PREVIEW_EXPIRES_AT`.
+Record only that each was configured for the intended environment and that the
+fail-closed checks passed. `SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY` must be
+injected only into the operator's local, temporary command environment for the
+single verification process; it must not be persisted in Vercel, GitHub, any
+file, shell history, retained command output, or this record.
 
 ## 4. Delivery governance
 
