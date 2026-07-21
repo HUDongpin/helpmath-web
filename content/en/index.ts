@@ -214,8 +214,8 @@ export const enContent = {
               "That wording is historical context, not a claim that the former Flash-based service or its student accounts remain available today. The research record and important limitations are summarized on our Research page.",
             ],
             actions: [
-              {label: "Visit the HELP Math 1.0 archive", href: "https://www.helpprogram.net/"},
-              {label: "Read the archived awards page", href: "https://www.helpprogram.net/Awards.htm"},
+              {label: "Explore the historical curriculum", href: "/curriculum#help-math-1-catalog"},
+              {label: "View official recognition records", href: "/resources#codie-past-winners"},
             ],
             sourceNote:
               "Source status: archived HELP Math pages. Descriptions such as “leading” are legacy self-descriptions and are not repeated here as current comparative claims.",
@@ -405,13 +405,13 @@ export const enContent = {
         title: "A broad archive, returning one carefully reviewed piece at a time",
         summary:
           "Historic materials describe HELP Math configurations for upper-elementary and middle-grade mathematics, with additional uses for remediation. The current website publishes context and demo status—not the historical curriculum or lesson prototypes.",
-        primaryAction: { label: "Review demo status", href: "/demos" },
-        secondaryAction: { label: "Check curriculum request status", href: "/contact?topic=curriculum" },
+        primaryAction: { label: "Explore the HELP Math 1.0 catalog", href: "#help-math-1-catalog" },
+        secondaryAction: { label: "Browse project resources", href: "/resources" },
       },
       archiveNotice: {
-        title: "Why we do not publish a single lesson or hour count",
+        title: "Historical counts need a version and a date",
         body:
-          "Archived documents describe different editions and proposed scopes, including grade 3–8 and grade 6–8 configurations. Those records are being reconciled before any current catalog, standards alignment, or availability claim is published.",
+          "The reconciled catalog below combines a 2007 teacher guide and 2008 program record with a 2012 scope-and-sequence record. It is archival—not a current HELP Math 2.0 catalog, standards alignment, enrollment offer, or statement that the former lessons remain available.",
       },
       domains: {
         eyebrow: "Historical content domains",
@@ -444,6 +444,49 @@ export const enContent = {
               "Reading, representing, comparing, and reasoning from data using coordinated graphs, quantities, and explanations.",
           },
         ],
+      },
+      historicalCatalog: {
+        eyebrow: "HELP Math 1.0 historical catalog",
+        title: "What dated 2007–2012 program records described",
+        intro:
+          "Multiple legacy records support a Grades 3–8 catalog of 73 lessons: 44 middle-school lessons and 29 elementary lessons. The cards preserve that dated scope and separate it from any future HELP Math 2.0 release.",
+        cards: [
+          {
+            id: "middle-school-catalog",
+            title: "Grades 6–8 · 44 historical lessons",
+            description:
+              "Four strands: Numbers Make Sense; From ABC to XYZ; Go Figure!; and How Likely! A contemporaneous teacher guide enumerates 12, 12, 12, and 8 named lessons respectively.",
+            detail:
+              "The final strand includes four items labeled “Double Lesson.” This helps explain why archival pages describe both 44 comprehensive lessons and four 12-unit series: the sources use different counting conventions.",
+          },
+          {
+            id: "elementary-catalog",
+            title: "Grades 3–5 · 29 historical lessons",
+            description:
+              "The legacy catalog described 29 comprehensive upper-elementary lessons. A 2012 scope record names Math Foundations I, II, and III for Grades 3, 4, and 5.",
+            detail:
+              "The scope spans numbers, operations, algebraic foundations, geometry, measurement, and data. Exact per-grade lesson counts are omitted because correlation records reflect different editions.",
+          },
+          {
+            id: "historical-learner-supports",
+            title: "Historical learner supports",
+            description:
+              "Self-paced multimedia lessons; English/Spanish vocabulary and audio; teacher-controlled bilingual support; read-aloud; visual models; manipulatives; “Need More Help” hints; guided practice; and immediate feedback.",
+            detail:
+              "These descriptions come from dated product materials and do not establish that any support is currently available on helpmath.ai.",
+          },
+          {
+            id: "historical-educator-tools",
+            title: "Historical educator tools",
+            description:
+              "Custom learning paths and lesson assignment; randomized quizzes; automatic scoring; placement and diagnostic assessments; time-on-task monitoring; class and student reports; and Excel export.",
+            detail:
+              "These are descriptions of the retired HELP Math 1.0 service. This public website does not provide accounts, assignments, quizzes, dashboards, or progress storage.",
+          },
+        ],
+        sourceNote:
+          "Source boundary: HELP Math Program Information (copyright 2008, Digital Directions International), the HELP Math Teacher’s Guide/NCTM alignment record v3.1.2 (2007), and a 2012 scope-and-sequence record. The catalog supports 29 + 44 = 73; exact hours and elementary per-course counts are omitted because archival editions use different counting conventions.",
+        action: {label: "Review the program lineage", href: "/about#program-lineage"},
       },
       lessonFlow: {
         eyebrow: "Learning-object design",
@@ -580,7 +623,7 @@ export const enContent = {
             "These percentages come from the program’s archived evaluation white paper and describe students retained in its final analytic sample. They are not additional WWC-validated subgroup findings and should not be generalized to HELP Math 2.0.",
           sourceLabel: "Historical source: HELP Math Evaluation White Paper (May 2013)",
           sourceActions: [
-            {label: "Read the archived evaluation (PDF)", href: "https://www.helpprogram.net/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf"},
+            {label: "Review the archive publication status", href: "/resources#help-math-pilot-archive"},
           ],
         },
         {
@@ -650,13 +693,13 @@ export const enContent = {
         title: "Project materials with their context attached",
         summary:
           "The archive contains useful program and planning documents, but not every file is cleared or accessible for public download. Each item states what it is and how it should—and should not—be interpreted.",
-        primaryAction: { label: "Check resource availability", href: "/contact?topic=resources" },
+        primaryAction: { label: "Browse the resource library", href: "#resource-library" },
         secondaryAction: { label: "View research context", href: "/research" },
       },
       archiveNotice: {
-        title: "Accessible publication is in progress",
+        title: "Official records and project pages are available now",
         body:
-          "Source PDFs are being checked for ownership, sensitive content, accurate metadata, readable text order, headings, and image descriptions. Contact intake and file availability are shown separately and may remain closed during review.",
+          "Selected government, ERIC, and HELP Math web records can be opened directly below. Owner-held archival PDFs remain clearly marked while ownership, sensitive content, metadata, reading order, headings, and image descriptions are reviewed.",
       },
       filters: {
         ariaLabel: "Filter resources by category",
@@ -664,10 +707,37 @@ export const enContent = {
         program: "Program",
         research: "Research",
         technical: "Modernization",
+        resultsTemplate: "{count} resources shown",
+        empty: "No resources match this category.",
       },
       items: [
         {
+          id: "help-math-history",
+          category: "program",
+          title: "HELP Math 1.0 history and program lineage",
+          format: "Web resource · Program",
+          dateLabel: "Reviewed July 2026",
+          status: "available",
+          statusLabel: "Available now",
+          description:
+            "A sourced overview of HELP Math 1.0, Boulder Learning’s HELP Math 2.0 roadmap, and the confirmed Boulder Learning–PedaNova modernization partnership.",
+          action: { label: "Read the program history", href: "/about#program-lineage" },
+        },
+        {
+          id: "help-math-1-catalog",
+          category: "program",
+          title: "HELP Math 1.0 historical curriculum and capabilities",
+          format: "Web resource · Program",
+          dateLabel: "2007, 2008, and 2012 records · Reviewed July 2026",
+          status: "available",
+          statusLabel: "Available now",
+          description:
+            "A version-labeled record of the former Grades 3–8 catalog, its 73-lesson total, four middle-school series, and historical teacher and learner tools—with the original counting conflict disclosed.",
+          action: { label: "Explore the historical catalog", href: "/curriculum#help-math-1-catalog" },
+        },
+        {
           id: "about-help-math",
+          category: "program",
           title: "About HELP Math",
           format: "Archived PDF · Program",
           dateLabel: "Created in 2014",
@@ -678,7 +748,152 @@ export const enContent = {
           action: { label: "Check request availability", href: "/contact?topic=resource-about-help-math" },
         },
         {
+          id: "help-math-pilot-archive",
+          category: "research",
+          title: "HELP Math Evaluation White Paper",
+          format: "Archived PDF · Research",
+          dateLabel: "May 2013",
+          status: "request",
+          statusLabel: "Publication pending",
+          description:
+            "The retained program-authored source for the 42.1% versus 4.6% pilot figures and grade-level percentages summarized in the research register. A public copy remains pending rights and accessibility review; these figures are not WWC-validated subgroup findings.",
+          action: { label: "Check request availability", href: "/contact?topic=resource-help-math-pilot" },
+        },
+        {
+          id: "wwc-study-record",
+          category: "research",
+          title: "What Works Clearinghouse study record",
+          format: "Official web record · Research",
+          dateLabel: "Reviewed October 2012",
+          status: "available",
+          statusLabel: "Official source",
+          description:
+            "The U.S. Department of Education record for the randomized HELP Math 1.0 study of 146 students in Grades 6–10, including the evidence-standard rating and reported findings.",
+          action: { label: "Open the WWC study record", href: "https://ies.ed.gov/ncee/wwc/Study/72999" },
+        },
+        {
+          id: "wwc-single-study-review",
+          category: "research",
+          title: "WWC single-study review of HELP Math",
+          format: "Official PDF · Research",
+          dateLabel: "October 2012 · 422 KB",
+          status: "available",
+          statusLabel: "Official source",
+          description:
+            "The complete WWC review explaining the study design, sample, comparison condition, outcome measure, effect size, and why the study met standards without reservations.",
+          action: { label: "Read the WWC review (PDF)", href: "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf" },
+        },
+        {
+          id: "crawford-2013-eric",
+          category: "research",
+          title: "Larger randomized study—ERIC record EJ1023032",
+          format: "Bibliographic web record · Research",
+          dateLabel: "Computers in the Schools · 2013",
+          status: "available",
+          statusLabel: "Available now",
+          description:
+            "The ERIC record for a separate 396-student study that provides important context: both groups improved, but the study did not find an overall between-group main effect.",
+          action: { label: "View the ERIC record", href: "https://eric.ed.gov/?id=EJ1023032" },
+        },
+        {
+          id: "freeman-2012-doi",
+          category: "research",
+          title: "Using digital technologies to redress inequities for English language learners in the English speaking mathematics classroom",
+          format: "Publisher article record · Research",
+          dateLabel: "Computers & Education · August 2012",
+          status: "available",
+          statusLabel: "Publisher source",
+          description:
+            "The publisher record for Barbara Freeman’s peer-reviewed study of 50 ninth- and tenth-grade Hispanic English language learners over six months. It examined mathematics ability, self-efficacy, and perceptions of future possibilities; it is historical HELP Math 1.0 context, not evidence for HELP Math 2.0.",
+          action: { label: "Open the DOI record", href: "https://doi.org/10.1016/j.compedu.2011.11.003" },
+        },
+        {
+          id: "ell-curriculum-eric",
+          category: "research",
+          title: "Creating a Middle School Mathematics Curriculum for English-Language Learners",
+          format: "ERIC bibliographic record · Research",
+          dateLabel: "Remedial and Special Education · 2008",
+          status: "available",
+          statusLabel: "Available now",
+          description:
+            "The ERIC record for a published article about the design of a middle-school mathematics curriculum for English-language learners. It provides historical design context, not current HELP Math 2.0 evidence.",
+          action: { label: "View the ERIC record", href: "https://eric.ed.gov/?id=EJ796893" },
+        },
+        {
+          id: "codie-past-winners",
+          category: "research",
+          title: "CODiE Awards official past-winners record",
+          format: "Official web record · Recognition",
+          dateLabel: "2009 and 2010",
+          status: "available",
+          statusLabel: "Official source",
+          description:
+            "The official CODiE archive lists HELP Math as the Best Instructional Solution for Special Needs Students in both 2009 and 2010. This dated recognition applies to the historical product.",
+          action: { label: "Open the CODiE winners archive", href: "https://codieawards.com/past-winners" },
+        },
+        {
+          id: "edtech-2011-winners",
+          category: "research",
+          title: "EdTech Digest 2011 winners record",
+          format: "Official web record · Recognition",
+          dateLabel: "2011",
+          status: "available",
+          statusLabel: "Official source",
+          description:
+            "The publisher’s winners page identifies HELP Math in the special-needs category. The modern site uses the award’s official name rather than the broader wording found on legacy HELP Math pages.",
+          action: { label: "Open the 2011 winners page", href: "https://www.edtechdigest.com/winners/" },
+        },
+        {
+          id: "ready-to-teach-eric",
+          category: "research",
+          title: "The Ready to Teach Program—federal initiative report",
+          format: "ERIC record · Historical context",
+          dateLabel: "U.S. Department of Education · 2011",
+          status: "available",
+          statusLabel: "Official index",
+          description:
+            "The ERIC record for a federal initiative report that includes HELP in its program history. It provides historical context and is not, by itself, proof of a specific HELP Math funding percentage.",
+          action: { label: "View the ERIC record", href: "https://eric.ed.gov/?id=ED530966" },
+        },
+        {
+          id: "ies-math-learning-companion",
+          category: "research",
+          title: "Related IES Math Learning Companion grant",
+          format: "Official grant record · Context",
+          dateLabel: "Awarded 2009 · Closed",
+          status: "available",
+          statusLabel: "Official source",
+          description:
+            "An official IES record for a related web-based mathematics-intervention project led by Texas Christian University. It is linked as related research history, not represented as the HELP Math 1.0 award itself.",
+          action: { label: "Open the IES grant record", href: "https://ies.ed.gov/use-work/awards/math-learning-companion-individualized-intervention-students-math-learning-disabilities" },
+        },
+        {
+          id: "education-week-2013",
+          category: "research",
+          title: "Schools Face Shortage of Digital Curricula for English-Learners",
+          format: "Publisher web article · Media",
+          dateLabel: "Education Week · May 2013",
+          status: "available",
+          statusLabel: "Publisher source",
+          description:
+            "The publisher-hosted version of a historical Education Week article linked by the former HELP Math sales-partner page. It is third-party reporting, not a HELP Math effectiveness study.",
+          action: { label: "Read at Education Week", href: "https://www.edweek.org/policy-politics/schools-face-shortage-of-digital-curricula-for-english-learners/2013/05" },
+        },
+        {
+          id: "technology-innovations-report",
+          category: "research",
+          title: "Technology-Driven Innovations for Teaching English Learners",
+          format: "Publisher PDF · Media",
+          dateLabel: "Lexington Institute · 2013",
+          status: "available",
+          statusLabel: "Publisher source",
+          description:
+            "The publisher-hosted report linked from the legacy partner page. It offers period context on education technology for English learners and should not be read as independent validation of every HELP Math claim.",
+          action: { label: "Read the report (PDF)", href: "https://lexingtoninstitute.org/wp-content/uploads/2013/11/TechnologyInnovations.pdf" },
+        },
+        {
           id: "html5-phase-one",
+          category: "technical",
           title: "HELP Math with HTML5: Phase I",
           format: "Archived PDF · Modernization",
           dateLabel: "Created in 2020",
@@ -690,6 +905,7 @@ export const enContent = {
         },
         {
           id: "help-math-two-scope",
+          category: "program",
           title: "HELP Math 2.0 Scope",
           format: "Archived PDF · Program",
           dateLabel: "Created in 2020",
@@ -701,14 +917,15 @@ export const enContent = {
         },
         {
           id: "modernization-notes",
+          category: "technical",
           title: "Modernization and recovery notes",
           format: "Web resource · Modernization",
           dateLabel: "Living project documentation",
           status: "available",
-          statusLabel: "Access pending",
+          statusLabel: "Available now",
           description:
             "An overview of source preservation, learning-object recovery, validation, accessibility, and staged product planning.",
-          action: { label: "Check notes availability", href: "/contact?topic=modernization-notes" },
+          action: { label: "Read the recovery approach", href: "/about#preservation" },
         },
       ],
       accessibleCopies: {

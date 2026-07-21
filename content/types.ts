@@ -187,6 +187,14 @@ export interface CurriculumContent {
     intro: string;
     cards: FeatureCard[];
   };
+  historicalCatalog: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    cards: FeatureCard[];
+    sourceNote: string;
+    action: LinkContent;
+  };
   lessonFlow: {
     eyebrow: string;
     title: string;
@@ -221,9 +229,11 @@ export interface ResearchContent {
 }
 
 export type ResourceStatus = "available" | "review" | "request";
+export type ResourceCategory = "program" | "research" | "technical";
 
 export interface ResourceEntry {
   id: string;
+  category: ResourceCategory;
   title: string;
   format: string;
   dateLabel: string;
@@ -243,6 +253,8 @@ export interface ResourcesContent {
     program: string;
     research: string;
     technical: string;
+    resultsTemplate: string;
+    empty: string;
   };
   items: ResourceEntry[];
   accessibleCopies: CalloutContent;

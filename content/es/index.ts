@@ -214,8 +214,8 @@ export const esContent = {
               "Esta redacción ofrece contexto histórico; no afirma que el antiguo servicio basado en Flash ni sus cuentas estudiantiles sigan disponibles. La página de Investigación resume la evidencia y sus limitaciones importantes.",
             ],
             actions: [
-              {label: "Visitar el archivo de HELP Math 1.0", href: "https://www.helpprogram.net/"},
-              {label: "Leer la página histórica de premios", href: "https://www.helpprogram.net/Awards.htm"},
+              {label: "Explorar el currículo histórico", href: "/es/curriculum#help-math-1-catalog"},
+              {label: "Ver los registros oficiales de reconocimiento", href: "/es/resources#codie-past-winners"},
             ],
             sourceNote:
               "Estado de las fuentes: páginas archivadas de HELP Math. Descripciones como «líder» son autoafirmaciones históricas y no se repiten aquí como comparaciones actuales.",
@@ -405,13 +405,13 @@ export const esContent = {
         title: "Un archivo amplio que regresa pieza por pieza, después de validarse",
         summary:
           "Los materiales históricos describen configuraciones de HELP Math para primaria superior y grados intermedios, además de usos de refuerzo. El sitio actual publica contexto y estado de demos, no el currículo ni prototipos de lecciones.",
-        primaryAction: { label: "Revisar estado de demostraciones", href: "/es/demos" },
-        secondaryAction: { label: "Comprobar solicitudes curriculares", href: "/es/contact?topic=curriculum" },
+        primaryAction: { label: "Explorar el catálogo de HELP Math 1.0", href: "#help-math-1-catalog" },
+        secondaryAction: { label: "Explorar recursos del proyecto", href: "/es/resources" },
       },
       archiveNotice: {
-        title: "Por qué no publicamos una sola cifra de lecciones u horas",
+        title: "Las cifras históricas necesitan versión y fecha",
         body:
-          "Los documentos archivados describen distintas ediciones y alcances propuestos, incluidas configuraciones de 3.º a 8.º y de 6.º a 8.º grado. Se están conciliando esos registros antes de publicar un catálogo actual o afirmaciones sobre alineación y disponibilidad.",
+          "El catálogo conciliado combina una guía docente de 2007 y un registro del programa de 2008 con un alcance y secuencia de 2012. Es histórico, no un catálogo actual de HELP Math 2.0 ni una oferta de matrícula, alineación o disponibilidad de las antiguas lecciones.",
       },
       domains: {
         eyebrow: "Dominios históricos de contenido",
@@ -444,6 +444,49 @@ export const esContent = {
               "Leer, representar, comparar y razonar a partir de datos mediante gráficas, cantidades y explicaciones coordinadas.",
           },
         ],
+      },
+      historicalCatalog: {
+        eyebrow: "Catálogo histórico de HELP Math 1.0",
+        title: "Lo que describían los registros fechados de 2007–2012",
+        intro:
+          "Varios registros históricos respaldan un catálogo de 73 lecciones para los grados 3.º–8.º: 44 de escuela intermedia y 29 de primaria. Las tarjetas conservan ese alcance fechado y lo separan de cualquier versión futura de HELP Math 2.0.",
+        cards: [
+          {
+            id: "middle-school-catalog",
+            title: "Grados 6.º–8.º · 44 lecciones históricas",
+            description:
+              "Cuatro series: Numbers Make Sense; From ABC to XYZ; Go Figure!; y How Likely! Una guía docente contemporánea enumera 12, 12, 12 y 8 lecciones con nombre, respectivamente.",
+            detail:
+              "La última serie contiene cuatro elementos llamados «Double Lesson». Esto ayuda a explicar por qué las páginas históricas describen tanto 44 lecciones completas como cuatro series de 12 unidades: emplean convenciones de conteo distintas.",
+          },
+          {
+            id: "elementary-catalog",
+            title: "Grados 3.º–5.º · 29 lecciones históricas",
+            description:
+              "El catálogo antiguo describía 29 lecciones completas de primaria superior. Un registro de alcance de 2012 nombra Math Foundations I, II y III para 3.º, 4.º y 5.º grado.",
+            detail:
+              "El alcance abarca números, operaciones, fundamentos algebraicos, geometría, medición y datos. Se omiten cantidades exactas por grado porque los registros reflejan ediciones distintas.",
+          },
+          {
+            id: "historical-learner-supports",
+            title: "Apoyos históricos para estudiantes",
+            description:
+              "Lecciones multimedia a ritmo propio; vocabulario y audio en inglés y español; apoyo bilingüe controlado por el docente; lectura en voz alta; modelos visuales; manipulativos; pistas “Need More Help”; práctica guiada y retroalimentación inmediata.",
+            detail:
+              "Estas descripciones proceden de materiales fechados y no demuestran que los apoyos estén disponibles actualmente en helpmath.ai.",
+          },
+          {
+            id: "historical-educator-tools",
+            title: "Herramientas históricas para educadores",
+            description:
+              "Rutas y asignación personalizadas; cuestionarios aleatorios; calificación automática; evaluaciones de ubicación y diagnóstico; seguimiento del tiempo; informes de clase y estudiante; y exportación a Excel.",
+            detail:
+              "Son descripciones del servicio retirado HELP Math 1.0. Este sitio público no ofrece cuentas, tareas, cuestionarios, paneles ni almacenamiento de progreso.",
+          },
+        ],
+        sourceNote:
+          "Límite de las fuentes: HELP Math Program Information (copyright 2008, Digital Directions International), HELP Math Teacher’s Guide/NCTM alignment v3.1.2 (2007) y un registro de alcance y secuencia de 2012. El catálogo respalda 29 + 44 = 73; se omiten horas y cantidades exactas por curso porque las ediciones usan convenciones distintas.",
+        action: {label: "Revisar la evolución del programa", href: "/es/about#program-lineage"},
       },
       lessonFlow: {
         eyebrow: "Diseño de objetos de aprendizaje",
@@ -580,7 +623,7 @@ export const esContent = {
             "Estos porcentajes proceden del informe de evaluación archivado y describen al alumnado retenido en la muestra analítica final. No son resultados de subgrupos validados adicionalmente por WWC ni deben generalizarse a HELP Math 2.0.",
           sourceLabel: "Fuente histórica: HELP Math Evaluation White Paper (mayo de 2013)",
           sourceActions: [
-            {label: "Leer la evaluación archivada (PDF)", href: "https://www.helpprogram.net/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf"},
+            {label: "Revisar el estado de publicación del archivo", href: "/es/resources#help-math-pilot-archive"},
           ],
         },
         {
@@ -650,13 +693,13 @@ export const esContent = {
         title: "Materiales del proyecto con su contexto incluido",
         summary:
           "El archivo contiene documentos útiles de programa y planificación, pero no todos están autorizados ni son accesibles para descarga pública. Cada elemento indica qué es y cómo debe —y no debe— interpretarse.",
-        primaryAction: { label: "Comprobar disponibilidad de recursos", href: "/es/contact?topic=resources" },
+        primaryAction: { label: "Explorar la biblioteca", href: "#resource-library" },
         secondaryAction: { label: "Ver el contexto de investigación", href: "/es/research" },
       },
       archiveNotice: {
-        title: "La publicación accesible está en curso",
+        title: "Ya están disponibles registros oficiales y páginas del proyecto",
         body:
-          "Se están revisando la titularidad, el contenido sensible, los metadatos, el orden de lectura, los encabezados y las descripciones de imágenes. El contacto y la disponibilidad de archivos se indican por separado y pueden seguir cerrados durante la revisión.",
+          "Los registros seleccionados del gobierno, ERIC y las páginas web de HELP Math pueden abrirse directamente. Los PDF archivados del propietario siguen identificados mientras se revisan titularidad, contenido sensible, metadatos, orden de lectura, encabezados y descripciones de imágenes.",
       },
       filters: {
         ariaLabel: "Filtrar recursos por categoría",
@@ -664,10 +707,37 @@ export const esContent = {
         program: "Programa",
         research: "Investigación",
         technical: "Modernización",
+        resultsTemplate: "Se muestran {count} recursos",
+        empty: "No hay recursos en esta categoría.",
       },
       items: [
         {
+          id: "help-math-history",
+          category: "program",
+          title: "Historia de HELP Math 1.0 y evolución del programa",
+          format: "Recurso web · Programa",
+          dateLabel: "Revisado en julio de 2026",
+          status: "available",
+          statusLabel: "Disponible ahora",
+          description:
+            "Resumen con fuentes de HELP Math 1.0, la hoja de ruta de Boulder Learning para HELP Math 2.0 y la alianza de modernización confirmada entre Boulder Learning y PedaNova.",
+          action: { label: "Leer la historia del programa", href: "/es/about#program-lineage" },
+        },
+        {
+          id: "help-math-1-catalog",
+          category: "program",
+          title: "Currículo y funciones históricas de HELP Math 1.0",
+          format: "Recurso web · Programa",
+          dateLabel: "Registros de 2007, 2008 y 2012 · Revisado en julio de 2026",
+          status: "available",
+          statusLabel: "Disponible ahora",
+          description:
+            "Registro con versión del antiguo catálogo de los grados 3.º–8.º, sus 73 lecciones, cuatro series de escuela intermedia y herramientas históricas, incluido el conflicto de conteo original.",
+          action: { label: "Explorar el catálogo histórico", href: "/es/curriculum#help-math-1-catalog" },
+        },
+        {
           id: "about-help-math",
+          category: "program",
           title: "About HELP Math",
           format: "PDF archivado · Programa",
           dateLabel: "Creado en 2014",
@@ -678,7 +748,152 @@ export const esContent = {
           action: { label: "Comprobar disponibilidad", href: "/es/contact?topic=resource-about-help-math" },
         },
         {
+          id: "help-math-pilot-archive",
+          category: "research",
+          title: "HELP Math Evaluation White Paper",
+          format: "PDF archivado · Investigación",
+          dateLabel: "Mayo de 2013",
+          status: "request",
+          statusLabel: "Publicación pendiente",
+          description:
+            "Fuente conservada y redactada por el programa para las cifras piloto de 42,1 % frente a 4,6 % y los porcentajes por grado resumidos en el registro de investigación. La copia pública sigue pendiente de revisión de derechos y accesibilidad; estas cifras no son resultados por subgrupo validados por WWC.",
+          action: { label: "Comprobar disponibilidad", href: "/es/contact?topic=resource-help-math-pilot" },
+        },
+        {
+          id: "wwc-study-record",
+          category: "research",
+          title: "Registro del estudio en What Works Clearinghouse",
+          format: "Registro web oficial · Investigación",
+          dateLabel: "Revisado en octubre de 2012",
+          status: "available",
+          statusLabel: "Fuente oficial",
+          description:
+            "Registro del Departamento de Educación de Estados Unidos para el estudio aleatorizado de HELP Math 1.0 con 146 estudiantes de los grados 6.º–10.º, incluida la calificación de evidencia y los resultados.",
+          action: { label: "Abrir el registro de WWC", href: "https://ies.ed.gov/ncee/wwc/Study/72999" },
+        },
+        {
+          id: "wwc-single-study-review",
+          category: "research",
+          title: "Revisión de estudio individual de HELP Math por WWC",
+          format: "PDF oficial · Investigación",
+          dateLabel: "Octubre de 2012 · 422 KB",
+          status: "available",
+          statusLabel: "Fuente oficial",
+          description:
+            "Revisión completa de WWC sobre diseño, muestra, comparación, medida de resultados, tamaño del efecto y la razón por la que el estudio cumplió las normas sin reservas.",
+          action: { label: "Leer la revisión de WWC (PDF)", href: "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf" },
+        },
+        {
+          id: "crawford-2013-eric",
+          category: "research",
+          title: "Estudio aleatorizado mayor—registro ERIC EJ1023032",
+          format: "Registro bibliográfico web · Investigación",
+          dateLabel: "Computers in the Schools · 2013",
+          status: "available",
+          statusLabel: "Disponible ahora",
+          description:
+            "Registro ERIC de otro estudio con 396 estudiantes que aporta contexto: ambos grupos mejoraron, pero no se halló un efecto principal general entre los grupos.",
+          action: { label: "Ver el registro de ERIC", href: "https://eric.ed.gov/?id=EJ1023032" },
+        },
+        {
+          id: "freeman-2012-doi",
+          category: "research",
+          title: "Using digital technologies to redress inequities for English language learners in the English speaking mathematics classroom",
+          format: "Registro del artículo del editor · Investigación",
+          dateLabel: "Computers & Education · agosto de 2012",
+          status: "available",
+          statusLabel: "Fuente del editor",
+          description:
+            "Registro editorial del estudio revisado por pares de Barbara Freeman con 50 estudiantes hispanos de inglés de 9.º y 10.º grado durante seis meses. Examinó la capacidad matemática, la autoeficacia y las perspectivas de futuro; constituye contexto histórico de HELP Math 1.0, no evidencia de HELP Math 2.0.",
+          action: { label: "Abrir el registro DOI", href: "https://doi.org/10.1016/j.compedu.2011.11.003" },
+        },
+        {
+          id: "ell-curriculum-eric",
+          category: "research",
+          title: "Creating a Middle School Mathematics Curriculum for English-Language Learners",
+          format: "Registro bibliográfico ERIC · Investigación",
+          dateLabel: "Remedial and Special Education · 2008",
+          status: "available",
+          statusLabel: "Disponible ahora",
+          description:
+            "Registro ERIC de un artículo publicado sobre el diseño de un currículo de matemáticas para estudiantes de inglés. Aporta contexto histórico de diseño, no evidencia actual de HELP Math 2.0.",
+          action: { label: "Ver el registro de ERIC", href: "https://eric.ed.gov/?id=EJ796893" },
+        },
+        {
+          id: "codie-past-winners",
+          category: "research",
+          title: "Registro oficial de ganadores anteriores de CODiE",
+          format: "Registro web oficial · Reconocimiento",
+          dateLabel: "2009 y 2010",
+          status: "available",
+          statusLabel: "Fuente oficial",
+          description:
+            "El archivo oficial de CODiE incluye a HELP Math como Best Instructional Solution for Special Needs Students en 2009 y 2010. El reconocimiento corresponde al producto histórico.",
+          action: { label: "Abrir el archivo de CODiE", href: "https://codieawards.com/past-winners" },
+        },
+        {
+          id: "edtech-2011-winners",
+          category: "research",
+          title: "Registro de ganadores de EdTech Digest 2011",
+          format: "Registro web oficial · Reconocimiento",
+          dateLabel: "2011",
+          status: "available",
+          statusLabel: "Fuente oficial",
+          description:
+            "La página de ganadores del editor identifica HELP Math en la categoría de necesidades especiales. El sitio moderno utiliza el nombre oficial y no la descripción más amplia de las páginas antiguas.",
+          action: { label: "Abrir la página de ganadores", href: "https://www.edtechdigest.com/winners/" },
+        },
+        {
+          id: "ready-to-teach-eric",
+          category: "research",
+          title: "The Ready to Teach Program—informe de iniciativa federal",
+          format: "Registro ERIC · Contexto histórico",
+          dateLabel: "Departamento de Educación de EE. UU. · 2011",
+          status: "available",
+          statusLabel: "Índice oficial",
+          description:
+            "Registro ERIC de un informe federal que incluye HELP en la historia del programa. Aporta contexto histórico, pero no demuestra por sí solo un porcentaje específico de financiación de HELP Math.",
+          action: { label: "Ver el registro de ERIC", href: "https://eric.ed.gov/?id=ED530966" },
+        },
+        {
+          id: "ies-math-learning-companion",
+          category: "research",
+          title: "Subvención relacionada Math Learning Companion de IES",
+          format: "Registro oficial de subvención · Contexto",
+          dateLabel: "Otorgada en 2009 · Cerrada",
+          status: "available",
+          statusLabel: "Fuente oficial",
+          description:
+            "Registro oficial de IES para otro proyecto de intervención matemática web dirigido por Texas Christian University. Se presenta como historia relacionada, no como la subvención de HELP Math 1.0.",
+          action: { label: "Abrir el registro de IES", href: "https://ies.ed.gov/use-work/awards/math-learning-companion-individualized-intervention-students-math-learning-disabilities" },
+        },
+        {
+          id: "education-week-2013",
+          category: "research",
+          title: "Schools Face Shortage of Digital Curricula for English-Learners",
+          format: "Artículo web del editor · Medios",
+          dateLabel: "Education Week · mayo de 2013",
+          status: "available",
+          statusLabel: "Fuente del editor",
+          description:
+            "Versión alojada por el editor de un artículo histórico de Education Week enlazado desde la antigua página de socios comerciales. Es periodismo de terceros, no un estudio de eficacia de HELP Math.",
+          action: { label: "Leer en Education Week", href: "https://www.edweek.org/policy-politics/schools-face-shortage-of-digital-curricula-for-english-learners/2013/05" },
+        },
+        {
+          id: "technology-innovations-report",
+          category: "research",
+          title: "Technology-Driven Innovations for Teaching English Learners",
+          format: "PDF del editor · Medios",
+          dateLabel: "Lexington Institute · 2013",
+          status: "available",
+          statusLabel: "Fuente del editor",
+          description:
+            "Informe alojado por su editor y enlazado desde la antigua página de socios. Aporta contexto de época y no debe leerse como validación independiente de todas las afirmaciones de HELP Math.",
+          action: { label: "Leer el informe (PDF)", href: "https://lexingtoninstitute.org/wp-content/uploads/2013/11/TechnologyInnovations.pdf" },
+        },
+        {
           id: "html5-phase-one",
+          category: "technical",
           title: "HELP Math with HTML5: Phase I",
           format: "PDF archivado · Modernización",
           dateLabel: "Creado en 2020",
@@ -690,6 +905,7 @@ export const esContent = {
         },
         {
           id: "help-math-two-scope",
+          category: "program",
           title: "HELP Math 2.0 Scope",
           format: "PDF archivado · Programa",
           dateLabel: "Creado en 2020",
@@ -701,14 +917,15 @@ export const esContent = {
         },
         {
           id: "modernization-notes",
+          category: "technical",
           title: "Notas de modernización y recuperación",
           format: "Recurso web · Modernización",
           dateLabel: "Documentación viva del proyecto",
           status: "available",
-          statusLabel: "Acceso pendiente",
+          statusLabel: "Disponible ahora",
           description:
             "Resumen de preservación de fuentes, recuperación de objetos de aprendizaje, validación, accesibilidad y planificación escalonada del producto.",
-          action: { label: "Comprobar disponibilidad de notas", href: "/es/contact?topic=modernization-notes" },
+          action: { label: "Leer el enfoque de recuperación", href: "/es/about#preservation" },
         },
       ],
       accessibleCopies: {
