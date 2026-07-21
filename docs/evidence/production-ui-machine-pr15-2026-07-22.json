@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-21T20:41:56.000Z",
+  "source": {
+    "method": "Credential-free Lighthouse and Playwright CLI capture against canonical Production after PR #15 deployment",
+    "evidenceLevel": "retained machine reports and pixel artifacts with SHA-256 binding",
+    "lighthouseVersion": "13.0.3",
+    "playwrightCliVersion": "0.1.17",
+    "absoluteOperatorChromePathRetained": false,
+    "browserExecutable": "Playwright Chromium 1228 Chrome for Testing",
+    "normalizedLighthouseInvocations": [
+      "npx --yes lighthouse@13.0.3 https://www.helpmath.ai/ --quiet --output=json --only-categories=performance,accessibility,best-practices,seo --preset=desktop --output-path=docs/evidence/production-ui-pr15-2026-07-22/production-home-desktop-pr15-2026-07-22.lhr.json",
+      "npx --yes lighthouse@13.0.3 https://www.helpmath.ai/ --quiet --output=json --only-categories=performance,accessibility,best-practices,seo --output-path=docs/evidence/production-ui-pr15-2026-07-22/production-home-mobile-pr15-2026-07-22.lhr.json"
+    ],
+    "invocationNote": "The normalized commands retain the executed package, target, categories, preset, output format, and repository paths. The operator-specific absolute Chrome executable path is intentionally omitted; each raw report retains the effective Lighthouse config."
+  },
+  "identity": {
+    "pullRequest": 15,
+    "repositoryCommit": "d3b84e8dcf539d8859641bdb58cbaa5237efc461",
+    "githubDeploymentId": 5544827753,
+    "vercelDeploymentId": "dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ",
+    "canonicalUrl": "https://www.helpmath.ai/",
+    "immutableUrl": "https://helpmath-peh16hg5x-peter-dongpin-hu-s-projects.vercel.app",
+    "identityAssociation": "The UI artifacts target the canonical alias. Commit and deployment identity are operator-associated here and corroborated by the PR #15 release, GitHub deployment, and Vercel alias records; the Lighthouse reports and PNG files do not independently encode a repository commit or deployment ID."
+  },
+  "lighthouseReports": [
+    {
+      "formFactor": "desktop",
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-home-desktop-pr15-2026-07-22.lhr.json",
+      "sha256": "22f24c419154c8be4e2e481efda35ca16e085b3cfc34a48bdaf45e5bd0079c89",
+      "bytes": 575595,
+      "lighthouseVersion": "13.0.3",
+      "fetchTime": "2026-07-21T20:35:24.841Z",
+      "requestedUrl": "https://www.helpmath.ai/",
+      "finalUrl": "https://www.helpmath.ai/",
+      "screenEmulation": {
+        "mobile": false,
+        "width": 1350,
+        "height": 940,
+        "deviceScaleFactor": 1
+      },
+      "scores": {
+        "performance": 1,
+        "accessibility": 1,
+        "bestPractices": 1,
+        "seo": 1
+      },
+      "metrics": {
+        "firstContentfulPaintMs": 386.8745,
+        "largestContentfulPaintMs": 426.8745,
+        "totalBlockingTimeMs": 0,
+        "cumulativeLayoutShift": 0.046582798790165775,
+        "speedIndexMs": 809.3939153300512
+      },
+      "runWarnings": [],
+      "runtimeError": null
+    },
+    {
+      "formFactor": "mobile",
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-home-mobile-pr15-2026-07-22.lhr.json",
+      "sha256": "c96a335ffa629d5ecc0f2f33e79646b52b4bf6edeea3ff26c9c22e53ff802b4e",
+      "bytes": 556417,
+      "lighthouseVersion": "13.0.3",
+      "fetchTime": "2026-07-21T20:35:24.841Z",
+      "requestedUrl": "https://www.helpmath.ai/",
+      "finalUrl": "https://www.helpmath.ai/",
+      "screenEmulation": {
+        "mobile": true,
+        "width": 390,
+        "height": 844,
+        "deviceScaleFactor": 1
+      },
+      "scores": {
+        "performance": 1,
+        "accessibility": 1,
+        "bestPractices": 1,
+        "seo": 1
+      },
+      "metrics": {
+        "firstContentfulPaintMs": 930,
+        "largestContentfulPaintMs": 1750,
+        "totalBlockingTimeMs": 10,
+        "cumulativeLayoutShift": 0.002575588901182617,
+        "speedIndexMs": 1988.2704180025305
+      },
+      "runWarnings": [],
+      "runtimeError": null
+    }
+  ],
+  "screenshots": [
+    {
+      "route": "/",
+      "locale": "en",
+      "viewport": "1440x1000",
+      "fullPage": true,
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-home-desktop-pr15-2026-07-22.png",
+      "sha256": "056571847e3326dc34f00f6fc4c82e7ceb07a99569a7b8d05303e673424f5706",
+      "bytes": 632951,
+      "pixelWidth": 1440,
+      "pixelHeight": 5184
+    },
+    {
+      "route": "/",
+      "locale": "en",
+      "viewport": "390x844",
+      "fullPage": true,
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-home-mobile-pr15-2026-07-22.png",
+      "sha256": "869a45d8cd682efb5afbf6a9d64bc548c1b35e13145ac6f1c207ef007070b4f4",
+      "bytes": 496194,
+      "pixelWidth": 390,
+      "pixelHeight": 6979
+    },
+    {
+      "route": "/demos",
+      "locale": "en",
+      "viewport": "1440x1000",
+      "fullPage": true,
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-demos-desktop-pr15-2026-07-22.png",
+      "sha256": "80aba4e714743b9f4dea2ab728541670a456b4a8d3ca98517a46ee81f0124980",
+      "bytes": 346229,
+      "pixelWidth": 1440,
+      "pixelHeight": 2643
+    },
+    {
+      "route": "/es/demos",
+      "locale": "es",
+      "viewport": "390x844",
+      "fullPage": true,
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-demos-spanish-mobile-pr15-2026-07-22.png",
+      "sha256": "291d87687a5be2deed34437bfd922e99362452fd8396f49c4b9738430ae6483b",
+      "bytes": 307640,
+      "pixelWidth": 390,
+      "pixelHeight": 4125
+    },
+    {
+      "route": "/es/terms",
+      "locale": "es",
+      "viewport": "320x740",
+      "fullPage": false,
+      "path": "docs/evidence/production-ui-pr15-2026-07-22/production-terms-spanish-320-pr15-2026-07-22.png",
+      "sha256": "476476636a4136f7d31f46681e7f905c33cc2e21f11ec34436f92434d2ea290c",
+      "bytes": 59069,
+      "pixelWidth": 320,
+      "pixelHeight": 740
+    }
+  ],
+  "corroboratingEvidence": {
+    "releaseRecord": "docs/releases/2026-07-22-pr15.md",
+    "candidateQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863225868",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863649827",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863684054",
+    "credentialFreeCanonicalResult": "docs/evidence/executive-preview-canonical-pr15-2026-07-22.json",
+    "vercelAliasEvidence": "docs/evidence/vercel-production-alias-pr15-2026-07-22.json"
+  },
+  "privacyBoundary": {
+    "credentialUsed": false,
+    "privateDemoContentCaptured": false,
+    "publicDemoPublicationGate": "holding",
+    "legalPublicationGate": "holding",
+    "contactIntakeGate": "holding",
+    "legacyCutoverGate": "holding",
+    "productionLaunchGate": "holding"
+  },
+  "limitations": [
+    "Lighthouse is a point-in-time synthetic lab measurement under the retained effective configuration, not field Core Web Vitals evidence or a guarantee of future performance.",
+    "The PNG files are visual artifacts, not semantic accessibility or interaction proofs; automated browser and contract tests provide separate coverage.",
+    "The public Demos screenshots show the safe reviewer-entry and publication-status pages. They intentionally contain no private animation frames and do not establish authenticated playback, public rights, product acceptance, audio acceptance, or strict migration fidelity.",
+    "The 320x740 Spanish Terms screenshot is a targeted viewport artifact. The separate focused test also covered 390x844, but no standalone report for that earlier test was retained.",
+    "The raw Lighthouse reports and screenshots do not independently identify a repository commit or Vercel deployment; their association is recorded in this envelope and corroborated by the release and deployment records."
+  ]
+}

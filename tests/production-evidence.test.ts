@@ -20,6 +20,10 @@ const pr15ExecutiveEvidenceSha256 =
 const pr15UiEvidencePath = 'docs/evidence/production-ui-pr15-2026-07-22.json';
 const pr15UiEvidenceSha256 =
   'd7fb8dde8fad4346872ca016ecbd43c94fab177430b1679cdf437a7ed148080e';
+const pr15UiMachineEvidencePath =
+  'docs/evidence/production-ui-machine-pr15-2026-07-22.json';
+const pr15UiMachineEvidenceSha256 =
+  'da2bb0228f4e4e484020999ec8a7451421d32cb1517134ebbdb00f1959ab92ed';
 const pr15ProductionCommit = 'd3b84e8dcf539d8859641bdb58cbaa5237efc461';
 const pr15VercelDeploymentId = 'dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ';
 
@@ -408,11 +412,196 @@ describe('PR #15 current Production evidence', () => {
     });
   });
 
+  it('pins the retained PR #15 Lighthouse reports and production screenshots', async () => {
+    const bytes = await readFile(pr15UiMachineEvidencePath);
+    const evidence = JSON.parse(bytes.toString('utf8')) as {
+      source: {
+        evidenceLevel: string;
+        lighthouseVersion: string;
+        playwrightCliVersion: string;
+        absoluteOperatorChromePathRetained: boolean;
+      };
+      identity: {
+        pullRequest: number;
+        repositoryCommit: string;
+        githubDeploymentId: number;
+        vercelDeploymentId: string;
+        canonicalUrl: string;
+      };
+      lighthouseReports: Array<{
+        formFactor: 'desktop' | 'mobile';
+        path: string;
+        sha256: string;
+        bytes: number;
+        lighthouseVersion: string;
+        fetchTime: string;
+        requestedUrl: string;
+        finalUrl: string;
+        screenEmulation: {
+          mobile: boolean;
+          width: number;
+          height: number;
+          deviceScaleFactor: number;
+        };
+        scores: {
+          performance: number;
+          accessibility: number;
+          bestPractices: number;
+          seo: number;
+        };
+        metrics: {
+          firstContentfulPaintMs: number;
+          largestContentfulPaintMs: number;
+          totalBlockingTimeMs: number;
+          cumulativeLayoutShift: number;
+          speedIndexMs: number;
+        };
+        runWarnings: unknown[];
+        runtimeError: unknown;
+      }>;
+      screenshots: Array<{
+        route: string;
+        locale: string;
+        viewport: string;
+        fullPage: boolean;
+        path: string;
+        sha256: string;
+        bytes: number;
+        pixelWidth: number;
+        pixelHeight: number;
+      }>;
+      privacyBoundary: Record<string, boolean | string>;
+      limitations: string[];
+    };
+
+    assert.equal(sha256(bytes), pr15UiMachineEvidenceSha256);
+    assert.match(evidence.source.evidenceLevel, /retained machine reports/iu);
+    assert.equal(evidence.source.lighthouseVersion, '13.0.3');
+    assert.equal(evidence.source.playwrightCliVersion, '0.1.17');
+    assert.equal(evidence.source.absoluteOperatorChromePathRetained, false);
+    assert.equal(evidence.identity.pullRequest, 15);
+    assert.equal(evidence.identity.repositoryCommit, pr15ProductionCommit);
+    assert.equal(evidence.identity.githubDeploymentId, 5544827753);
+    assert.equal(evidence.identity.vercelDeploymentId, pr15VercelDeploymentId);
+    assert.equal(evidence.identity.canonicalUrl, 'https://www.helpmath.ai/');
+    assert.equal(evidence.lighthouseReports.length, 2);
+    assert.equal(evidence.screenshots.length, 5);
+    assert.equal(evidence.privacyBoundary.credentialUsed, false);
+    assert.equal(evidence.privacyBoundary.privateDemoContentCaptured, false);
+    assert.equal(evidence.privacyBoundary.publicDemoPublicationGate, 'holding');
+    assert.ok(evidence.limitations.some((value) => /not field Core Web Vitals/iu.test(value)));
+
+    for (const report of evidence.lighthouseReports) {
+      const [reportBytes, metadata] = await Promise.all([readFile(report.path), stat(report.path)]);
+      const raw = JSON.parse(reportBytes.toString('utf8')) as {
+        lighthouseVersion: string;
+        fetchTime: string;
+        requestedUrl: string;
+        finalUrl: string;
+        finalDisplayedUrl: string;
+        runWarnings: unknown[];
+        runtimeError?: unknown;
+        configSettings: {
+          formFactor: string;
+          screenEmulation: {
+            mobile: boolean;
+            width: number;
+            height: number;
+            deviceScaleFactor: number;
+            disabled: boolean;
+          };
+          onlyCategories: string[];
+        };
+        categories: Record<string, {score: number}>;
+        audits: Record<string, {numericValue: number}>;
+      };
+
+      assert.equal(metadata.size, report.bytes);
+      assert.equal(sha256(reportBytes), report.sha256);
+      assert.equal(raw.lighthouseVersion, report.lighthouseVersion);
+      assert.equal(raw.fetchTime, report.fetchTime);
+      assert.equal(raw.requestedUrl, report.requestedUrl);
+      assert.equal(raw.finalUrl, report.finalUrl);
+      assert.equal(raw.finalDisplayedUrl, report.finalUrl);
+      assert.equal(raw.configSettings.formFactor, report.formFactor);
+      assert.deepEqual(raw.configSettings.screenEmulation, {
+        ...report.screenEmulation,
+        disabled: false,
+      });
+      assert.deepEqual(raw.configSettings.onlyCategories, [
+        'performance',
+        'accessibility',
+        'best-practices',
+        'seo',
+      ]);
+      assert.deepEqual(
+        {
+          performance: raw.categories.performance?.score,
+          accessibility: raw.categories.accessibility?.score,
+          bestPractices: raw.categories['best-practices']?.score,
+          seo: raw.categories.seo?.score,
+        },
+        report.scores,
+      );
+      assert.deepEqual(
+        {
+          firstContentfulPaintMs: raw.audits['first-contentful-paint']?.numericValue,
+          largestContentfulPaintMs: raw.audits['largest-contentful-paint']?.numericValue,
+          totalBlockingTimeMs: raw.audits['total-blocking-time']?.numericValue,
+          cumulativeLayoutShift: raw.audits['cumulative-layout-shift']?.numericValue,
+          speedIndexMs: raw.audits['speed-index']?.numericValue,
+        },
+        report.metrics,
+      );
+      assert.deepEqual(raw.runWarnings, report.runWarnings);
+      assert.equal(raw.runtimeError ?? null, report.runtimeError);
+      assert.deepEqual(report.scores, {
+        performance: 1,
+        accessibility: 1,
+        bestPractices: 1,
+        seo: 1,
+      });
+    }
+
+    for (const screenshot of evidence.screenshots) {
+      await assertScreenshot({
+        screenshot: screenshot.path,
+        screenshotWidth: screenshot.pixelWidth,
+        screenshotHeight: screenshot.pixelHeight,
+        bytes: screenshot.bytes,
+        sha256: screenshot.sha256,
+      });
+    }
+
+    assert.deepEqual(
+      evidence.screenshots.map(({route, locale, viewport, fullPage}) => ({
+        route,
+        locale,
+        viewport,
+        fullPage,
+      })),
+      [
+        {route: '/', locale: 'en', viewport: '1440x1000', fullPage: true},
+        {route: '/', locale: 'en', viewport: '390x844', fullPage: true},
+        {route: '/demos', locale: 'en', viewport: '1440x1000', fullPage: true},
+        {route: '/es/demos', locale: 'es', viewport: '390x844', fullPage: true},
+        {route: '/es/terms', locale: 'es', viewport: '320x740', fullPage: false},
+      ],
+    );
+  });
+
   it('contains no retained credential-shaped fields or values', async () => {
     const serialized = await Promise.all([
       readFile(pr15CanonicalEvidencePath, 'utf8'),
       readFile(pr15ExecutiveEvidencePath, 'utf8'),
       readFile(pr15UiEvidencePath, 'utf8'),
+      readFile(pr15UiMachineEvidencePath, 'utf8'),
+      ...[
+        'production-home-desktop-pr15-2026-07-22.lhr.json',
+        'production-home-mobile-pr15-2026-07-22.lhr.json',
+      ].map((name) =>
+        readFile(`docs/evidence/production-ui-pr15-2026-07-22/${name}`, 'utf8'),
+      ),
     ]).then((records) => records.join('\n'));
 
     assert.doesNotMatch(serialized, /"(?:token|secret|password|passphrase|cookie|privateKey)"\s*:/iu);
