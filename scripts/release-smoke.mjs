@@ -1,9 +1,37 @@
+import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+
 import {
+  evaluateExecutivePreviewEntries,
+  inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
+  isStrictIsoUtcTimestamp,
   mapWithConcurrency,
   retryDelayMs,
   retryOperation,
 } from './release-smoke-helpers.mjs';
+
+const launchGateManifestText = await readFile(
+  new URL('../config/launch-gates.json', import.meta.url),
+  'utf8',
+);
+const launchGateManifest = JSON.parse(launchGateManifestText);
+const launchGateManifestSha256 = createHash('sha256')
+  .update(launchGateManifestText)
+  .digest('hex');
+const legalPublicationState = launchGateManifest.gates?.legalPublication?.status;
+const contactIntakeState = launchGateManifest.gates?.contactIntake?.status;
+for (const [gate, state] of [
+  ['legalPublication', legalPublicationState],
+  ['contactIntake', contactIntakeState],
+]) {
+  if (!['holding', 'approved'].includes(state)) {
+    throw new Error(`config/launch-gates.json has invalid ${gate} state ${state ?? 'missing'}.`);
+  }
+}
+const legalPublicationApproved = legalPublicationState === 'approved';
+const contactRepositoryApproved =
+  legalPublicationApproved && contactIntakeState === 'approved';
 
 const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? 'https://www.helpmath.ai');
 const canonicalBaseUrl = new URL(
@@ -29,6 +57,11 @@ const requestRetryMaxDelayMs = Number(
 );
 const vercelBypassSecret = process.env.SMOKE_VERCEL_BYPASS_SECRET?.trim();
 const executivePreviewAccessKey = process.env.SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
+const expectedExecutivePreviewState =
+  process.env.EXPECT_EXECUTIVE_PREVIEW_STATE?.trim().toLowerCase() || 'any';
+const expectedExecutivePreviewExpiresAt =
+  process.env.EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT?.trim() || null;
+const smokeStartedAt = Date.now();
 
 for (const [name, value] of [
   ['SMOKE_BASE_URL', baseUrl],
@@ -70,6 +103,31 @@ if (
     'SMOKE_REQUEST_RETRY_MAX_DELAY_MS must be at least SMOKE_REQUEST_RETRY_BASE_DELAY_MS.',
   );
 }
+if (!['any', 'login', 'unavailable'].includes(expectedExecutivePreviewState)) {
+  throw new Error(
+    'EXPECT_EXECUTIVE_PREVIEW_STATE must be one of: any, login, unavailable.',
+  );
+}
+if (expectContactEnabled && !contactRepositoryApproved) {
+  throw new Error(
+    'EXPECT_CONTACT_ENABLED=true requires approved legalPublication and contactIntake repository gates.',
+  );
+}
+if (expectedExecutivePreviewExpiresAt) {
+  if (expectedExecutivePreviewState !== 'login') {
+    throw new Error(
+      'EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT requires EXPECT_EXECUTIVE_PREVIEW_STATE=login.',
+    );
+  }
+  if (!isStrictIsoUtcTimestamp(expectedExecutivePreviewExpiresAt)) {
+    throw new Error(
+      'EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT must be a canonical UTC timestamp with milliseconds.',
+    );
+  }
+  if (Date.parse(expectedExecutivePreviewExpiresAt) <= smokeStartedAt) {
+    throw new Error('EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT must be in the future.');
+  }
+}
 
 const origin = baseUrl.origin;
 const canonicalOrigin = canonicalBaseUrl.origin;
@@ -99,6 +157,7 @@ const contentRoutes = [
   '/support',
   '/login',
   '/contact',
+  ...(legalPublicationApproved ? ['/privacy', '/terms'] : []),
 ];
 
 const privateDemoRoutes = [
@@ -402,8 +461,18 @@ for (const page of expectedPages) {
   if (entry) checkAlternateLinks(entry.block, page.alternates, `sitemap entry ${page.canonical}`);
 }
 
-for (const draftPath of ['/privacy', '/terms', '/es/privacy', '/es/terms']) {
-  check(!uniqueSitemapUrls.has(canonicalUrl(draftPath)), `${draftPath} must stay outside the sitemap while draft`);
+for (const legalPath of ['/privacy', '/terms', '/es/privacy', '/es/terms']) {
+  if (legalPublicationApproved) {
+    check(
+      uniqueSitemapUrls.has(canonicalUrl(legalPath)),
+      `${legalPath} must be present in the sitemap after legal approval`,
+    );
+  } else {
+    check(
+      !uniqueSitemapUrls.has(canonicalUrl(legalPath)),
+      `${legalPath} must stay outside the sitemap while draft`,
+    );
+  }
 }
 for (const previewPath of privateDemoRoutes) {
   check(
@@ -412,33 +481,88 @@ for (const previewPath of privateDemoRoutes) {
   );
 }
 
-const executivePreviewEntryPaths = [
-  '/executive-preview?returnTo=/demos/conversion-1-2',
-  '/es/executive-preview?returnTo=/es/demos/conversion-1-2',
+const executivePreviewEntryCases = [
+  {
+    path: '/executive-preview?returnTo=/demos/conversion-1-2',
+    locale: 'en',
+  },
+  {
+    path: '/es/executive-preview?returnTo=/es/demos/conversion-1-2',
+    locale: 'es',
+  },
 ];
 const executivePreviewEntries = await Promise.all(
-  executivePreviewEntryPaths.map(async (path) => {
+  executivePreviewEntryCases.map(async ({path, locale}) => {
     const response = await get(path);
     const html = await response.text();
+    const inspection = inspectExecutivePreviewEntry(html);
+    const language = html.match(/<html[^>]+lang=["']([^"']+)/iu)?.[1] ?? null;
     check(response.status === 200, `${path} returned ${response.status}`);
+    check(language === locale, `${path} has lang=${language ?? 'missing'}, expected ${locale}`);
     checkExecutivePreviewHeaders(response, path);
     check(
       hasRobotsMeta(html, ['noindex', 'nofollow', 'noarchive']),
       `${path} is missing noindex, nofollow, noarchive robots metadata`,
     );
-    if (executivePreviewAccessKey) {
+    check(
+      inspection.state !== 'unknown',
+      `${path} has an unrecognized or internally inconsistent executive preview state`,
+    );
+    if (inspection.state === 'login') {
       check(
-        /<form\b[^>]*action=["']\/api\/executive-preview\/session["'][^>]*method=["']post["']/i.test(html),
+        inspection.hasLoginForm,
         `${path} is missing its same-origin executive preview login form`,
       );
       check(
-        /<input\b[^>]*name=["']passphrase["']/i.test(html),
+        inspection.hasPassphraseField,
         `${path} is missing its executive preview passphrase field`,
       );
+      check(
+        inspection.expiryValues.length === 1,
+        `${path} has ${inspection.expiryValues.length} review expiry values, expected 1`,
+      );
+      const expiresAt = inspection.expiryValues[0];
+      check(
+        isStrictIsoUtcTimestamp(expiresAt),
+        `${path} has a malformed review expiry ${expiresAt ?? 'missing'}`,
+      );
+      const expiresAtMs = Date.parse(expiresAt ?? '');
+      check(
+        Number.isFinite(expiresAtMs) && expiresAtMs > smokeStartedAt,
+        `${path} review expiry is not in the future`,
+      );
+    } else if (inspection.state === 'unavailable') {
+      check(
+        inspection.unavailableLocales.length === 1 &&
+          inspection.unavailableLocales[0] === locale,
+        `${path} does not expose the expected ${locale} unavailable notice`,
+      );
+      check(
+        inspection.expiryValues.length === 0,
+        `${path} exposes a review expiry while the preview is unavailable`,
+      );
     }
-    return {path, status: response.status};
+    return {path, status: response.status, ...inspection};
   }),
 );
+
+const executivePreviewEvaluation = evaluateExecutivePreviewEntries(
+  executivePreviewEntries,
+  {
+    expectedState: expectedExecutivePreviewState,
+    expectedExpiresAt: expectedExecutivePreviewExpiresAt,
+    nowMs: Date.now(),
+  },
+);
+failures.push(...executivePreviewEvaluation.failures);
+const executivePreviewState = executivePreviewEvaluation.state;
+if (executivePreviewAccessKey) {
+  check(
+    executivePreviewState === 'login',
+    `executive preview access key was supplied while entry state is ${executivePreviewState}`,
+  );
+}
+const executivePreviewExpiresAt = executivePreviewEvaluation.expiresAt;
 
 const internalLinks = new Map();
 const publicPages = await Promise.all(
@@ -818,15 +942,30 @@ for (const path of ['/privacy', '/terms', '/es/privacy', '/es/terms']) {
   const html = await response.text();
   const visibleText = visibleTextFrom(html);
   check(response.status === 200, `${path} returned ${response.status}`);
-  check(
-    hasRobotsHeader(response, ['noindex', 'follow']),
-    `${path} is missing X-Robots-Tag: noindex, follow`,
-  );
-  check(
-    hasRobotsMeta(html, ['noindex', 'follow']),
-    `${path} is missing the matching robots meta tag`,
-  );
-  check(/draft|borrador/i.test(visibleText), `${path} is missing its visible draft notice`);
+  if (legalPublicationApproved) {
+    check(
+      !robotsDirectives(response.headers.get('x-robots-tag')).has('noindex'),
+      `${path} still sends a noindex header after legal approval`,
+    );
+    check(
+      !hasRobotsMeta(html, ['noindex']),
+      `${path} still renders noindex metadata after legal approval`,
+    );
+    check(
+      !/\bdraft\b|borrador/iu.test(visibleText),
+      `${path} still exposes draft copy after legal approval`,
+    );
+  } else {
+    check(
+      hasRobotsHeader(response, ['noindex', 'follow']),
+      `${path} is missing X-Robots-Tag: noindex, follow`,
+    );
+    check(
+      hasRobotsMeta(html, ['noindex', 'follow']),
+      `${path} is missing the matching robots meta tag`,
+    );
+    check(/draft|borrador/iu.test(visibleText), `${path} is missing its visible draft notice`);
+  }
 }
 
 const staticAssets = [
@@ -965,6 +1104,10 @@ if (origin === 'https://www.helpmath.ai') {
 const summary = {
   baseUrl: origin,
   canonicalOrigin,
+  launchGateManifestSha256,
+  launchGates: Object.fromEntries(
+    Object.entries(launchGateManifest.gates ?? {}).map(([id, gate]) => [id, gate.status]),
+  ),
   fetchTimeoutMs,
   internalLinkConcurrency,
   requestMaxAttempts,
@@ -981,17 +1124,34 @@ const summary = {
   executivePreviewAssets: executivePreviewAssets.length,
   privateDemoOptimizerProbes: 4,
   executivePreviewEntries: executivePreviewEntries.length,
+  executivePreviewExpectedState: expectedExecutivePreviewState,
+  executivePreviewExpectedExpiresAt: expectedExecutivePreviewExpiresAt,
+  executivePreviewState,
+  executivePreviewExpiresAt,
   executivePreviewAuthentication,
   executivePreviewAuthenticatedDemoRoutes,
   executivePreviewAuthenticatedAssets,
   executivePreviewAuthenticatedRuntimes,
   staticAssets: staticAssets.length,
-  legalDrafts: 4,
+  legalPublicationGate: legalPublicationState,
+  legalDrafts: legalPublicationApproved ? 0 : 4,
+  legalPublishedPages: legalPublicationApproved ? 4 : 0,
   domainMatrixCases,
+  contactRepositoryGate: contactIntakeState,
   contactExpectation: expectContactEnabled ? 'enabled' : 'disabled',
   protectedPreviewAuth: Boolean(vercelBypassSecret),
   failures,
 };
+
+if (executivePreviewState === 'login') {
+  check(
+    isStrictIsoUtcTimestamp(executivePreviewExpiresAt) &&
+      Date.parse(executivePreviewExpiresAt) > Date.now(),
+    'executive preview expired before the smoke completed',
+  );
+}
+
+summary.failures = failures;
 
 console.log(JSON.stringify(summary, null, 2));
 

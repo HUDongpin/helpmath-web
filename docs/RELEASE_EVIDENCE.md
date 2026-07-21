@@ -25,6 +25,7 @@ the candidate commit itself.
 | Production | Vercel deployment ID assigned to `www.helpmath.ai` |
 | Production smoke | Timestamp and zero-failure JSON output after promotion |
 | Contact mode | `disabled` or the separate approved delivery-test evidence |
+| Launch gates | Manifest SHA-256 and the five non-secret gate statuses |
 | Exceptions | Every accepted failure, owner, reason, and expiry/review date |
 
 ## Verification sequence
@@ -43,6 +44,10 @@ npm run build
 npm run test:e2e
 npm audit --audit-level=high
 ```
+
+`check:generated`, `npm test`, and `npm run build` each fail closed on an
+invalid launch-gate manifest. Retain only its SHA-256 and statuses; the
+manifest must contain no credentials, contracts, or personal data.
 
 Confirm in authenticated GitHub that the successful `Quality` run has the same
 head SHA. Confirm in authenticated Vercel that the Preview deployment is
