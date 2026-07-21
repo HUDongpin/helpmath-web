@@ -687,15 +687,25 @@ if (executivePreviewAccessKey) {
     }
 
     for (const path of [executivePreviewAssets[0], executivePreviewRuntimes[0]]) {
-      const fullResponse = await get(path, {headers: sessionHeaders});
+      // Node fetch transparently decompresses response bodies while some edge
+      // networks calculate a method-specific compressed Content-Length for
+      // HEAD. Request the stored representation so HEAD and GET can be
+      // compared without conflating transport compression with source bytes.
+      const identityHeaders = {...sessionHeaders, 'accept-encoding': 'identity'};
+      const fullResponse = await get(path, {headers: identityHeaders});
       const fullBody = await fullResponse.arrayBuffer();
-      const headResponse = await get(path, {method: 'HEAD', headers: sessionHeaders});
+      const headResponse = await get(path, {method: 'HEAD', headers: identityHeaders});
       const headBody = await headResponse.arrayBuffer();
+      const getContentLength = fullResponse.headers.get('content-length');
       check(headResponse.status === 200, `${path} authenticated HEAD returned ${headResponse.status}`);
       check(headBody.byteLength === 0, `${path} authenticated HEAD returned a body`);
       check(
-        headResponse.headers.get('content-length') === String(fullBody.byteLength),
-        `${path} authenticated HEAD content-length does not match GET`,
+        getContentLength === String(fullBody.byteLength),
+        `${path} identity GET content-length does not match its body`,
+      );
+      check(
+        headResponse.headers.get('content-length') === getContentLength,
+        `${path} identity HEAD content-length does not match GET`,
       );
       checkExecutivePreviewResourceHeaders(headResponse, `authenticated HEAD ${path}`);
     }
