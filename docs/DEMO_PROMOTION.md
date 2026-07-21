@@ -24,8 +24,23 @@ hashes, candidate bindings, evidence shapes, timestamps, and fail-closed
 activation prerequisites. `npm run build:executive-runtime` independently
 verifies that each deterministic browser bundle matches the SHA-256 recorded
 by its candidate. The legacy `demos/SNAPSHOT.json` no longer pins mutable site
-integration files; candidate evidence therefore remains stable when routing or
-activation enforcement changes.
+integration files or per-demo publication state; candidate evidence therefore
+remains stable when routing or activation enforcement changes.
+
+A rights- and product-approved conditional public demo remains `noindex` in
+both HTTP and page metadata, but its page is not blocked in `robots.txt` so a
+crawler can observe that directive. Only a strict-complete indexable demo gets
+an exact robots allow-rule for its lifecycle-owned asset API prefix.
+
+For Vercel packaging, only direct, non-hidden JSON under
+`docs/evidence/demo-publication/` can enter the build context. The lifecycle
+validator requires that directory's complete regular non-symlink file set to
+equal the rights and product acceptance references exactly and verifies every
+retained byte against its recorded SHA-256. Hidden files, non-JSON files,
+nested paths, symbolic files, extras, and missing references fail closed. The
+current acceptances are all `null`, so the directory may be absent or empty and
+must contain no evidence. This packaging contract is not an acceptance record
+and does not relax the holding-only launch-gate lock.
 
 This foundation is not an executable public-release procedure. A later,
 separately reviewed change must remove or replace the holding-only launch-gate
@@ -59,10 +74,10 @@ Before that implementation may be proposed:
 
 An approved CEO Executive Preview may temporarily allow the named executive
 audience to open `conversion-1-2` and `conversion-1-4` through the protected
-entry route. It does not change `demos/SNAPSHOT.json` to public access, add the
-demos to the public library or sitemap, or authorize indexing, forwarding,
-recording, republication, classroom use, CDN distribution, or any other public
-display.
+entry route. It does not activate either demo in
+`config/demo-activations.json`, add the demos to the public library or sitemap,
+or authorize indexing, forwarding, recording, republication, classroom use,
+CDN distribution, or any other public display.
 
 The executive-preview boundary requires all four server-only Vercel variables:
 `EXECUTIVE_PREVIEW_ENABLED`, `EXECUTIVE_PREVIEW_ACCESS_KEY`,

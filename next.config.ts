@@ -40,7 +40,7 @@ const conditionalDemoHeaders = demoRoutes
   .flatMap((route) => [route, `/es${route}`])
   .map((source) => ({
     source,
-    headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]
+    headers: [{key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive'}]
   }));
 
 const executivePreviewHeaders = [
@@ -48,7 +48,8 @@ const executivePreviewHeaders = [
   '/es/executive-preview',
   ...reviewDemoRoutes,
   ...reviewDemoRoutes.map((route) => `/es${route}`),
-  '/api/executive-preview/:path*',
+  '/api/executive-preview/session',
+  '/api/executive-preview/runtime/:path*',
   '/flash-assets/:path*',
 ].map((source) => ({
   source,

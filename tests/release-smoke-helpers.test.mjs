@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES,
+  buildDemoLifecycleSmokeModel,
   evaluateExecutivePreviewEntries,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
@@ -12,15 +12,139 @@ import {
   retryOperation,
 } from '../scripts/release-smoke-helpers.mjs';
 
-test('authenticated executive smoke covers both demos in both locales', () => {
+const lifecycleFixture = {
+  assetsById: {
+    'conversion-1-2': [
+      '/api/executive-preview/assets/conversion-1-2/gallon.png',
+    ],
+    'conversion-1-4': [
+      '/api/executive-preview/assets/conversion-1-4/pitcher.png',
+    ],
+  },
+  candidateIds: ['conversion-1-2', 'conversion-1-4'],
+  headingsByLocale: {
+    en: {'conversion-1-2': 'Conversion 1.2', 'conversion-1-4': 'Conversion 1.4'},
+    es: {'conversion-1-2': 'Conversión 1.2', 'conversion-1-4': 'Conversión 1.4'},
+  },
+};
+
+test('demo lifecycle smoke model preserves the current all-private contract', () => {
+  const model = buildDemoLifecycleSmokeModel({
+    ...lifecycleFixture,
+    indexableIds: [],
+    publicIds: [],
+    reviewIds: ['conversion-1-2', 'conversion-1-4'],
+  });
+
+  assert.deepEqual(model.publicDemoIds, []);
+  assert.deepEqual(model.privateDemoRoutes, [
+    '/demos/conversion-1-2',
+    '/es/demos/conversion-1-2',
+    '/demos/conversion-1-4',
+    '/es/demos/conversion-1-4',
+  ]);
   assert.deepEqual(
-    EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES.map(({path, locale}) => ({path, locale})),
+    model.authenticatedDemoCases.map(({path, locale}) => ({path, locale})),
     [
       {path: '/demos/conversion-1-2', locale: 'en'},
-      {path: '/demos/conversion-1-4', locale: 'en'},
       {path: '/es/demos/conversion-1-2', locale: 'es'},
+      {path: '/demos/conversion-1-4', locale: 'en'},
       {path: '/es/demos/conversion-1-4', locale: 'es'},
     ],
+  );
+  assert.deepEqual(model.privateAssetPaths, [
+    '/api/executive-preview/assets/conversion-1-2/gallon.png',
+    '/api/executive-preview/assets/conversion-1-4/pitcher.png',
+  ]);
+});
+
+test('demo lifecycle smoke model separates conditional, indexable, and private demos', () => {
+  const conditional = buildDemoLifecycleSmokeModel({
+    ...lifecycleFixture,
+    indexableIds: [],
+    publicIds: ['conversion-1-2'],
+    reviewIds: ['conversion-1-4'],
+  });
+  assert.deepEqual(conditional.publicDemoRoutes, [
+    '/demos/conversion-1-2',
+    '/es/demos/conversion-1-2',
+  ]);
+  assert.deepEqual(conditional.indexableDemoRoutes, []);
+  assert.deepEqual(conditional.privateDemoRoutes, [
+    '/demos/conversion-1-4',
+    '/es/demos/conversion-1-4',
+  ]);
+  assert.deepEqual(conditional.publicAssetPaths, [
+    '/api/executive-preview/assets/conversion-1-2/gallon.png',
+  ]);
+  assert.deepEqual(conditional.reviewRuntimePaths, [
+    '/api/executive-preview/runtime/conversion-1-4.js',
+  ]);
+
+  const indexable = buildDemoLifecycleSmokeModel({
+    ...lifecycleFixture,
+    indexableIds: ['conversion-1-2'],
+    publicIds: ['conversion-1-2'],
+    reviewIds: ['conversion-1-4'],
+  });
+  assert.deepEqual(indexable.indexableDemoRoutes, [
+    '/demos/conversion-1-2',
+    '/es/demos/conversion-1-2',
+  ]);
+
+  const assetless = buildDemoLifecycleSmokeModel({
+    ...lifecycleFixture,
+    assetsById: {
+      ...lifecycleFixture.assetsById,
+      'conversion-1-4': [],
+    },
+    indexableIds: [],
+    publicIds: ['conversion-1-4'],
+    reviewIds: ['conversion-1-2'],
+  });
+  assert.deepEqual(assetless.publicAssetPaths, []);
+  assert.deepEqual(assetless.reviewAssetPaths, [
+    '/api/executive-preview/assets/conversion-1-2/gallon.png',
+  ]);
+});
+
+test('demo lifecycle smoke model fails closed on invalid ownership or state overlap', () => {
+  assert.throws(
+    () => buildDemoLifecycleSmokeModel({
+      ...lifecycleFixture,
+      indexableIds: [],
+      publicIds: ['conversion-1-2'],
+      reviewIds: ['conversion-1-2'],
+    }),
+    /cannot be public and private-review/u,
+  );
+  assert.throws(
+    () => buildDemoLifecycleSmokeModel({
+      ...lifecycleFixture,
+      assetsById: {
+        ...lifecycleFixture.assetsById,
+        'conversion-1-2': ['/api/executive-preview/assets/conversion-1-4/pitcher.png'],
+      },
+      indexableIds: [],
+      publicIds: [],
+      reviewIds: ['conversion-1-2'],
+    }),
+    /unique namespaced asset paths/u,
+  );
+  assert.throws(
+    () => buildDemoLifecycleSmokeModel({
+      ...lifecycleFixture,
+      assetsById: {
+        ...lifecycleFixture.assetsById,
+        'conversion-1-2': [
+          '/api/executive-preview/assets/conversion-1-2/../conversion-1-4/pitcher.png',
+        ],
+      },
+      indexableIds: [],
+      publicIds: [],
+      reviewIds: ['conversion-1-2'],
+    }),
+    /unique namespaced asset paths/u,
   );
 });
 

@@ -1,5 +1,7 @@
 import { enContent } from "./en";
 import { esContent } from "./es";
+import {indexableDemoIds, demoIds, reviewDemoIds} from "../demos/catalog";
+import {applyDemoLifecycleContent} from "./demo-lifecycle-content";
 import type { Locale, SiteContent } from "./types";
 
 export * from "./types";
@@ -8,8 +10,16 @@ export const defaultLocale: Locale = "en";
 export const supportedLocales = ["en", "es"] as const satisfies readonly Locale[];
 
 export const siteContent: Readonly<Record<Locale, SiteContent>> = {
-  en: enContent,
-  es: esContent,
+  en: applyDemoLifecycleContent(enContent, {
+    publicDemoIds: demoIds,
+    indexableDemoIds,
+    reviewDemoIds,
+  }),
+  es: applyDemoLifecycleContent(esContent, {
+    publicDemoIds: demoIds,
+    indexableDemoIds,
+    reviewDemoIds,
+  }),
 };
 
 export function isLocale(value: string | null | undefined): value is Locale {

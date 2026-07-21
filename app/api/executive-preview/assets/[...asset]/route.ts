@@ -11,8 +11,8 @@ import {
   verifyExecutivePreviewSession,
 } from '@/lib/executive-preview-access';
 import {
-  EXECUTIVE_PREVIEW_ASSET_FILES,
-  serveExecutivePreviewResource,
+  isExecutivePreviewAssetPublic,
+  serveExecutivePreviewAsset,
 } from '@/lib/executive-preview-resources';
 
 export const dynamic = 'force-dynamic';
@@ -34,10 +34,9 @@ async function serveAsset(
 ) {
   const {asset} = await params;
   const relativePath = asset.join('/');
-  return serveExecutivePreviewResource({
-    authorized: await isAuthorized(request),
-    contentType: 'image/png',
-    files: EXECUTIVE_PREVIEW_ASSET_FILES,
+  const publiclyAccessible = isExecutivePreviewAssetPublic(relativePath);
+  return serveExecutivePreviewAsset({
+    authorized: publiclyAccessible ? false : await isAuthorized(request),
     headOnly,
     readFile,
     requestKey: relativePath,

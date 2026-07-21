@@ -51,6 +51,10 @@ const manifestErrors = validateDemoActivationManifest(activationManifest, {
   demoPublicationGateApproved,
 });
 
+export const demoLifecycleUpdatedAt = manifestErrors.length === 0
+  ? activationManifest.updatedAt
+  : null;
+
 export function deriveDemoLifecycleState({
   id,
   candidate,

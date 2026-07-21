@@ -1,6 +1,8 @@
 import {ArrowRight, KeyRound, LockKeyhole, ShieldAlert} from 'lucide-react';
 
+import {getSiteContent} from '@/content';
 import type {Locale} from '@/content/types';
+import {reviewDemoIds} from '@/demos/catalog';
 import {Link} from '@/i18n/navigation';
 
 import {Container, Eyebrow, Section} from './ui';
@@ -20,7 +22,7 @@ const copy = {
     eyebrow: 'Internal executive review',
     title: 'HELP Math JavaScript demo preview',
     intro:
-      'A restricted review space for two early JavaScript reconstructions of legacy HELP Math animations.',
+      'A restricted review space for early JavaScript reconstructions of legacy HELP Math animations.',
     restrictedTitle: 'Private review — not for distribution',
     restrictedBody:
       'These prototypes are not validated as faithful or complete. Audio, technical acceptance, visual validation, and rights review remain pending. Do not forward, record, republish, or present them as finished HELP Math products.',
@@ -39,11 +41,8 @@ const copy = {
       'Access is closed because the private preview is not configured or its review window has expired. No demo content has been released publicly.',
     demosTitle: 'Private JavaScript prototypes',
     demosBody:
-      'Open either prototype below while this short-lived review session is active.',
-    firstTitle: 'Conversion 1.2',
-    firstBody: 'Internal JavaScript animation prototype for executive review.',
-    secondTitle: 'Conversion 1.4',
-    secondBody: 'Internal JavaScript animation prototype for executive review.',
+      'Open any assigned prototype below while this short-lived review session is active.',
+    noDemos: 'No private prototypes are assigned to this review window.',
     openDemo: 'Open prototype',
     logout: 'End private session',
   },
@@ -51,7 +50,7 @@ const copy = {
     eyebrow: 'Revisión ejecutiva interna',
     title: 'Vista previa de demos JavaScript de HELP Math',
     intro:
-      'Un espacio restringido para revisar dos reconstrucciones iniciales en JavaScript de animaciones heredadas de HELP Math.',
+      'Un espacio restringido para revisar reconstrucciones iniciales en JavaScript de animaciones heredadas de HELP Math.',
     restrictedTitle: 'Revisión privada — no distribuir',
     restrictedBody:
       'Estos prototipos no están validados como fieles ni completos. El audio, la aceptación técnica, la validación visual y la revisión de derechos siguen pendientes. No los reenvíes, grabes, publiques ni presentes como productos terminados de HELP Math.',
@@ -70,11 +69,8 @@ const copy = {
       'El acceso está cerrado porque la vista previa privada no está configurada o su periodo de revisión ha vencido. Ninguna demo se ha publicado.',
     demosTitle: 'Prototipos JavaScript privados',
     demosBody:
-      'Abre cualquiera de los prototipos mientras esta sesión de revisión de corta duración esté activa.',
-    firstTitle: 'Conversión 1.2',
-    firstBody: 'Prototipo interno de animación JavaScript para revisión ejecutiva.',
-    secondTitle: 'Conversión 1.4',
-    secondBody: 'Prototipo interno de animación JavaScript para revisión ejecutiva.',
+      'Abre cualquier prototipo asignado mientras esta sesión de revisión de corta duración esté activa.',
+    noDemos: 'No hay prototipos privados asignados a esta ventana de revisión.',
     openDemo: 'Abrir prototipo',
     logout: 'Cerrar sesión privada',
   },
@@ -228,10 +224,12 @@ function AuthenticatedPreview({
   locale: Locale;
   text: (typeof copy)[Locale];
 }) {
-  const demos = [
-    {href: '/demos/conversion-1-2', title: text.firstTitle, body: text.firstBody},
-    {href: '/demos/conversion-1-4', title: text.secondTitle, body: text.secondBody},
-  ];
+  const details = getSiteContent(locale).pages.demoDetails;
+  const demos = reviewDemoIds.map((id) => ({
+    href: `/demos/${id}` as const,
+    title: details[id].title,
+    body: details[id].summary,
+  }));
 
   return (
     <Section className="pt-0">
@@ -243,29 +241,35 @@ function AuthenticatedPreview({
           <p className="mt-2 text-[var(--ink-soft)]">{text.demosBody}</p>
           <ExpiryNotice expiresAt={expiresAt} locale={locale} text={text} />
         </div>
-        <div className="grid gap-5 md:grid-cols-2">
-          {demos.map((demo) => (
-            <article
-              className="flex flex-col border-2 border-[var(--ink)] bg-white p-6 shadow-[5px_5px_0_var(--ink)]"
-              key={demo.href}
-            >
-              <Eyebrow>{demo.href}</Eyebrow>
-              <h3 className="font-[family-name:var(--font-display)] text-3xl font-bold">
-                {demo.title}
-              </h3>
-              <p className="mt-2 grow text-[var(--ink-soft)]">{demo.body}</p>
-              <Link
-                aria-label={`${text.openDemo}: ${demo.title}`}
-                className="action action--secondary mt-6 self-start"
-                href={demo.href}
-                locale={locale}
+        {demos.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2">
+            {demos.map((demo) => (
+              <article
+                className="flex flex-col border-2 border-[var(--ink)] bg-white p-6 shadow-[5px_5px_0_var(--ink)]"
+                key={demo.href}
               >
-                <span>{text.openDemo}</span>
-                <ArrowRight aria-hidden="true" size={18} strokeWidth={2.4} />
-              </Link>
-            </article>
-          ))}
-        </div>
+                <Eyebrow>{demo.href}</Eyebrow>
+                <h3 className="font-[family-name:var(--font-display)] text-3xl font-bold">
+                  {demo.title}
+                </h3>
+                <p className="mt-2 grow text-[var(--ink-soft)]">{demo.body}</p>
+                <Link
+                  aria-label={`${text.openDemo}: ${demo.title}`}
+                  className="action action--secondary mt-6 self-start"
+                  href={demo.href}
+                  locale={locale}
+                >
+                  <span>{text.openDemo}</span>
+                  <ArrowRight aria-hidden="true" size={18} strokeWidth={2.4} />
+                </Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="border-2 border-[var(--line)] bg-white p-5 text-[var(--ink-soft)]">
+            {text.noDemos}
+          </p>
+        )}
         <form action="/api/executive-preview/session" className="mt-9" method="post">
           <input name="action" type="hidden" value="logout" />
           <input name="locale" type="hidden" value={locale} />

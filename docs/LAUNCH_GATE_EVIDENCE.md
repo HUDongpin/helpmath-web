@@ -26,12 +26,21 @@ demo routes and assets, legacy cutover, release smoke, and every other consumer
 fail closed in each intermediate state. Until then, Codex, CI, an approver
 name, an evidence JSON file, or a manifest edit cannot unlock a gate.
 
-While this lock is active, `.vercelignore` excludes the entire `docs/evidence/`
-tree from every Vercel build context. No preparatory envelope, private contract,
-receipt, or accidentally misplaced JSON is uploaded. A future lifecycle may
-retain evidence files only after its validator proves that the directory's
-complete regular-file set exactly equals the manifest references and scans
-every retained byte before the Vercel build proceeds.
+`.vercelignore` keeps the evidence tree out of Vercel except for direct,
+non-hidden `*.json` files in exactly `docs/evidence/launch-gates/` and
+`docs/evidence/demo-publication/`. Non-JSON files, hidden files, nested files,
+and every other evidence directory remain excluded. This narrow build-input
+allowlist is packaging readiness only; it does not approve a gate or activate a
+demo.
+
+Before the Vercel build proceeds, the launch-gate and demo-lifecycle validators
+enumerate the complete entry set in their respective allowlisted directory.
+Every entry must be a direct regular non-symlink file, the set must exactly
+equal the manifest or activation references, and every file byte must match its
+recorded SHA-256. An unreferenced, missing, nested, hidden, non-JSON, symbolic,
+or digest-mismatched entry fails closed. With the current holding gates and null
+demo acceptances, both reference sets are empty, so each allowlisted directory
+may be absent or empty but may not contain a preparatory artifact.
 
 ## Approval record
 

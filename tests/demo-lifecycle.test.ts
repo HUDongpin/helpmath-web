@@ -28,6 +28,7 @@ import {
   isDemoPrivatePreview,
   isDemoPublic,
 } from '../lib/demo-lifecycle';
+import {validateEvidenceDirectoryContract} from '../scripts/evidence-directory-contract';
 
 const NOW_MS = Date.parse('2026-07-23T00:00:00.000Z');
 const UPDATED_AT = '2026-07-22T12:00:00.000Z';
@@ -188,6 +189,18 @@ describe('demo candidates', () => {
 });
 
 describe('demo activation manifest', () => {
+  it('allows the demo-publication evidence directory to be absent only with null acceptances', async () => {
+    for (const id of DEMO_CANDIDATE_IDS) {
+      assert.equal(activationManifestJson.demos[id].approvals.rightsAcceptance, null, id);
+      assert.equal(activationManifestJson.demos[id].approvals.productAcceptance, null, id);
+    }
+    assert.deepEqual(await validateEvidenceDirectoryContract({
+      repositoryRoot: process.cwd(),
+      relativeDirectory: 'docs/evidence/demo-publication',
+      references: [],
+    }), []);
+  });
+
   it('keeps both current candidates private-preview, inactive, and non-indexable', () => {
     const canonical = readFileSync('config/demo-activations.json', 'utf8');
     assert.deepEqual(parseNormalizedJson(canonical, 'demo activations').errors, []);

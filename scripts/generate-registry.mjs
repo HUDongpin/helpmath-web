@@ -7,6 +7,11 @@ import {demoIds} from '../demos/catalog.ts';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputPath = path.join(repositoryRoot, 'demos/registry.generated.ts');
 const publicIds = [...demoIds].sort();
+const argumentsList = process.argv.slice(2);
+if (argumentsList.some((argument) => argument !== '--check') || argumentsList.length > 1) {
+  throw new Error('Usage: tsx scripts/generate-registry.mjs [--check]');
+}
+const checkOnly = argumentsList[0] === '--check';
 
 for (const id of publicIds) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
@@ -31,4 +36,11 @@ ${loaders}
 });
 `;
 
-await writeFile(outputPath, generated, 'utf8');
+if (checkOnly) {
+  const current = await readFile(outputPath, 'utf8').catch(() => null);
+  if (current !== generated) {
+    throw new Error('demos/registry.generated.ts is stale; run npm run generate:demos');
+  }
+} else {
+  await writeFile(outputPath, generated, 'utf8');
+}

@@ -1,8 +1,9 @@
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
+import {tsImport} from 'tsx/esm/api';
 
 import {
-  EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES,
+  buildDemoLifecycleSmokeModel,
   evaluateExecutivePreviewEntries,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
@@ -45,6 +46,41 @@ for (const [gate, state] of [
 const legalPublicationApproved = legalPublicationState === 'approved';
 const contactRepositoryApproved =
   legalPublicationApproved && contactIntakeState === 'approved';
+
+const [demoCatalog, demoCandidateCatalog, contentCatalog] = await Promise.all([
+  tsImport('../demos/catalog.ts', import.meta.url),
+  tsImport('../demos/candidates/index.ts', import.meta.url),
+  tsImport('../content/index.ts', import.meta.url),
+]);
+const lifecycleModel = buildDemoLifecycleSmokeModel({
+  assetsById: Object.fromEntries(
+    demoCandidateCatalog.DEMO_CANDIDATE_IDS.map((id) => {
+      const prefix = `private-demo-assets/${id}/`;
+      const assets = demoCandidateCatalog.demoCandidates[id].artifacts
+        .map(({path}) => path)
+        .filter((artifactPath) => artifactPath.startsWith(prefix))
+        .map((artifactPath) =>
+          `/api/executive-preview/assets/${artifactPath.slice('private-demo-assets/'.length)}`
+        );
+      return [id, assets];
+    }),
+  ),
+  candidateIds: demoCandidateCatalog.DEMO_CANDIDATE_IDS,
+  headingsByLocale: Object.fromEntries(
+    ['en', 'es'].map((locale) => [
+      locale,
+      Object.fromEntries(
+        demoCandidateCatalog.DEMO_CANDIDATE_IDS.map((id) => [
+          id,
+          contentCatalog.siteContent[locale].pages.demoDetails[id].title,
+        ]),
+      ),
+    ]),
+  ),
+  indexableIds: demoCatalog.indexableDemoIds,
+  publicIds: demoCatalog.demoIds,
+  reviewIds: demoCatalog.reviewDemoIds,
+});
 
 const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? 'https://www.helpmath.ai');
 const canonicalBaseUrl = new URL(
@@ -173,12 +209,19 @@ const contentRoutes = [
   ...(legalPublicationApproved ? ['/privacy', '/terms'] : []),
 ];
 
-const privateDemoRoutes = [
-  '/demos/conversion-1-2',
-  '/demos/conversion-1-4',
-  '/es/demos/conversion-1-2',
-  '/es/demos/conversion-1-4',
-];
+const {
+  authenticatedDemoCases,
+  indexableDemoIds,
+  privateAssetPaths: privateExecutivePreviewAssets,
+  privateDemoIds,
+  privateDemoRoutes,
+  publicAssetPaths: publicExecutivePreviewAssets,
+  publicDemoIds,
+  reviewAssetPaths: reviewExecutivePreviewAssets,
+  reviewDemoIds,
+  reviewRuntimePaths: executivePreviewRuntimes,
+  runtimeProbePaths: executivePreviewRuntimeProbes,
+} = lifecycleModel;
 
 const closedLegacyDemoAssets = [
   '/flash-assets/conversion-1-2/gallon-0.png',
@@ -193,26 +236,6 @@ const closedLegacyDemoAssets = [
   '/flash-assets/cylinder-base.png',
   '/flash-assets/pitcher-back.png',
   '/flash-assets/pitcher-front.png',
-];
-
-const executivePreviewAssets = [
-  '/api/executive-preview/assets/conversion-1-2/gallon-0.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-32.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-64.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-96.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-128.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-empty-stage.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-full-stage.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-pouring-empty.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-pouring-full.png',
-  '/api/executive-preview/assets/conversion-1-4/cylinder-base.png',
-  '/api/executive-preview/assets/conversion-1-4/pitcher-back.png',
-  '/api/executive-preview/assets/conversion-1-4/pitcher-front.png',
-];
-
-const executivePreviewRuntimes = [
-  '/api/executive-preview/runtime/conversion-1-2.js',
-  '/api/executive-preview/runtime/conversion-1-4.js',
 ];
 
 function check(condition, message) {
@@ -384,6 +407,25 @@ function checkExecutivePreviewResourceHeaders(response, label) {
   );
 }
 
+function checkPublicDemoAssetHeaders(response, label) {
+  const cacheControl = robotsDirectives(response.headers.get('cache-control'));
+  check(cacheControl.has('public'), `${label} is missing public cache scope`);
+  check(cacheControl.has('max-age=0'), `${label} is missing max-age=0`);
+  check(cacheControl.has('must-revalidate'), `${label} is missing must-revalidate`);
+  check(!cacheControl.has('private'), `${label} unexpectedly uses private cache scope`);
+  check(!cacheControl.has('no-store'), `${label} unexpectedly uses no-store`);
+  const vary = robotsDirectives(response.headers.get('vary'));
+  check(!vary.has('cookie'), `${label} unexpectedly varies on Cookie`);
+  check(
+    response.headers.get('cross-origin-resource-policy')?.toLowerCase() === 'same-origin',
+    `${label} is missing Cross-Origin-Resource-Policy: same-origin`,
+  );
+  check(
+    response.headers.get('x-content-type-options')?.toLowerCase() === 'nosniff',
+    `${label} is missing X-Content-Type-Options: nosniff`,
+  );
+}
+
 function alternateLinksFrom(markup) {
   const tags = markup.match(/<(?:[a-z]+:)?link\b[^>]*>/gi) ?? [];
   return tags.flatMap((tag) => {
@@ -431,11 +473,22 @@ function expectedPage(locale, route) {
   };
 }
 
-const expectedPages = contentRoutes.flatMap((route) => [
+const contentPages = contentRoutes.flatMap((route) => [
   expectedPage('en', route),
   expectedPage('es', route),
 ]);
-const expectedSitemapUrls = expectedPages.map((page) => page.canonical).sort();
+const publicDemoPages = publicDemoIds.flatMap((id) => [
+  expectedPage('en', `/demos/${id}`),
+  expectedPage('es', `/demos/${id}`),
+]);
+const indexableDemoIdSet = new Set(indexableDemoIds);
+const publicDemoIdSet = new Set(publicDemoIds);
+const indexableDemoPages = publicDemoPages.filter(({route}) =>
+  indexableDemoIdSet.has(route.slice('/demos/'.length)),
+);
+const expectedPages = [...contentPages, ...publicDemoPages];
+const expectedSitemapPages = [...contentPages, ...indexableDemoPages];
+const expectedSitemapUrls = expectedSitemapPages.map((page) => page.canonical).sort();
 
 const sitemapResponse = await get('/sitemap.xml');
 check(sitemapResponse.status === 200, `sitemap.xml returned ${sitemapResponse.status}`);
@@ -468,7 +521,7 @@ for (const actualUrl of [...uniqueSitemapUrls].sort()) {
   check(expectedSitemapUrls.includes(actualUrl), `sitemap.xml contains unexpected URL ${actualUrl}`);
 }
 
-for (const page of expectedPages) {
+for (const page of expectedSitemapPages) {
   const entry = sitemapEntries.find((candidate) => candidate.loc === page.canonical);
   check(Boolean(entry), `sitemap.xml is missing the entry for ${page.canonical}`);
   if (entry) checkAlternateLinks(entry.block, page.alternates, `sitemap entry ${page.canonical}`);
@@ -493,14 +546,50 @@ for (const previewPath of privateDemoRoutes) {
     `${previewPath} must stay outside the sitemap until publication approval`,
   );
 }
+for (const page of publicDemoPages) {
+  const present = uniqueSitemapUrls.has(page.canonical);
+  const indexable = indexableDemoIdSet.has(page.route.slice('/demos/'.length));
+  check(
+    present === indexable,
+    `${page.path} sitemap presence does not match its lifecycle indexing state`,
+  );
+}
 
+const robotsLifecycleResponse = await get('/robots.txt');
+const robotsLifecycleText = await robotsLifecycleResponse.text();
+check(robotsLifecycleResponse.status === 200, `robots.txt returned ${robotsLifecycleResponse.status}`);
+check(
+  robotsLifecycleText.includes('Disallow: /api/'),
+  'robots.txt is missing the default private API boundary',
+);
+for (const id of demoCandidateCatalog.DEMO_CANDIDATE_IDS) {
+  const indexable = indexableDemoIdSet.has(id);
+  const isPublic = publicDemoIdSet.has(id);
+  for (const path of [`/demos/${id}`, `/es/demos/${id}`]) {
+    check(
+      robotsLifecycleText.includes(`Disallow: ${path}`) === !isPublic,
+      `robots.txt crawl policy for ${path} does not match lifecycle access state`,
+    );
+  }
+  const assetAllow = `Allow: /api/executive-preview/assets/${id}/`;
+  check(
+    robotsLifecycleText.includes(assetAllow) === indexable,
+    `robots.txt asset policy for ${id} does not match lifecycle indexing state`,
+  );
+}
+
+const firstReviewDemoId = reviewDemoIds[0] ?? null;
 const executivePreviewEntryCases = [
   {
-    path: '/executive-preview?returnTo=/demos/conversion-1-2',
+    path: firstReviewDemoId
+      ? `/executive-preview?returnTo=/demos/${firstReviewDemoId}`
+      : '/executive-preview',
     locale: 'en',
   },
   {
-    path: '/es/executive-preview?returnTo=/es/demos/conversion-1-2',
+    path: firstReviewDemoId
+      ? `/es/executive-preview?returnTo=/es/demos/${firstReviewDemoId}`
+      : '/es/executive-preview',
     locale: 'es',
   },
 ];
@@ -595,6 +684,18 @@ const publicPages = await Promise.all(
       normalizedUrl(canonical) === normalizedUrl(page.canonical),
       `${page.path} has canonical ${canonical ?? 'missing'}, expected ${page.canonical}`,
     );
+    if (page.route.startsWith('/demos/')) {
+      const id = page.route.slice('/demos/'.length);
+      const indexable = indexableDemoIdSet.has(id);
+      check(
+        hasRobotsHeader(response, ['noindex']) === !indexable,
+        `${page.path} X-Robots-Tag does not match lifecycle indexing state`,
+      );
+      check(
+        hasRobotsMeta(html, ['noindex']) === !indexable,
+        `${page.path} robots metadata does not match lifecycle indexing state`,
+      );
+    }
     const alternates = checkAlternateLinks(html, page.alternates, `page ${page.path}`);
 
     for (const match of html.matchAll(/href=["']([^"'#]+)["']/gi)) {
@@ -628,6 +729,17 @@ for (const result of publicPages.filter(({page}) => ['/', '/demos'].includes(pag
     !result.html.includes('/flash-assets/'),
     `${result.page.path} references a private demo asset`,
   );
+  if (result.page.route === '/demos') {
+    for (const id of publicDemoIds) {
+      const publicPath = result.page.locale === 'es'
+        ? `/es/demos/${id}`
+        : `/demos/${id}`;
+      check(
+        result.html.includes(`href="${publicPath}"`),
+        `${result.page.path} does not link to public demo route ${publicPath}`,
+      );
+    }
+  }
 }
 
 for (const route of contentRoutes) {
@@ -668,7 +780,10 @@ function relativeRedirectLocation(location, requestPath) {
 const englishPrefixRedirects = [
   ['/en?source=release-smoke', '/?source=release-smoke'],
   ['/en/about', '/about'],
-  ['/en/demos/conversion-1-2?source=release-smoke', '/demos/conversion-1-2?source=release-smoke'],
+  ...demoCandidateCatalog.DEMO_CANDIDATE_IDS.slice(0, 1).map((id) => [
+    `/en/demos/${id}?source=release-smoke`,
+    `/demos/${id}?source=release-smoke`,
+  ]),
 ];
 
 for (const [path, destination] of englishPrefixRedirects) {
@@ -757,7 +872,7 @@ for (const path of privateDemoRoutes) {
   check(hasNoStore(response), `${path} is missing Cache-Control: no-store`);
 }
 
-for (const path of [...closedLegacyDemoAssets, ...executivePreviewAssets]) {
+for (const path of [...closedLegacyDemoAssets, ...privateExecutivePreviewAssets]) {
   const response = await get(path);
   const contentType = response.headers.get('content-type') ?? '';
   await response.arrayBuffer();
@@ -773,7 +888,7 @@ for (const path of [...closedLegacyDemoAssets, ...executivePreviewAssets]) {
   }
 }
 
-for (const path of executivePreviewRuntimes) {
+for (const path of executivePreviewRuntimeProbes) {
   const response = await get(path);
   const contentType = response.headers.get('content-type') ?? '';
   await response.arrayBuffer();
@@ -782,7 +897,7 @@ for (const path of executivePreviewRuntimes) {
   checkExecutivePreviewResourceHeaders(response, path);
 }
 
-for (const path of [executivePreviewAssets[0], executivePreviewRuntimes[0]]) {
+for (const path of [privateExecutivePreviewAssets[0], executivePreviewRuntimeProbes[0]].filter(Boolean)) {
   const response = await get(path, {method: 'HEAD'});
   const body = await response.arrayBuffer();
   check(response.status === 404, `${path} unauthenticated HEAD returned ${response.status}`);
@@ -790,17 +905,51 @@ for (const path of [executivePreviewAssets[0], executivePreviewRuntimes[0]]) {
   checkExecutivePreviewResourceHeaders(response, `unauthenticated HEAD ${path}`);
 }
 
+for (const path of publicExecutivePreviewAssets) {
+  const response = await get(path);
+  const contentType = response.headers.get('content-type') ?? '';
+  const body = await response.arrayBuffer();
+  check(response.status === 200, `${path} returned ${response.status}, expected public 200`);
+  check(contentType.startsWith('image/png'), `${path} has public content-type ${contentType || 'missing'}`);
+  check(body.byteLength > 0, `${path} returned an empty public image`);
+  checkPublicDemoAssetHeaders(response, path);
+}
+
+if (publicExecutivePreviewAssets[0]) {
+  const path = publicExecutivePreviewAssets[0];
+  const identityHeaders = {'accept-encoding': 'identity'};
+  const fullResponse = await get(path, {headers: identityHeaders});
+  const fullBody = await fullResponse.arrayBuffer();
+  const headResponse = await get(path, {method: 'HEAD', headers: identityHeaders});
+  const headBody = await headResponse.arrayBuffer();
+  check(headResponse.status === 200, `${path} public HEAD returned ${headResponse.status}`);
+  check(headBody.byteLength === 0, `${path} public HEAD returned a body`);
+  check(
+    fullResponse.headers.get('content-length') === String(fullBody.byteLength),
+    `${path} public identity GET content-length does not match its body`,
+  );
+  check(
+    headResponse.headers.get('content-length') === fullResponse.headers.get('content-length'),
+    `${path} public identity HEAD content-length does not match GET`,
+  );
+  checkPublicDemoAssetHeaders(headResponse, `public HEAD ${path}`);
+}
+
 let executivePreviewAuthenticatedDemoRoutes = 0;
 let executivePreviewAuthenticatedAssets = 0;
 let executivePreviewAuthenticatedRuntimes = 0;
-let executivePreviewAuthentication = executivePreviewAccessKey ? 'failed' : 'not-requested';
+let executivePreviewAuthentication = !executivePreviewAccessKey
+  ? 'not-requested'
+  : firstReviewDemoId
+    ? 'failed'
+    : 'not-applicable';
 
-if (executivePreviewAccessKey) {
+if (executivePreviewAccessKey && firstReviewDemoId) {
   const authenticationFailureStart = failures.length;
   const form = new URLSearchParams({
     locale: 'en',
     passphrase: executivePreviewAccessKey,
-    returnTo: '/demos/conversion-1-2',
+    returnTo: `/demos/${firstReviewDemoId}`,
   });
   const loginResponse = await get('/api/executive-preview/session', {
     method: 'POST',
@@ -819,8 +968,8 @@ if (executivePreviewAccessKey) {
 
   check(loginResponse.status === 303, `executive preview login returned ${loginResponse.status}, expected 303`);
   check(
-    loginLocation === '/demos/conversion-1-2',
-    `executive preview login redirected to ${loginLocation ?? 'missing'}, expected /demos/conversion-1-2`,
+    loginLocation === `/demos/${firstReviewDemoId}`,
+    `executive preview login redirected to ${loginLocation ?? 'missing'}, expected /demos/${firstReviewDemoId}`,
   );
   checkExecutivePreviewHeaders(loginResponse, 'executive preview login response');
   check(Boolean(cookieMatch?.[2]), 'executive preview login did not return a session cookie');
@@ -830,9 +979,13 @@ if (executivePreviewAccessKey) {
     check(/(?:^|;)\s*Secure(?:;|$)/iu.test(setCookie), 'executive preview session cookie is missing Secure');
   }
 
-  if (loginResponse.status === 303 && loginLocation === '/demos/conversion-1-2' && cookieMatch?.[2]) {
+  if (
+    loginResponse.status === 303 &&
+    loginLocation === `/demos/${firstReviewDemoId}` &&
+    cookieMatch?.[2]
+  ) {
     const sessionHeaders = {cookie: `${cookieMatch[1]}=${cookieMatch[2]}`};
-    for (const testCase of EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES) {
+    for (const testCase of authenticatedDemoCases) {
       const response = await get(testCase.path, {headers: sessionHeaders});
       const html = await response.text();
       const language = html.match(/<html[^>]+lang=["']([^"']+)/i)?.[1] ?? null;
@@ -852,7 +1005,7 @@ if (executivePreviewAccessKey) {
       if (response.status === 200) executivePreviewAuthenticatedDemoRoutes += 1;
     }
 
-    for (const path of executivePreviewAssets) {
+    for (const path of reviewExecutivePreviewAssets) {
       const response = await get(path, {headers: sessionHeaders});
       const contentType = response.headers.get('content-type') ?? '';
       const body = await response.arrayBuffer();
@@ -880,7 +1033,7 @@ if (executivePreviewAccessKey) {
       }
     }
 
-    for (const path of [executivePreviewAssets[0], executivePreviewRuntimes[0]]) {
+    for (const path of [reviewExecutivePreviewAssets[0], executivePreviewRuntimes[0]].filter(Boolean)) {
       // Node fetch transparently decompresses response bodies while some edge
       // networks calculate a method-specific compressed Content-Length for
       // HEAD. Request the stored representation so HEAD and GET can be
@@ -906,17 +1059,19 @@ if (executivePreviewAccessKey) {
 
     const tamperedValue = `${cookieMatch[2].slice(0, -1)}${cookieMatch[2].endsWith('A') ? 'B' : 'A'}`;
     const tamperedHeaders = {cookie: `${cookieMatch[1]}=${tamperedValue}`};
-    const tamperedDemo = await get('/demos/conversion-1-2', {headers: tamperedHeaders});
+    const tamperedDemo = await get(`/demos/${firstReviewDemoId}`, {headers: tamperedHeaders});
     check(tamperedDemo.status === 404, `tampered executive cookie opened a demo route`);
     checkExecutivePreviewHeaders(tamperedDemo, 'tampered-cookie demo response');
-    const tamperedAsset = await get(executivePreviewAssets[0], {headers: tamperedHeaders});
-    check(tamperedAsset.status === 404, `tampered executive cookie opened an asset route`);
-    checkExecutivePreviewResourceHeaders(tamperedAsset, 'tampered-cookie asset response');
+    if (reviewExecutivePreviewAssets[0]) {
+      const tamperedAsset = await get(reviewExecutivePreviewAssets[0], {headers: tamperedHeaders});
+      check(tamperedAsset.status === 404, `tampered executive cookie opened an asset route`);
+      checkExecutivePreviewResourceHeaders(tamperedAsset, 'tampered-cookie asset response');
+    }
 
     for (const path of [
       `${executivePreviewRuntimes[0]}.map`,
       '/api/executive-preview/runtime/package.json',
-      '/api/executive-preview/assets/conversion-1-2/package.json',
+      `/api/executive-preview/assets/${firstReviewDemoId}/package.json`,
     ]) {
       const response = await get(path, {headers: sessionHeaders});
       const body = await response.arrayBuffer();
@@ -931,16 +1086,37 @@ if (executivePreviewAccessKey) {
   }
 }
 
-for (const path of [
+const legacyOptimizerProbes = [
   '/_next/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
   '/_vercel/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
-  '/_next/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
-  '/_vercel/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
-]) {
+];
+// Demo images are served only by the lifecycle-aware asset route. Next/Vercel
+// image proxying stays disabled for both public and private candidates so it
+// cannot become a second access path with different authorization semantics.
+const lifecycleOptimizerProbes = demoCandidateCatalog.DEMO_CANDIDATE_IDS.flatMap((id) => {
+  const asset = lifecycleModel.publicDemoIds.includes(id)
+    ? lifecycleModel.publicAssetPaths.find((path) =>
+        path.startsWith(`/api/executive-preview/assets/${id}/`)
+      )
+    : lifecycleModel.privateAssetPaths.find((path) =>
+        path.startsWith(`/api/executive-preview/assets/${id}/`)
+      );
+  if (!asset) return [];
+  const encodedAsset = encodeURIComponent(asset);
+  return [
+    `/_next/image?url=${encodedAsset}&w=640&q=75`,
+    `/_vercel/image?url=${encodedAsset}&w=640&q=75`,
+  ];
+});
+
+for (const path of [...legacyOptimizerProbes, ...lifecycleOptimizerProbes]) {
   const response = await get(path);
   const contentType = response.headers.get('content-type') ?? '';
   await response.arrayBuffer();
-  check(response.status !== 200, `${path} bypassed the private asset boundary`);
+  check(
+    response.status !== 200,
+    `${path} bypassed the direct-only demo asset policy`,
+  );
   check(!contentType.startsWith('image/'), `${path} exposed optimized image content as ${contentType}`);
 }
 
@@ -1127,9 +1303,14 @@ const summary = {
   legacyRedirects: legacyRedirects.length,
   brandedNotFoundCases: brandedNotFoundCases.length,
   privateDemoRoutes: privateDemoRoutes.length,
+  privateDemos: privateDemoIds.length,
+  publicDemos: publicDemoIds.length,
+  indexableDemos: indexableDemoIds.length,
   closedLegacyDemoAssets: closedLegacyDemoAssets.length,
-  executivePreviewAssets: executivePreviewAssets.length,
-  privateDemoOptimizerProbes: 4,
+  privateExecutivePreviewAssets: privateExecutivePreviewAssets.length,
+  publicExecutivePreviewAssets: publicExecutivePreviewAssets.length,
+  executivePreviewRuntimeProbes: executivePreviewRuntimeProbes.length,
+  demoOptimizerProbes: legacyOptimizerProbes.length + lifecycleOptimizerProbes.length,
   executivePreviewEntries: executivePreviewEntries.length,
   executivePreviewExpectedState: expectedExecutivePreviewState,
   executivePreviewExpectedExpiresAt: expectedExecutivePreviewExpiresAt,

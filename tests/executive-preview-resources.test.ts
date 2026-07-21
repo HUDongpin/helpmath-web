@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
-import {reviewDemoIds} from '../demos/catalog';
+import nextConfig from '../next.config';
+import {demoIds, reviewDemoIds} from '../demos/catalog';
 import {demoCandidates} from '../demos/candidates';
 import {
   EXECUTIVE_PREVIEW_ASSET_FILES,
+  EXECUTIVE_PREVIEW_ASSET_OWNERS,
   EXECUTIVE_PREVIEW_RUNTIME_FILES,
+  isExecutivePreviewAssetPublic,
+  serveExecutivePreviewAsset,
   serveExecutivePreviewResource,
 } from '../lib/executive-preview-resources';
 
@@ -17,6 +21,14 @@ function assertPrivateHeaders(response: Response) {
   assert.equal(response.headers.get('cross-origin-resource-policy'), 'same-origin');
 }
 
+function assertPublicAssetHeaders(response: Response) {
+  assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+  assert.equal(response.headers.get('vary'), null);
+  assert.equal(response.headers.get('x-robots-tag'), null);
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(response.headers.get('cross-origin-resource-policy'), 'same-origin');
+}
+
 describe('executive preview resource service', () => {
   it('allowlists only lifecycle-approved private-preview runtimes and owned assets', () => {
     assert.deepEqual(
@@ -24,13 +36,90 @@ describe('executive preview resource service', () => {
       reviewDemoIds.map((id) => `${id}.js`).sort(),
     );
 
-    const expectedAssets = reviewDemoIds.flatMap((id) =>
+    const assetDemoIds = [...new Set([...reviewDemoIds, ...demoIds])];
+    const expectedAssets = assetDemoIds.flatMap((id) =>
       demoCandidates[id].artifacts
         .map(({path}) => path)
         .filter((path) => path.startsWith(`private-demo-assets/${id}/`))
         .map((path) => path.slice('private-demo-assets/'.length)),
     ).sort();
     assert.deepEqual(Object.keys(EXECUTIVE_PREVIEW_ASSET_FILES).sort(), expectedAssets);
+    assert.deepEqual(Object.keys(EXECUTIVE_PREVIEW_ASSET_OWNERS).sort(), expectedAssets);
+    for (const [assetPath, owner] of Object.entries(EXECUTIVE_PREVIEW_ASSET_OWNERS)) {
+      assert.ok(assetPath.startsWith(`${owner}/`), assetPath);
+    }
+  });
+
+  it('keeps current inactive assets private and returns the same empty 404 anonymously', async () => {
+    const requestKey = 'conversion-1-2/gallon-0.png';
+    const bytes = new Uint8Array([137, 80, 78, 71]);
+    assert.equal(isExecutivePreviewAssetPublic(requestKey), false);
+
+    const response = await serveExecutivePreviewAsset({
+      authorized: false,
+      headOnly: false,
+      readFile: async () => bytes,
+      requestKey,
+      root: '/private',
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal((await response.arrayBuffer()).byteLength, 0);
+    assertPrivateHeaders(response);
+
+    const executivePreview = await serveExecutivePreviewAsset({
+      authorized: true,
+      headOnly: false,
+      readFile: async () => bytes,
+      requestKey,
+      root: '/private',
+    });
+    assert.equal(executivePreview.status, 200);
+    assert.deepEqual(new Uint8Array(await executivePreview.arrayBuffer()), bytes);
+    assertPrivateHeaders(executivePreview);
+  });
+
+  it('allows anonymous reads only for an exact asset owned by a public lifecycle demo', async () => {
+    const bytes = new Uint8Array([137, 80, 78, 71]);
+    let reads = 0;
+    const response = await serveExecutivePreviewAsset({
+      authorized: false,
+      headOnly: false,
+      publicDemoIds: ['conversion-1-2'],
+      readFile: async () => {
+        reads += 1;
+        return bytes;
+      },
+      requestKey: 'conversion-1-2/gallon-0.png',
+      root: '/private',
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(new Uint8Array(await response.arrayBuffer()), bytes);
+    assert.equal(reads, 1);
+    assertPublicAssetHeaders(response);
+
+    for (const requestKey of [
+      'conversion-1-4/pitcher-back.png',
+      'conversion-1-2/../conversion-1-4/pitcher-back.png',
+      'conversion-1-2/not-in-candidate.png',
+      '../../package.json',
+    ]) {
+      const denied = await serveExecutivePreviewAsset({
+        authorized: false,
+        headOnly: false,
+        publicDemoIds: ['conversion-1-2'],
+        readFile: async () => {
+          reads += 1;
+          return bytes;
+        },
+        requestKey,
+        root: '/private',
+      });
+      assert.equal(denied.status, 404, requestKey);
+      assertPrivateHeaders(denied);
+    }
+    assert.equal(reads, 1);
   });
 
   it('returns the same empty 404 for unauthorized and non-allowlisted requests', async () => {
@@ -122,5 +211,16 @@ describe('executive preview resource service', () => {
     assert.equal(missing.status, 503);
     assertPrivateHeaders(escaping);
     assertPrivateHeaders(missing);
+  });
+
+  it('leaves asset cache policy to the lifecycle-aware route response', async () => {
+    const headers = await nextConfig.headers?.();
+    assert.ok(headers);
+    const sources = headers.map(({source}) => source);
+
+    assert.ok(sources.includes('/api/executive-preview/session'));
+    assert.ok(sources.includes('/api/executive-preview/runtime/:path*'));
+    assert.equal(sources.includes('/api/executive-preview/:path*'), false);
+    assert.equal(sources.includes('/api/executive-preview/assets/:path*'), false);
   });
 });

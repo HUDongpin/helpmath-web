@@ -15,6 +15,7 @@ import {
   type DemoActivationManifest,
   type DemoCandidate,
 } from '../lib/demo-lifecycle-validation';
+import {validateEvidenceDirectoryContract} from './evidence-directory-contract';
 
 const repositoryRoot = process.cwd();
 const canonicalRepositoryRoot = await realpath(repositoryRoot);
@@ -137,6 +138,29 @@ errors.push(...validateDemoActivationManifest(parsedActivation.value, {
 }).map((error) => `config/demo-activations.json: ${error}`));
 
 const activationManifest = parsedActivation.value as DemoActivationManifest | null;
+const demoPublicationEvidenceReferences = Object.values(activationManifest?.demos ?? {})
+  .flatMap((activation) => [
+    activation.approvals?.rightsAcceptance,
+    activation.approvals?.productAcceptance,
+  ])
+  .flatMap((acceptance) =>
+    acceptance && typeof acceptance.evidenceRef === 'string'
+      ? [{
+          reference: acceptance.evidenceRef,
+          sha256: typeof acceptance.evidenceSha256 === 'string'
+            ? acceptance.evidenceSha256
+            : '',
+        }]
+      : [],
+  );
+errors.push(...(
+  await validateEvidenceDirectoryContract({
+    repositoryRoot,
+    relativeDirectory: 'docs/evidence/demo-publication',
+    references: demoPublicationEvidenceReferences,
+  })
+).map((error) => `demo-publication evidence directory: ${error}`));
+
 for (const [id, activation] of Object.entries(activationManifest?.demos ?? {})) {
   for (const acceptance of [
     activation.approvals?.rightsAcceptance,
