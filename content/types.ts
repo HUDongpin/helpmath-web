@@ -323,6 +323,7 @@ export interface ContactContent {
       topic: string;
       message: string;
       privacyConsent: string;
+      privacyNoticeLinkLabel: string;
     };
     placeholders: {
       name: string;

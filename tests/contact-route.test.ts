@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {afterEach, describe, it} from 'node:test';
+import {afterEach, beforeEach, describe, it} from 'node:test';
 import {
   buildContactEmail,
   DEVELOPMENT_TURNSTILE_TOKEN,
@@ -9,7 +9,13 @@ import {contactRequestSchema} from '../lib/contact-schema';
 
 const envKeys = [
   'NODE_ENV',
+  'NEXT_PUBLIC_CONTACT_ENABLED',
+  'NEXT_PUBLIC_SITE_URL',
   'TURNSTILE_SECRET_KEY',
+  'TURNSTILE_ALLOWED_HOSTNAMES',
+  'VERCEL_URL',
+  'VERCEL_BRANCH_URL',
+  'VERCEL_PROJECT_PRODUCTION_URL',
   'RESEND_API_KEY',
   'SUPPORT_TO_EMAIL',
   'SUPPORT_FROM_EMAIL',
@@ -46,6 +52,10 @@ function request(body: unknown, headers: Record<string, string> = {}) {
   });
 }
 
+beforeEach(() => {
+  setEnv('NEXT_PUBLIC_CONTACT_ENABLED', 'true');
+});
+
 afterEach(() => {
   for (const key of envKeys) {
     setEnv(key, originalEnv[key]);
@@ -65,6 +75,18 @@ describe('POST /api/contact', () => {
     assert.doesNotMatch(email.text, /verified-token|turnstile/i);
   });
 
+  it('fails closed before parsing when contact intake is not explicitly enabled', async () => {
+    setEnv('NEXT_PUBLIC_CONTACT_ENABLED', 'false');
+    globalThis.fetch = async () => {
+      throw new Error('Turnstile must not be called while contact is disabled');
+    };
+
+    const response = await POST(request(validRequest()));
+    const body = await response.json();
+    assert.equal(response.status, 503);
+    assert.equal(body.error.code, 'CONTACT_DISABLED');
+  });
+
   it('returns the same structured error envelope for malformed JSON', async () => {
     const response = await POST(request('{not json'));
     const body = await response.json();
@@ -72,6 +94,18 @@ describe('POST /api/contact', () => {
     assert.equal(body.ok, false);
     assert.equal(body.error.code, 'BAD_REQUEST');
     assert.equal(typeof body.error.message, 'string');
+  });
+
+  it('rejects non-JSON and oversized request bodies before validation', async () => {
+    const unsupported = await POST(
+      request(JSON.stringify(validRequest()), {'content-type': 'text/plain'}),
+    );
+    assert.equal(unsupported.status, 415);
+    assert.equal((await unsupported.json()).error.code, 'UNSUPPORTED_MEDIA_TYPE');
+
+    const oversized = await POST(request(`"${'x'.repeat(17_000)}"`));
+    assert.equal(oversized.status, 413);
+    assert.equal((await oversized.json()).error.code, 'PAYLOAD_TOO_LARGE');
   });
 
   it('returns field errors for invalid submissions', async () => {
@@ -145,6 +179,18 @@ describe('POST /api/contact', () => {
     assert.equal(body.error.code, 'TURNSTILE_FAILED');
   });
 
+  it('rejects a successful token issued for a different hostname', async () => {
+    setEnv('NODE_ENV', 'production');
+    process.env.TURNSTILE_SECRET_KEY = 'test-secret';
+    globalThis.fetch = async () =>
+      Response.json({success: true, action: 'contact', hostname: 'attacker.example'});
+
+    const response = await POST(request(validRequest()));
+    const body = await response.json();
+    assert.equal(response.status, 422);
+    assert.equal(body.error.code, 'TURNSTILE_FAILED');
+  });
+
   it('verifies the Turnstile action and forwarded client address before delivery', async () => {
     setEnv('NODE_ENV', 'production');
     process.env.TURNSTILE_SECRET_KEY = 'test-secret';
@@ -156,7 +202,11 @@ describe('POST /api/contact', () => {
         'https://challenges.cloudflare.com/turnstile/v0/siteverify',
       );
       verificationBody = String(init?.body);
-      return Response.json({success: true, action: 'contact'});
+      return Response.json({
+        success: true,
+        action: 'contact',
+        hostname: 'www.helpmath.ai',
+      });
     };
 
     const response = await POST(
@@ -165,6 +215,24 @@ describe('POST /api/contact', () => {
     const body = await response.json();
     assert.match(verificationBody, /remoteip=203\.0\.113\.8/);
     assert.match(verificationBody, /response=verified-token/);
+    assert.equal(response.status, 503);
+    assert.equal(body.error.code, 'EMAIL_NOT_CONFIGURED');
+  });
+
+  it('accepts the Vercel branch URL as an injected preview hostname', async () => {
+    setEnv('NODE_ENV', 'production');
+    process.env.TURNSTILE_SECRET_KEY = 'test-secret';
+    process.env.VERCEL_BRANCH_URL = 'helpmath-git-review-example.vercel.app';
+    delete process.env.RESEND_API_KEY;
+    globalThis.fetch = async () =>
+      Response.json({
+        success: true,
+        action: 'contact',
+        hostname: 'helpmath-git-review-example.vercel.app',
+      });
+
+    const response = await POST(request(validRequest()));
+    const body = await response.json();
     assert.equal(response.status, 503);
     assert.equal(body.error.code, 'EMAIL_NOT_CONFIGURED');
   });

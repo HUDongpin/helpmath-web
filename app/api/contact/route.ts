@@ -3,10 +3,14 @@ import {Resend} from 'resend';
 import {contactRequestSchema, type ContactRequest} from '@/lib/contact-schema';
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const MAX_CONTACT_BODY_BYTES = 16 * 1024;
 export const DEVELOPMENT_TURNSTILE_TOKEN = 'development-bypass';
 
 type ErrorCode =
+  | 'CONTACT_DISABLED'
   | 'BAD_REQUEST'
+  | 'UNSUPPORTED_MEDIA_TYPE'
+  | 'PAYLOAD_TOO_LARGE'
   | 'VALIDATION_ERROR'
   | 'TURNSTILE_NOT_CONFIGURED'
   | 'TURNSTILE_FAILED'
@@ -52,7 +56,66 @@ function clientIp(request: Request) {
 interface TurnstileResult {
   success?: boolean;
   action?: string;
+  hostname?: string;
   'error-codes'?: string[];
+}
+
+function hostname(value: string | undefined) {
+  const candidate = value?.trim();
+  if (!candidate) return undefined;
+
+  try {
+    return new URL(candidate.includes('://') ? candidate : `https://${candidate}`).hostname
+      .toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
+function allowedTurnstileHostnames() {
+  const configured = process.env.TURNSTILE_ALLOWED_HOSTNAMES?.split(',') ?? [];
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://www.helpmath.ai',
+    process.env.VERCEL_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    ...configured,
+  ];
+  const allowed = new Set(candidates.map(hostname).filter((value): value is string => Boolean(value)));
+
+  if (process.env.NODE_ENV !== 'production') {
+    allowed.add('localhost');
+    allowed.add('127.0.0.1');
+  }
+
+  return allowed;
+}
+
+async function boundedBodyText(request: Request) {
+  if (!request.body) return '';
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_CONTACT_BODY_BYTES) {
+      await reader.cancel().catch(() => undefined);
+      throw new Error('payload-too-large');
+    }
+    chunks.push(value);
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder('utf-8', {fatal: true}).decode(bytes);
 }
 
 export async function verifyTurnstile(
@@ -83,10 +146,29 @@ export async function verifyTurnstile(
 
     if (!response.ok) return 'failed';
     const result = (await response.json()) as TurnstileResult;
-    return result.success === true && result.action === 'contact' ? 'verified' : 'failed';
+    const challengeHostname = hostname(result.hostname);
+    return result.success === true &&
+      result.action === 'contact' &&
+      challengeHostname !== undefined &&
+      allowedTurnstileHostnames().has(challengeHostname)
+      ? 'verified'
+      : 'failed';
   } catch {
     return 'failed';
   }
+}
+
+async function contactJson(request: Request): Promise<unknown> {
+  const mediaType = request.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase();
+  if (mediaType !== 'application/json') throw new Error('unsupported-media-type');
+
+  const declaredLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_CONTACT_BODY_BYTES) {
+    throw new Error('payload-too-large');
+  }
+
+  const raw = await boundedBodyText(request);
+  return JSON.parse(raw) as unknown;
 }
 
 function emailText(payload: ContactRequest) {
@@ -118,10 +200,24 @@ export function buildContactEmail(payload: ContactRequest, from: string, to: str
 }
 
 export async function POST(request: Request) {
+  if (process.env.NEXT_PUBLIC_CONTACT_ENABLED !== 'true') {
+    return errorResponse(503, 'CONTACT_DISABLED', 'Contact intake is not enabled.');
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
+    body = await contactJson(request);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'unsupported-media-type') {
+      return errorResponse(
+        415,
+        'UNSUPPORTED_MEDIA_TYPE',
+        'The request body must use application/json.',
+      );
+    }
+    if (error instanceof Error && error.message === 'payload-too-large') {
+      return errorResponse(413, 'PAYLOAD_TOO_LARGE', 'The request body is too large.');
+    }
     return errorResponse(400, 'BAD_REQUEST', 'The request body must be valid JSON.');
   }
 

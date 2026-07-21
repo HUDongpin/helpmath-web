@@ -36,7 +36,7 @@ export function SiteFooter({content}: {content: SharedContent}) {
         </div>
       </div>
       <div className="container site-footer__base">
-        <span>© {year} HELP Math.</span>
+        <span>HELP Math · {year}</span>
         <span>{footer.legalNote}</span>
       </div>
     </footer>

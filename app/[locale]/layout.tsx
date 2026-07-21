@@ -30,8 +30,6 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   category: 'education',
-  creator: SITE_NAME,
-  publisher: SITE_NAME,
   robots: {index: true, follow: true}
 };
 
@@ -55,13 +53,13 @@ export default async function LocaleLayout({
   if (!routing.locales.some((candidate) => candidate === locale)) notFound();
   const appLocale = locale as Locale;
   const content = getSiteContent(appLocale).shared;
-  const organizationData = JSON.stringify({
+  const websiteData = JSON.stringify({
     '@context': 'https://schema.org',
-    '@type': 'EducationalOrganization',
+    '@type': 'WebSite',
     name: SITE_NAME,
     url: getSiteUrl().toString(),
     description: SITE_DESCRIPTION,
-    availableLanguage: ['English', 'Spanish']
+    inLanguage: ['en', 'es']
   }).replaceAll('<', '\\u003c');
 
   return (
@@ -76,7 +74,7 @@ export default async function LocaleLayout({
           <SiteFooter content={content} />
         </LocaleProvider>
         <script
-          dangerouslySetInnerHTML={{__html: organizationData}}
+          dangerouslySetInnerHTML={{__html: websiteData}}
           type="application/ld+json"
         />
       </body>
