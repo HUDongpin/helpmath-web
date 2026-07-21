@@ -10,7 +10,7 @@ import {LanguageSwitcher} from './language-switcher';
 
 export function Brand({homeLabel}: {homeLabel: string}) {
   return (
-    <Link className="brand" href="/" title={homeLabel}>
+    <Link className="brand" href="/" prefetch={false} title={homeLabel}>
       <span aria-hidden="true" className="brand__mark">
         <span>+</span>
         <span>×</span>
