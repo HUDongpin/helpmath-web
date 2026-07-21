@@ -23,6 +23,7 @@ the candidate commit itself.
 | Preview | Vercel deployment ID, protected URL, state, and matching Git SHA |
 | Preview smoke | Timestamp, command options, and zero-failure JSON output |
 | Production | Vercel deployment ID assigned to `www.helpmath.ai` |
+| Canonical alias assignment | Owner-authenticated Vercel evidence tying `www.helpmath.ai` and `helpmath.ai` to that exact Production deployment and commit |
 | Production smoke | Timestamp and zero-failure JSON output after promotion |
 | Contact mode | `disabled` or the separate approved delivery-test evidence |
 | Launch gates | Manifest SHA-256 and the five non-secret gate statuses |

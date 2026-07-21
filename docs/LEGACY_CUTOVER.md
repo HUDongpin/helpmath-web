@@ -123,13 +123,74 @@ DNS. Do not store registrar credentials or mail secrets in the repository.
 | Prior TTL and any planned TTL reduction time | Pending |
 | MX/SPF/DKIM/DMARC and ownership-record comparison | Pending |
 | Old mailbox continuity test | Pending |
-| Release commit and Vercel deployment evidence | Pre-cutover baseline: `aca9c2a73eb359562c09b0c83edc6199d281c635`; GitHub deployment `5539509970`; Vercel deployment locator `2rZYH1gAwqZf5hRgUYjCDhXRQwdt`; successful same-commit Quality run `29836346154`; successful production-smoke run `29836382011`; see `docs/releases/2026-07-21-pr11.md`. Replace with the final reviewed cutover candidate before DNS changes. |
+| Release commit and Vercel deployment evidence | Pre-cutover baseline: `a52f687e77ebd1d29ffff46c5b73cdb31b1fedbd`; GitHub deployment `5540832611`; Vercel deployment locator `9JMDBSRvgNkfqncvyFKKcBLJg1V6`; successful same-commit Quality run `29842954387`; successful production-smoke run `29843000292`; authenticated canonical alias evidence `docs/evidence/vercel-production-alias-2026-07-21.json`; see `docs/releases/2026-07-21-pr12.md`. Replace with the final reviewed cutover candidate before DNS changes. |
 | Chosen one-hop or temporary two-hop topology | Pending |
 | Legacy source archive manifest and hash record | Local pre-cutover capture: 23/23 governed locators, 23 content-addressed objects, 14,280,549 bytes. Metadata evidence is in `docs/evidence/legacy-source-crawl-2026-07-21.{json,csv,sha256}`; JSON SHA-256 `9e12d758ff2b0d37805da1d1f34cfcfad4a45e517c86831248df59015882927a`. Archive closure passed for 27 files. A deterministic restricted local recovery package and fresh-directory same-machine restore drill passed; bundle SHA-256 `bcc030474eda6d99aade0b9012c5645b47f819b244acc22da0069c4e0736928e`, receipt `docs/evidence/legacy-source-recovery-2026-07-21.json`. Original bytes and the recovery package remain local. Encrypted off-device custody and an independent restore remain pending. |
 | Rights/accessibility disposition for owner-held PDFs | Pending |
 | External-source link review and resource-map revision | 2026-07-21 baseline complete in `LEGACY_RESOURCE_MAP.md` and `data/legacy-source-registry.json`; repeat immediately before cutover. |
 | Quantitative rollback threshold | Pending |
 | Search Console owners for both domains | Pending |
+
+## Executable preflight
+
+Run the fail-closed preflight from the exact clean release commit before any
+legacy-host or DNS change:
+
+```bash
+npm run preflight:legacy-cutover -- \
+  --plan /owner-approved/legacy-cutover-plan.json \
+  --evidence-dir /owner-approved/append-only-receipts
+```
+
+The exact plan, evidence-envelope, required-check, freshness, and exit contract
+is documented in `LEGACY_CUTOVER_PREFLIGHT.md`.
+
+The plan must live outside the repository, explicitly choose `direct-one-hop`
+or `temporary-two-hop`, pin the full repository commit and Vercel deployment,
+resolve `/Sales.htm`, name change/rollback/DNS/mail/Search Console owners,
+define the UTC monitoring window and structured rollback thresholds, and record
+the nine required decisions as machine-readable approvals. It must reference
+fourteen non-secret JSON evidence artifacts by absolute external path,
+SHA-256, and observation time: before/proposed DNS zones, mail continuity,
+verified production contact delivery, Search Console control, off-device
+archive restore, rights/accessibility disposition, a fresh stable-link review,
+Production alias assignment, Quality,
+Production smoke, a staged target-host config test, and fresh pre-cutover DNS
+plus HTTP/TLS baselines.
+
+The preflight reads every referenced artifact and the retained underlying
+collector output to which it points. It resolves real paths, rejects repository
+paths, symbolic-link terminals, permissive files, and oversized inputs, then
+recomputes both SHA-256 values and validates exact evidence kind,
+cutover/deployment/commit/topology identity, `pass` status, required check IDs,
+and permitted age. Pre-cutover DNS and HTTP/TLS receipts expire after 15
+minutes; most release and operational receipts expire after 24 hours; Search
+Console control expires after 7 days and the independent off-device restore
+and rights/accessibility disposition after 30 days. Credential-shaped fields
+or values are rejected.
+
+The command reruns the repository launch-gate, generated Apache, local Apache
+2.4 contract, and metadata source-custody checks; confirms the clean worktree
+and plan commit; requires `legalPublication`, `contactIntake`, and
+`legacyCutover` approval; validates all nine machine-readable plan decisions;
+and binds every external receipt to the planned topology, deployment, and
+commit. A zero-exit `GO_TO_CHANGE` requires successful creation of a private
+`0600`, content-addressed JSON receipt and companion SHA-256 in a pre-existing
+absolute external directory that grants no group or other access. The receipt
+contains a `validUntil` deadline and must not be used to begin a change after
+it. Any failed or
+missing check, terminated/timed-out child command, receipt failure, or absent
+receipt store yields `NO_GO` and exit code `2`.
+
+This is a pre-change authorization command. Its DNS and HTTP/TLS inputs prove
+the unchanged public baseline and target readiness, not the post-change
+redirect result. The post-change probes and rollback decision in the checklist
+below remain mandatory. This command verifies typed, owner-approved receipts;
+it does not itself log
+in to the registrar, mail provider, Search Console, Vercel, or the legacy host,
+and it does not substitute for those evidence collectors. Full zone exports,
+mail receipts, and probe details belong in the owner-approved restricted store,
+not the repository. There is no force or success-on-`NO_GO` option.
 
 ## Cutover checklist
 

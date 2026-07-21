@@ -34,6 +34,10 @@ describe('launch gate manifest', () => {
       assert.equal(isLaunchGateApproved(id), false, id);
       assert.equal(launchGateManifest.gates[id].status, 'holding', id);
     }
+    assert.deepEqual(launchGateManifest.gates.legacyCutover.dependencies, [
+      'legalPublication',
+      'contactIntake',
+    ]);
   });
 
   it('rejects an approval without an approver, evidence, and closed blockers', () => {

@@ -171,7 +171,7 @@
     "components/executive-demo-runtime-loader.tsx": "33dddff54ed7a7df73643f9a82675c894914f550a15ded9787c3446060d2dd56",
     "components/executive-preview-page.tsx": "e6fd17dcde40aec580a106feabdd09ae0315351f9ec1cce6f33927714cfeeacc",
     "components/home-page.tsx": "6048a1e2dd81b5fd298f0f9d84733c7e01d02e67ecfa2e67c5a698fd3241a8a9",
-    "e2e/site.spec.ts": "f3e7d50efd7d22a2a638738f27a9382c3b51e1c7da1ca4ab66d92367fcc4a8b1",
+    "e2e/site.spec.ts": "27a3c72e229b00d24f89d0d014f7b9f3167068f44e03f4e4955763eabb5a1018",
     "eslint.config.mjs": "66a3a43881ea21aa45ae4ba2ed9ff053a6f4a5239665f39e9fbde70e50fa43bc",
     "lib/executive-preview-access.ts": "41d3c6177590b5e9367ec257ca9a0e6af35a0dda5d0ccab294ab783e729680cf",
     "lib/executive-preview-rate-limit.ts": "c35ebfff6404551cca63746c66239bb14c43bd677883eecf3297c7b54e012043",
@@ -180,15 +180,15 @@
     "lib/public-paths.ts": "0dc923702c009177f95290952e8a5e16d54d55515da03608d45b0b695e2686c2",
     "next.config.ts": "c2ac34ff3a75ef251c61dcd69f73e9dbb8d60e48402240fd2c8af91f11dd1038",
     "package-lock.json": "6af6df86ff8a287d357a8813a03b1a7846311707221fdd433ac7a12edff0d641",
-    "package.json": "d916e07ef7666ff664d206fa5a289d48e2714183b49ddac1c592883be936ed87",
+    "package.json": "fd1cb1e8639be43605f0135a76243a2445d9d8d03e77f581cef78b812470cf6a",
     "playwright.config.ts": "551465ee50be6c97f0dc33bbd528cd1c45b865f730180644964b854e4cfadb98",
     "playwright.global-setup.ts": "0c08a9e689680fdaf7c88201f737dfbce35bddff11ba7e2c25ae0488b29fb58b",
     "proxy.ts": "f4157f2c66194a5830680f4d917916fd9462bad826f1d891a3f3cca8497a0692",
     "scripts/build-executive-demo-runtime.mjs": "0167cd4d7d468bba837944639d6066c17f2465d4798f86852926033668272869",
     "scripts/check-private-demo-leaks.mjs": "21d0be77d1b96188a61d1975daf1fbbc19b8ae320a00fbedea756d3abc4bf6a2",
     "scripts/generate-registry.mjs": "dff90e5e6105ece559c7254afb167d1bc1c80d3a746c6694e12ef2474a01f5db",
-    "scripts/release-smoke-helpers.mjs": "8f7fcaef71d643e510342feae1c0c2ee00083c01982be3bcb8c1a39e2b9dfd86",
-    "scripts/release-smoke.mjs": "495e485aed6a9d519a2b7b61e94bced092c74bcbffbe7194c1ab1bdd557c86bb",
+    "scripts/release-smoke-helpers.mjs": "7b610a4bf9568deb1525809eda88ecc9987cfc342aae4275d00f8e5bacb7c11c",
+    "scripts/release-smoke.mjs": "36eef6c94d4912029c0e4543d91340d69e5437f21f665a1d6a6c7185e3c96906",
     "scripts/verify-private-demo-traces.mjs": "80a4a70da172d449039df82f905c4286d54c7df7c721986e65d5f2d683604fd7"
   }
 }

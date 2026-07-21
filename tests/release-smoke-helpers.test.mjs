@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES,
   evaluateExecutivePreviewEntries,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
@@ -10,6 +11,18 @@ import {
   retryDelayMs,
   retryOperation,
 } from '../scripts/release-smoke-helpers.mjs';
+
+test('authenticated executive smoke covers both demos in both locales', () => {
+  assert.deepEqual(
+    EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES.map(({path, locale}) => ({path, locale})),
+    [
+      {path: '/demos/conversion-1-2', locale: 'en'},
+      {path: '/demos/conversion-1-4', locale: 'en'},
+      {path: '/es/demos/conversion-1-2', locale: 'es'},
+      {path: '/es/demos/conversion-1-4', locale: 'es'},
+    ],
+  );
+});
 
 test('isStrictIsoUtcTimestamp accepts only canonical millisecond UTC timestamps', () => {
   assert.equal(isStrictIsoUtcTimestamp('2026-07-28T15:59:00.000Z'), true);
