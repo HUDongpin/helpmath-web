@@ -86,6 +86,10 @@ decision record.
 
 ## CEO Executive Preview
 
+Use the non-secret [CEO executive preview handoff](./EXECUTIVE_PREVIEW_HANDOFF.md)
+for passphrase delivery, the meeting walkthrough, evidence retention, and the
+post-meeting close procedure.
+
 The restricted entry routes are `/executive-preview` and
 `/es/executive-preview`. They provide temporary internal access to the two
 JavaScript prototypes without changing the demos' public-promotion state.
@@ -166,10 +170,14 @@ return their former content.
 ## Domain cutover
 
 Add `www.helpmath.ai` and `helpmath.ai` to the Vercel project, make `www`
-primary, and configure a permanent apex-to-www redirect. In Namecheap, change
-only the website CNAME/A records to the exact values Vercel reports. Preserve
-mail and ownership-verification records. Capture the old values before editing
-so the website records can be restored.
+primary, and configure a permanent apex-to-www redirect. Change only the
+website CNAME/A records in the confirmed active DNS control plane to the exact
+values Vercel reports. The 2026-07-21
+[public domain baseline](./DOMAIN_PUBLIC_BASELINE.md) shows Vercel nameservers
+for `helpmath.ai`; it does not prove registrar or administrator control. Confirm
+those facts before editing. Preserve mail and ownership-verification records,
+and capture the old values before editing so the website records can be
+restored.
 
 Do not claim an SEO migration from `helpprogram.net` until administrative
 control of that host is confirmed and page-level permanent redirects are live.

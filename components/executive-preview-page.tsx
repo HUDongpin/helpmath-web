@@ -9,6 +9,7 @@ type ExecutivePreviewState = 'authenticated' | 'login' | 'unavailable';
 
 type ExecutivePreviewPageProps = {
   error?: boolean;
+  expiresAt?: number;
   locale: Locale;
   returnTo: string;
   state: ExecutivePreviewState;
@@ -26,9 +27,12 @@ const copy = {
     loginTitle: 'Enter the executive preview',
     loginBody:
       'Use the high-entropy review passphrase supplied through the approved private channel. Access is temporary and expires automatically.',
+    expiryLabel: 'Review window closes:',
+    expiryNote: 'Active sessions cannot continue beyond this time.',
     passphraseLabel: 'Executive preview passphrase',
     submit: 'Open private preview',
-    error: 'Access could not be verified. Check the passphrase or request a new private access link.',
+    error:
+      'Access could not be verified. Check the passphrase or contact the review operator through the approved private channel.',
     unavailableTitle: 'Executive preview is unavailable',
     unavailableBody:
       'Access is closed because the private preview is not configured or its review window has expired. No demo content has been released publicly.',
@@ -53,9 +57,12 @@ const copy = {
     loginTitle: 'Entrar a la vista previa ejecutiva',
     loginBody:
       'Usa la frase de acceso de alta entropía enviada por el canal privado aprobado. El acceso es temporal y vence automáticamente.',
+    expiryLabel: 'La ventana de revisión cierra:',
+    expiryNote: 'Las sesiones activas no pueden continuar después de esta hora.',
     passphraseLabel: 'Frase de acceso para la vista previa ejecutiva',
     submit: 'Abrir vista previa privada',
-    error: 'No se pudo verificar el acceso. Revisa la frase de acceso o solicita un nuevo enlace privado.',
+    error:
+      'No se pudo verificar el acceso. Revisa la frase de acceso o contacta al responsable de la revisión por el canal privado aprobado.',
     unavailableTitle: 'La vista previa ejecutiva no está disponible',
     unavailableBody:
       'El acceso está cerrado porque la vista previa privada no está configurada o su periodo de revisión ha vencido. Ninguna demo se ha publicado.',
@@ -73,6 +80,7 @@ const copy = {
 
 export function ExecutivePreviewPage({
   error = false,
+  expiresAt,
   locale,
   returnTo,
   state,
@@ -116,9 +124,15 @@ export function ExecutivePreviewPage({
       </Section>
 
       {state === 'authenticated' ? (
-        <AuthenticatedPreview locale={locale} text={text} />
+        <AuthenticatedPreview expiresAt={expiresAt} locale={locale} text={text} />
       ) : state === 'login' ? (
-        <LoginPanel error={error} locale={locale} returnTo={returnTo} text={text} />
+        <LoginPanel
+          error={error}
+          expiresAt={expiresAt}
+          locale={locale}
+          returnTo={returnTo}
+          text={text}
+        />
       ) : (
         <UnavailablePanel text={text} />
       )}
@@ -128,11 +142,13 @@ export function ExecutivePreviewPage({
 
 function LoginPanel({
   error,
+  expiresAt,
   locale,
   returnTo,
   text,
 }: {
   error: boolean;
+  expiresAt?: number;
   locale: Locale;
   returnTo: string;
   text: (typeof copy)[Locale];
@@ -150,6 +166,7 @@ function LoginPanel({
               <p className="mt-2 text-[var(--ink-soft)]" id="executive-preview-login-help">
                 {text.loginBody}
               </p>
+              <ExpiryNotice expiresAt={expiresAt} locale={locale} text={text} />
             </div>
           </div>
 
@@ -195,9 +212,11 @@ function LoginPanel({
 }
 
 function AuthenticatedPreview({
+  expiresAt,
   locale,
   text,
 }: {
+  expiresAt?: number;
   locale: Locale;
   text: (typeof copy)[Locale];
 }) {
@@ -214,6 +233,7 @@ function AuthenticatedPreview({
             {text.demosTitle}
           </h2>
           <p className="mt-2 text-[var(--ink-soft)]">{text.demosBody}</p>
+          <ExpiryNotice expiresAt={expiresAt} locale={locale} text={text} />
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           {demos.map((demo) => (
@@ -247,6 +267,37 @@ function AuthenticatedPreview({
         </form>
       </Container>
     </Section>
+  );
+}
+
+function ExpiryNotice({
+  expiresAt,
+  locale,
+  text,
+}: {
+  expiresAt?: number;
+  locale: Locale;
+  text: (typeof copy)[Locale];
+}) {
+  if (!expiresAt) return null;
+
+  const expiry = new Date(expiresAt);
+  const dateTime = expiry.toISOString();
+  const formatted = new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'en-US', {
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    month: 'long',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+    year: 'numeric',
+  }).format(expiry);
+
+  return (
+    <p className="mt-3 text-sm font-semibold text-[var(--ink-soft)]">
+      {text.expiryLabel}{' '}
+      <time dateTime={dateTime}>{formatted}</time>. {text.expiryNote}
+    </p>
   );
 }
 

@@ -610,6 +610,12 @@ test('executive preview grants a short-lived private session for both JavaScript
   await expect(
     page.getByRole('heading', {level: 1, name: 'HELP Math JavaScript demo preview'}),
   ).toBeVisible();
+  const reviewExpiry = page.locator('time[datetime]');
+  await expect(reviewExpiry).toBeVisible();
+  const reviewExpiryDateTime = await reviewExpiry.getAttribute('datetime');
+  expect(reviewExpiryDateTime).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
+  expect(Date.parse(reviewExpiryDateTime!)).toBeGreaterThan(Date.now());
+  await expect(page.getByText('Active sessions cannot continue beyond this time.')).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
   await page.getByLabel('Executive preview passphrase').fill(executivePreviewAccessKey!);
@@ -661,6 +667,8 @@ test('executive preview grants a short-lived private session for both JavaScript
 
   await page.getByRole('link', {name: 'Back to executive preview'}).click();
   await expect(page).toHaveURL(/\/executive-preview$/);
+  await expect(page.locator('time[datetime]')).toHaveAttribute('datetime', reviewExpiryDateTime!);
+  await expect(page.getByText('Active sessions cannot continue beyond this time.')).toBeVisible();
   await expect(page.getByRole('link', {name: 'Open prototype: Conversion 1.2'})).toBeVisible();
   const secondDemoLink = page.getByRole('link', {name: 'Open prototype: Conversion 1.4'});
   await expect(secondDemoLink).toHaveAttribute('href', '/demos/conversion-1-4');
@@ -678,6 +686,9 @@ test('executive preview grants a short-lived private session for both JavaScript
   await page.goto('/es/executive-preview?returnTo=/demos/conversion-1-4', {
     waitUntil: 'networkidle',
   });
+  await expect(
+    page.getByText('Las sesiones activas no pueden continuar después de esta hora.'),
+  ).toBeVisible();
   await page.getByLabel('Frase de acceso para la vista previa ejecutiva').fill(
     executivePreviewAccessKey!,
   );

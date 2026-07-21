@@ -142,11 +142,11 @@ session cookie here.
 | Named executive audience and purpose of the review | CEO and Chairman John Ramo; internal JavaScript prototype review | HELP Math project researcher/software engineer request / 2026-07-21 |
 | Approved demo scope: `conversion-1-2` and `conversion-1-4` only | Project-team-requested scope; public status remains unchanged | HELP Math project researcher/software engineer request / 2026-07-21 |
 | Review start and absolute expiry time | Configured for Production only; all dynamic Preview deployments fail closed. Production closes `2026-07-28T15:59:00Z` (`2026-07-28 23:59` China Standard Time) | Engineering configuration / 2026-07-21 |
-| Private channel used to deliver the access passphrase | Pending (channel name only; never the value) | Pending |
-| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented; unit, browser, and authenticated production release-smoke checks passed with both entries, 12 private images, and 2 private runtimes validated and `failures: []` | Engineering verification / 2026-07-21 |
+| Private channel used to deliver the access passphrase | Pending (channel name only; never the value). Follow `EXECUTIVE_PREVIEW_HANDOFF.md`. | Pending |
+| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented and covered by unit and local browser checks. An earlier credentialed production check validated both entries, 12 private images, and 2 private runtimes, but the current production commit's retained smoke did not request authentication and no raw current-commit credentialed result was retained. Repeat the private check in `EXECUTIVE_PREVIEW_HANDOFF.md` before the CEO review. | Engineering verification and evidence clarification / 2026-07-21 |
 | Vercel WAF rate limit on executive session POST (IP, 15 requests / 10 minutes, default `429`) | Published rule `rule_executive_preview_session_post_limit_e7i95N`: exact path + POST, fixed window, IP, 15 requests / 600 seconds, default rate-limit action. In the production probe, requests 1–7 received the application’s expected `303`, request 8 onward received `429`, request 16 received `429`, and a follow-up edge response included `X-Vercel-Mitigated: deny`. Application defense in depth separately blocks the eighth failed attempt per warm instance. | Engineering configuration and production verification / 2026-07-21 |
-| Post-meeting action: disable access or rotate passphrase and signing secret | Pending | Pending |
-| Confirm no recording, forwarding, republication, or public presentation was authorized | Pending | Pending |
+| Post-meeting action: disable access or rotate passphrase and signing secret | Pending. The default close and verification procedure is in `EXECUTIVE_PREVIEW_HANDOFF.md`. | Pending |
+| Confirm no recording, forwarding, republication, or public presentation was authorized | Pending. Obtain and record the recipient's acknowledgement using `EXECUTIVE_PREVIEW_HANDOFF.md`; never store the passphrase or cookie. | Pending |
 | Separate rights/publication approval | Pending; not granted by this executive review | Pending |
 | Separate technical and product acceptance | Pending; not granted by this executive review | Pending |
 
@@ -166,7 +166,7 @@ file, shell history, retained command output, or this record.
 | Keep automatic `main` production assignment, or require manual promotion | Pending | Pending |
 | GitHub Pro upgrade for required PR checks on the private repository, or documented manual control | Pending | Pending |
 | Release owner and rollback owner | Pending | Pending |
-| Most recent application release baseline (historical evidence gaps disclosed) | Release-assurance/cutover hardening commit `ed1bad4cd5f84759cf816995fab00d002abf85ce`; GitHub/Vercel production deployment `5537444603` / `G8KErBhE2BdgwQtPhEoSJsSRYWZG`; production Quality run `29826254041` passed. `docs/releases/2026-07-21-pr9.md` records the exact candidate, Preview, Production, and public production-smoke evidence and discloses the protected-Preview semantic-smoke and authenticated-repeat gaps. Do not infer a pass for either missing check. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
+| Most recent application release baseline (historical evidence gaps disclosed) | Release hardening and deterministic recovery commit `3b2d78f0727cb11749d30160de96425fb4da4279`; GitHub/Vercel production deployment `5538707729` / `2r291UXTui7bX3cJ1GF6yESVQKvS`; same-commit production Quality run `29833169515` and production smoke run `29832453636` passed. `docs/releases/2026-07-21-pr10.md` records the exact candidate, Preview, Production, public smoke, stable-link result, and superseded initial push run, and discloses the protected-Preview semantic-smoke, alias-assignment, and authenticated-repeat gaps. Do not infer a pass for a missing check or alias identity from separate facts. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
 
 Until private-repository branch protection is available, every production
 change should still use a PR, wait for the complete `Quality` workflow, and
@@ -178,6 +178,7 @@ Complete the operational details in `LEGACY_CUTOVER.md` and record:
 
 | Decision | Owner answer or evidence reference | Approved by / date |
 | --- | --- | --- |
+| Public DNS, HTTP, and TLS observation before cutover | Point-in-time evidence is retained in `docs/DOMAIN_PUBLIC_BASELINE.md` and `docs/evidence/domain-public-baseline-2026-07-21.json`. It confirms the old host had not redirected and records the seven visible MX and two TXT values. It is not a complete zone export, administrator/control proof, mail-continuity test, Vercel alias binding, or Search Console proof. | Engineering observation / 2026-07-21 |
 | Registrar and DNS administrator for apex and `www` | Pending | Pending |
 | Complete DNS export and website-record rollback values | Pending | Pending |
 | MX/SPF/DKIM/DMARC and mailbox continuity owner | Pending | Pending |
