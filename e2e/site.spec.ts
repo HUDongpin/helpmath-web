@@ -498,9 +498,16 @@ test('account access page is a status page and never renders credential fields',
     page.getByRole('heading', {level: 1, name: 'The former HELP Math login is not active here'}),
   ).toBeVisible();
   await expect(page.getByText('Protect your old credentials', {exact: true})).toBeVisible();
+  await expect(page.getByText(/never asks for a former account password/i)).toBeVisible();
+  await expect(page.getByText(/Only a named reviewer may enter a separate preview passphrase/i)).toBeVisible();
   await expect(page.locator('main form')).toHaveCount(0);
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   await expect(page.locator('input[name="username"]')).toHaveCount(0);
+
+  await expectDocument(page, '/es/login', 'es');
+  await expect(page.getByText(/nunca pide la contraseña de una cuenta anterior/i)).toBeVisible();
+  await expect(page.getByText(/Solo un revisor designado puede introducir una frase de acceso distinta/i)).toBeVisible();
+  await expect(page.locator('main form')).toHaveCount(0);
   expectNoRuntimeIssues(issues);
 });
 
@@ -525,7 +532,7 @@ test('contact page fails closed until verified delivery is configured', async ({
   expectNoRuntimeIssues(issues);
 });
 
-test('demo landing pages explain the private review boundary without linking prototypes', async ({page}) => {
+test('demo landing pages expose only the restricted reviewer entry, never prototype routes', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
 
   await expectDocument(page, '/demos', 'en');
@@ -535,6 +542,10 @@ test('demo landing pages explain the private review boundary without linking pro
       name: 'Demos remain private while review is incomplete',
     }),
   ).toBeVisible();
+  await expect(page.getByRole('link', {name: 'Authorized reviewer access'})).toHaveAttribute(
+    'href',
+    '/executive-preview',
+  );
   await expect(page.locator('a[href^="/demos/conversion-"]')).toHaveCount(0);
   await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
 
@@ -545,6 +556,9 @@ test('demo landing pages explain the private review boundary without linking pro
       name: 'Las demostraciones siguen privadas mientras la revisión esté incompleta',
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('link', {name: 'Acceso de revisores autorizados'}),
+  ).toHaveAttribute('href', '/es/executive-preview');
   await expect(page.locator('a[href^="/es/demos/conversion-"]')).toHaveCount(0);
   await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
   expectNoRuntimeIssues(issues);
@@ -623,6 +637,10 @@ test('executive preview grants a short-lived private session for both JavaScript
   expect(Date.parse(reviewExpiryDateTime!)).toBeGreaterThan(Date.now());
   await expect(page.getByText('Active sessions cannot continue beyond this time.')).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByRole('link', {name: 'Enter private preview'})).toHaveAttribute(
+    'href',
+    '#executive-preview-login',
+  );
 
   await page.getByLabel('Executive preview passphrase').fill(executivePreviewAccessKey!);
   await Promise.all([
@@ -986,6 +1004,34 @@ test.describe('complete public browser experience matrix', () => {
 
       expectNoRuntimeIssues(issues);
     });
+  }
+});
+
+test('Spanish Terms hero copy stays inside narrow mobile viewports', async ({page}) => {
+  for (const viewport of [
+    {width: 320, height: 740},
+    {width: 390, height: 844},
+  ] as const) {
+    await page.setViewportSize(viewport);
+    await expectDocument(page, '/es/terms', 'es');
+    await page.evaluate(() => document.fonts.ready);
+
+    const copyBounds = await page.locator('.page-hero__copy').evaluate((element) => {
+      const rectangle = element.getBoundingClientRect();
+      return {
+        left: rectangle.left,
+        right: rectangle.right,
+      };
+    });
+    const headingOverflow = await page.locator('.page-hero__copy h1').evaluate(
+      (element) => element.scrollWidth - element.clientWidth,
+    );
+
+    expect(copyBounds.left, `${viewport.width}px hero begins outside the viewport`).toBeGreaterThanOrEqual(0);
+    expect(copyBounds.right, `${viewport.width}px hero ends outside the viewport`).toBeLessThanOrEqual(
+      viewport.width + 1,
+    );
+    expect(headingOverflow, `${viewport.width}px hero heading clips its text`).toBeLessThanOrEqual(1);
   }
 });
 
