@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-21T19:02:01.000Z",
+  "source": {
+    "method": "Operator attestation after a local owner-authenticated production smoke and focused Playwright browser check",
+    "rawOutputRetained": false,
+    "rawOutputRetentionReason": "Only the operator-attested non-secret outcome and counts are retained; no canonical machine result was preserved, and session state, screenshots, traces, and sensitive values were discarded."
+  },
+  "identity": {
+    "repositoryCommit": "05c3b460db78ac61b88b6d34479d925af634d724",
+    "githubDeploymentId": 5543929832,
+    "vercelDeploymentId": "dpl_2CCekiWMGdnwc78gdifVSs1NWNsX",
+    "canonicalUrl": "https://www.helpmath.ai",
+    "entryPath": "/executive-preview"
+  },
+  "preview": {
+    "state": "login",
+    "expiresAt": "2026-07-28T15:59:00.000Z",
+    "authentication": "operator-attested",
+    "authenticatedDemoRoutes": 4,
+    "expectedAuthenticatedDemoRoutes": 4,
+    "authenticatedPrivateImages": 12,
+    "expectedAuthenticatedPrivateImages": 12,
+    "authenticatedRuntimes": 2,
+    "expectedAuthenticatedRuntimes": 2,
+    "failures": []
+  },
+  "browserCheck": {
+    "name": "executive preview grants a short-lived private session for both JavaScript demos",
+    "result": "operator-attested-pass",
+    "testsPassed": 1,
+    "testsFailed": 0,
+    "timeoutMs": 90000,
+    "observedDurationSeconds": 22.8
+  },
+  "sensitiveValueHandling": {
+    "vercelVariableType": "Encrypted",
+    "pulledValueWasMasked": true,
+    "accessAndSigningValuesRotatedTogether": true,
+    "storage": "Operator macOS login Keychain",
+    "accessServiceName": "HELP MATH Executive Preview",
+    "signingServiceName": "HELP MATH Executive Preview Session",
+    "sensitiveValuesRetainedInRepositoryOrEvidence": false
+  },
+  "privacyBoundary": {
+    "publicDemoRoutesRemainClosed": true,
+    "unauthenticatedPrivateResourcesRemainClosed": true,
+    "noIndexBoundaryRetained": true,
+    "publicDemoPublicationGate": "holding"
+  },
+  "corroboratingEvidence": {
+    "productionEvidenceComment": "https://github.com/HUDongpin/helpmath-web/pull/13#issuecomment-5037967671",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29859546466"
+  },
+  "limitations": [
+    "The authenticated route, asset, runtime, failure, and duration fields are an operator attestation, not a retained machine artifact. The GitHub production-smoke artifact deliberately did not request executive authentication.",
+    "One diagnostic attempt using Vercel's masked placeholder was rejected before both sensitive values were rotated. It did not expose a product defect or a usable value.",
+    "The operator attests to current private playback and resource delivery only. This is not public-display permission, strict Flash fidelity evidence, audio acceptance, or product acceptance.",
+    "Private delivery to the named executive, acknowledgement of the no-recording and no-forwarding boundary, and the post-meeting close action remain owner tasks."
+  ]
+}
