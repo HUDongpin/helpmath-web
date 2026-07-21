@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "receiptKind": "help-math-legacy-source-local-restore-drill",
+  "status": "passed",
+  "startedAt": "2026-07-21T12:30:21.662Z",
+  "completedAt": "2026-07-21T12:30:21.756Z",
+  "captureDate": "2026-07-21",
+  "bundleSha256": "bcc030474eda6d99aade0b9012c5645b47f819b244acc22da0069c4e0736928e",
+  "packageRootSha256": "9392fc951d07b2f2d9f8003f52e0e185fdf51771683bdedaa919ffa4cd6a391a",
+  "entryCount": 28,
+  "totalBytes": 14343014,
+  "selectedManifest": "archive/manifests/legacy-source-crawl-2026-07-21.json",
+  "restoredIntoFreshTemporaryDirectory": true,
+  "temporaryRestoreRemoved": true,
+  "evidenceBoundary": "This same-machine temporary restore proves package readability and integrity only; it does not establish off-device, offline, or durable remote custody."
+}

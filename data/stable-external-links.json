@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "sourceDocuments": [
+    "docs/CONTENT_SOURCES.md",
+    "docs/LEGACY_RESOURCE_MAP.md"
+  ],
+  "legacySourceRegistry": "data/legacy-source-registry.json",
+  "excludedLegacyOrigin": "https://www.helpprogram.net",
+  "requestPolicy": {
+    "timeoutMs": 8000,
+    "maxAttempts": 2,
+    "maxRedirects": 4,
+    "concurrency": 4,
+    "retryBaseDelayMs": 250,
+    "retryMaxDelayMs": 1000,
+    "retryableHttpStatuses": [
+      408,
+      425,
+      429,
+      500,
+      502,
+      503,
+      504
+    ]
+  },
+  "links": [
+    {
+      "id": "boulder-about",
+      "category": "partner",
+      "url": "https://www.boulderlearning.com/about-us",
+      "allowedRedirectHosts": [
+        "boulderlearning.com",
+        "www.boulderlearning.com"
+      ]
+    },
+    {
+      "id": "boulder-products",
+      "category": "partner",
+      "url": "https://www.boulderlearning.com/products",
+      "allowedRedirectHosts": [
+        "boulderlearning.com",
+        "www.boulderlearning.com"
+      ]
+    },
+    {
+      "id": "codie-winners",
+      "category": "award",
+      "url": "https://codieawards.com/past-winners",
+      "allowedRedirectHosts": [
+        "codieawards.com",
+        "www.codieawards.com"
+      ]
+    },
+    {
+      "id": "doi-freeman-study",
+      "category": "publisher",
+      "url": "https://doi.org/10.1016/j.compedu.2011.11.003",
+      "allowedRedirectHosts": [
+        "doi.org",
+        "linkinghub.elsevier.com",
+        "sciencedirect.com",
+        "www.sciencedirect.com"
+      ]
+    },
+    {
+      "id": "edtech-digest-winners",
+      "category": "award",
+      "url": "https://www.edtechdigest.com/winners/",
+      "allowedRedirectHosts": [
+        "edtechdigest.com",
+        "www.edtechdigest.com"
+      ]
+    },
+    {
+      "id": "education-week-2013",
+      "category": "publisher",
+      "url": "https://www.edweek.org/policy-politics/schools-face-shortage-of-digital-curricula-for-english-learners/2013/05",
+      "allowedRedirectHosts": [
+        "edweek.org",
+        "www.edweek.org"
+      ]
+    },
+    {
+      "id": "eric-crawford-2013",
+      "category": "research",
+      "url": "https://eric.ed.gov/?id=EJ1023032",
+      "allowedRedirectHosts": [
+        "eric.ed.gov"
+      ]
+    },
+    {
+      "id": "eric-ell-curriculum",
+      "category": "research",
+      "url": "https://eric.ed.gov/?id=EJ796893",
+      "allowedRedirectHosts": [
+        "eric.ed.gov"
+      ]
+    },
+    {
+      "id": "eric-ready-to-teach",
+      "category": "research",
+      "url": "https://eric.ed.gov/?id=ED530966",
+      "allowedRedirectHosts": [
+        "eric.ed.gov"
+      ]
+    },
+    {
+      "id": "ies-related-grant",
+      "category": "research",
+      "url": "https://ies.ed.gov/use-work/awards/math-learning-companion-individualized-intervention-students-math-learning-disabilities",
+      "allowedRedirectHosts": [
+        "ies.ed.gov",
+        "www.ies.ed.gov"
+      ]
+    },
+    {
+      "id": "lexington-technology-innovations",
+      "category": "publisher",
+      "url": "https://lexingtoninstitute.org/wp-content/uploads/2013/11/TechnologyInnovations.pdf",
+      "allowedRedirectHosts": [
+        "lexingtoninstitute.org",
+        "www.lexingtoninstitute.org"
+      ]
+    },
+    {
+      "id": "mit-solve-roadmap",
+      "category": "partner",
+      "url": "https://solve.mit.edu/solutions/88712",
+      "allowedRedirectHosts": [
+        "solve.mit.edu"
+      ]
+    },
+    {
+      "id": "pedanova-home",
+      "category": "partner",
+      "url": "https://www.pedanova.tech/",
+      "allowedRedirectHosts": [
+        "pedanova.tech",
+        "www.pedanova.tech"
+      ]
+    },
+    {
+      "id": "pedanova-team",
+      "category": "partner",
+      "url": "https://www.pedanova.tech/team/",
+      "allowedRedirectHosts": [
+        "pedanova.tech",
+        "www.pedanova.tech"
+      ]
+    },
+    {
+      "id": "wwc-single-study-review",
+      "category": "research",
+      "url": "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf",
+      "allowedRedirectHosts": [
+        "ies.ed.gov",
+        "www.ies.ed.gov"
+      ]
+    },
+    {
+      "id": "wwc-study-record",
+      "category": "research",
+      "url": "https://ies.ed.gov/ncee/wwc/Study/72999",
+      "allowedRedirectHosts": [
+        "ies.ed.gov",
+        "www.ies.ed.gov"
+      ]
+    }
+  ]
+}

@@ -14,10 +14,18 @@ a public document mirror.
   `docs/evidence/`
 - External archive root:
   `/Users/peter/Desktop/helpmath-legacy-web-archive`
+- Restricted same-machine recovery package:
+  `/Users/peter/Desktop/helpmath-legacy-source-recovery-2026-07-21`
 - Captured: 23 of 23 registered HTTPS locators returned HTTP 200
 - Captured bytes: 14,280,549
 - Integrity: 23 content-addressed objects, each recorded by byte size and
   SHA-256
+- Recovery bundle SHA-256:
+  `bcc030474eda6d99aade0b9012c5645b47f819b244acc22da0069c4e0736928e`
+- Recovery package-root SHA-256:
+  `9392fc951d07b2f2d9f8003f52e0e185fdf51771683bdedaa919ffa4cd6a391a`
+- Local restore receipt:
+  `docs/evidence/legacy-source-recovery-2026-07-21.json`
 
 The repository evidence contains URLs, final URLs, status, response metadata,
 byte counts, hashes, capture timestamps, claim use, stable-replacement fields,
@@ -95,6 +103,57 @@ The metadata-only `--require-successful` check is part of the default
 `npm test`/CI path so a reviewed 23-of-23 evidence set cannot silently become
 an incomplete capture while release documentation continues to cite it.
 
+## Archive closure and local recovery drill
+
+The object validator above verifies files referenced by the selected capture.
+The stricter closure verifier additionally rejects unexpected or orphan files,
+unexpected directories, symbolic links, hard links, non-private modes,
+mismatched archive/repository manifests, invalid marker content, and objects
+whose byte count, SHA-256, content-addressed path, or PDF/HTML signature differs
+from every retained dated manifest.
+
+```bash
+npm run verify:legacy-source-archive -- \
+  --archive-root /Users/peter/Desktop/helpmath-legacy-web-archive
+```
+
+The recovery builder first requires that closure check to pass. It then emits
+a deterministic, self-contained JSON package, a metadata-only index, and a
+checksum sidecar into a new empty private directory outside both the website
+repository and source archive. The package embeds the governed registry,
+marker, manifests, and source objects as canonical base64; it therefore
+contains restricted source bytes and must never be committed, attached to a
+public issue, or copied unencrypted to shared storage.
+
+Recovery schema v1 deliberately accepts exactly one dated manifest, validated
+against the bundled current registry. Before an archive begins retaining more
+than one dated capture, version this schema to bind and validate the matching
+registry snapshot for every manifest; otherwise the recovery builder fails
+closed instead of packaging ungoverned historical source bytes.
+
+```bash
+mkdir -m 700 /absolute/new/empty-recovery-directory
+npm run build:legacy-source-recovery -- \
+  --archive-root /Users/peter/Desktop/helpmath-legacy-web-archive \
+  --output-directory /absolute/new/empty-recovery-directory
+npm run drill:legacy-source-recovery -- \
+  --bundle /absolute/new/empty-recovery-directory/help-math-legacy-source-recovery-2026-07-21.hmbundle.json \
+  --receipt /absolute/new/empty-recovery-directory/local-restore-receipt.json
+```
+
+On 2026-07-21 the closure check passed for exactly 27 archive files, 23
+captures, and one dated manifest set. Two independently generated packages
+were byte-identical. The retained local package contains 28 entries totaling
+14,343,014 unencoded bytes and has bundle SHA-256
+`bcc030474eda6d99aade0b9012c5645b47f819b244acc22da0069c4e0736928e`.
+It was extracted into a fresh temporary directory, every restored entry was
+rehash-verified, and the temporary restoration was removed. The metadata-only
+receipt is retained in `docs/evidence/legacy-source-recovery-2026-07-21.json`.
+
+This is a same-machine readability and integrity drill. It does not prove that
+another device, storage provider, custodian, or disaster-recovery environment
+can restore the package.
+
 ## Boundary and remaining decisions
 
 All registry and capture values for rights, accessibility, and republication
@@ -104,6 +163,8 @@ permission to publish, accessibility conformance, document authorship, claim
 validity, or durable off-device/remote custody.
 
 Before retiring or redirecting `helpprogram.net`, an authorized owner must
-place the archive in approved durable storage, verify restore access, record
-retention/ownership, and finish document-by-document rights and accessibility
-decisions. Do not add these source bodies to the public website repository.
+place an encrypted package in approved durable off-device storage, restore and
+verify that independent copy, record retention/ownership and key custody, and
+finish document-by-document rights and accessibility decisions. The local
+same-machine drill above does not satisfy that gate. Do not add these source
+bodies to the public website repository.

@@ -1,0 +1,224 @@
+name: Production deployment smoke
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke-${{ github.event.deployment.id }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      github.event.deployment.environment == 'Production' &&
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CANONICAL_URL: https://www.helpmath.ai
+      DEPLOYMENT_ID: ${{ github.event.deployment.id }}
+      DEPLOYMENT_REF: ${{ github.event.deployment.sha }}
+      DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ env.DEPLOYMENT_REF }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Validate deployment identity inputs
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SMOKE_EVIDENCE_DIRECTORY="$RUNNER_TEMP/helpmath-production-smoke"
+          mkdir -p "$SMOKE_EVIDENCE_DIRECTORY"
+          node --input-type=module <<'NODE'
+          import {execFileSync} from 'node:child_process';
+          import {writeFileSync} from 'node:fs';
+          import path from 'node:path';
+
+          const deployment = new URL(process.env.DEPLOYMENT_URL);
+          if (
+            deployment.protocol !== 'https:' ||
+            deployment.username ||
+            deployment.password ||
+            deployment.port ||
+            deployment.pathname !== '/' ||
+            deployment.search ||
+            deployment.hash ||
+            !deployment.hostname.endsWith('.vercel.app')
+          ) {
+            throw new Error('DEPLOYMENT_URL must be a root HTTPS vercel.app deployment URL.');
+          }
+
+          const checkedOutSha = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
+          if (!/^[0-9a-f]{40}$/.test(checkedOutSha)) throw new Error('Checked-out SHA is invalid.');
+          if (!/^[0-9a-f]{40}$/.test(process.env.DEPLOYMENT_REF)) {
+            throw new Error('Deployment event SHA is invalid.');
+          }
+          if (checkedOutSha !== process.env.DEPLOYMENT_REF) {
+            throw new Error('Checked-out SHA does not match the deployment event.');
+          }
+          execFileSync('git', [
+            'merge-base',
+            '--is-ancestor',
+            checkedOutSha,
+            'refs/remotes/origin/main',
+          ]);
+
+          const identity = {
+            schemaVersion: 1,
+            observedAt: new Date().toISOString(),
+            repositoryCommit: checkedOutSha,
+            githubDeploymentId: process.env.DEPLOYMENT_ID,
+            immutableDeploymentUrl: deployment.href,
+            canonicalUrl: process.env.CANONICAL_URL,
+            trigger: process.env.GITHUB_EVENT_NAME,
+            deploymentIdentity:
+              'URL and commit came from the same successful Production deployment-status event.',
+            aliasIdentity:
+              'Contract validation does not independently prove that the canonical alias points to this deployment; retain authenticated Vercel assignment evidence separately.',
+          };
+          writeFileSync(
+            path.join(process.env.SMOKE_EVIDENCE_DIRECTORY, 'identity.json'),
+            `${JSON.stringify(identity, null, 2)}\n`,
+            {mode: 0o600},
+          );
+          NODE
+      - run: npm ci
+      - name: Verify immutable deployment protection boundary
+        id: immutable
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SMOKE_EVIDENCE_DIRECTORY="$RUNNER_TEMP/helpmath-production-smoke"
+          node --input-type=module <<'NODE'
+          import {writeFileSync} from 'node:fs';
+          import path from 'node:path';
+
+          const response = await fetch(process.env.DEPLOYMENT_URL, {redirect: 'manual'});
+          await response.arrayBuffer();
+          const cacheControl = response.headers.get('cache-control') ?? '';
+          const robots = response.headers.get('x-robots-tag') ?? '';
+          const hsts = response.headers.get('strict-transport-security') ?? '';
+          const frameOptions = response.headers.get('x-frame-options') ?? '';
+          const location = response.headers.get('location');
+          let protectedByVercelSso = false;
+          try {
+            const redirect = new URL(location);
+            protectedByVercelSso =
+              redirect.protocol === 'https:' &&
+              redirect.hostname === 'vercel.com' &&
+              redirect.pathname === '/sso-api';
+          } catch {
+            protectedByVercelSso = false;
+          }
+          if (
+            response.status !== 302 ||
+            !protectedByVercelSso ||
+            !cacheControl.toLowerCase().includes('no-store') ||
+            !robots.toLowerCase().includes('noindex') ||
+            !hsts.toLowerCase().includes('max-age=') ||
+            frameOptions.toUpperCase() !== 'DENY'
+          ) {
+            throw new Error('Immutable deployment did not expose the expected Vercel protection boundary.');
+          }
+          const evidence = {
+            checkedAt: new Date().toISOString(),
+            url: process.env.DEPLOYMENT_URL,
+            status: response.status,
+            semanticSmoke: 'not-run; smoke-only bypass secrets are never persisted in GitHub Actions',
+            protectionBoundary: {
+              cacheControl,
+              robots,
+              hsts,
+              frameOptions,
+            },
+          };
+          writeFileSync(
+            path.join(process.env.SMOKE_EVIDENCE_DIRECTORY, 'immutable-protection.json'),
+            `${JSON.stringify(evidence, null, 2)}\n`,
+            {mode: 0o600},
+          );
+          NODE
+      - name: Verify canonical production contract
+        id: canonical
+        if: always() && steps.identity.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SMOKE_EVIDENCE_DIRECTORY="$RUNNER_TEMP/helpmath-production-smoke"
+          node scripts/release-smoke.mjs \
+            > "$SMOKE_EVIDENCE_DIRECTORY/canonical-contract.json"
+      - name: Write evidence summary
+        if: always()
+        env:
+          CANONICAL_OUTCOME: ${{ steps.canonical.outcome }}
+          IMMUTABLE_OUTCOME: ${{ steps.immutable.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SMOKE_EVIDENCE_DIRECTORY="$RUNNER_TEMP/helpmath-production-smoke"
+          node --input-type=module <<'NODE'
+          import {appendFileSync, existsSync, readFileSync} from 'node:fs';
+          import path from 'node:path';
+
+          const directory = process.env.SMOKE_EVIDENCE_DIRECTORY;
+          const identityPath = path.join(directory, 'identity.json');
+          const identity = existsSync(identityPath)
+            ? JSON.parse(readFileSync(identityPath, 'utf8'))
+            : undefined;
+          const canonicalPath = path.join(directory, 'canonical-contract.json');
+          let canonical;
+          if (existsSync(canonicalPath)) {
+            try {
+              canonical = JSON.parse(readFileSync(canonicalPath, 'utf8'));
+            } catch {
+              canonical = undefined;
+            }
+          }
+          const lines = [
+            '# HELP Math production deployment smoke',
+            '',
+            `- Deployment: ${identity?.githubDeploymentId ?? 'identity validation did not complete'}`,
+            `- Commit: ${identity?.repositoryCommit ?? 'identity validation did not complete'}`,
+            `- Immutable URL: ${identity?.immutableDeploymentUrl ?? 'identity validation did not complete'}`,
+            `- Immutable protection outcome: ${process.env.IMMUTABLE_OUTCOME}`,
+            `- Canonical step outcome: ${process.env.CANONICAL_OUTCOME}`,
+            `- Canonical failures: ${canonical ? canonical.failures.length : 'not completed'}`,
+            '',
+            'Canonical alias-to-deployment identity still requires authenticated Vercel evidence.',
+            '',
+          ];
+          const observation = {
+            schemaVersion: 1,
+            completedAt: new Date().toISOString(),
+            immutableProtectionOutcome: process.env.IMMUTABLE_OUTCOME,
+            canonicalContractOutcome: process.env.CANONICAL_OUTCOME,
+            canonicalFailureCount: canonical?.failures.length,
+            aliasIdentity:
+              'Not independently proven; retain authenticated Vercel assignment evidence separately.',
+          };
+          appendFileSync(
+            path.join(directory, 'workflow-observation.json'),
+            `${JSON.stringify(observation, null, 2)}\n`,
+            {mode: 0o600},
+          );
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n'));
+          NODE
+      - name: Retain non-secret smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: production-smoke-${{ github.run_id }}
+          path: ${{ runner.temp }}/helpmath-production-smoke
+          if-no-files-found: error
+          retention-days: 90
