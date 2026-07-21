@@ -71,6 +71,11 @@ test('English home exposes the primary navigation and the language-rich project 
     'href',
     '/es',
   );
+  const structuredData = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
+  ) as {'@type'?: string; inLanguage?: string[]};
+  expect(structuredData['@type']).toBe('WebSite');
+  expect(structuredData.inLanguage).toEqual(['en', 'es']);
   expectNoRuntimeIssues(issues);
 });
 
@@ -192,15 +197,41 @@ test('audited legacy pages and document directories redirect permanently', async
   for (const [legacyPath, destination] of [
     ['/Contact.htm', '/contact'],
     ['/Ped.htm', '/approach'],
+    ['/Kf.htm', '/about'],
+    ['/Sheltered%20Instruction.wmv', '/approach'],
     ['/Demo.htm', '/demos'],
+    ['/HELP%20Math%20Privacy%20Policy%203.12.07.pdf', '/privacy'],
+    ['/HELP%20Math%20Privacy%20Policy%203.12.07.doc', '/privacy'],
+    ['/HELP%20evaluation%20white%20paper%20June%202005.pdf', '/research'],
+    ['/HELP%20Math%20Correlations%20CCS%206%207%208.pdf', '/curriculum'],
+    ['/student_login.aspx', '/login'],
+    ['/trial_register.aspx', '/contact'],
     ['/PR/historical-study.pdf', '/research'],
     ['/DealerDocs/historical-guide.pdf', '/resources'],
+    ['/teacher_guide/historical-guide.pdf', '/resources'],
     ['/shortdemo/index.htm', '/demos'],
   ] as const) {
     const response = await request.get(legacyPath, {maxRedirects: 0});
     expect(response.status(), legacyPath).toBe(308);
     expect(response.headers().location, legacyPath).toBe(destination);
   }
+
+  for (const intentionallyUnavailable of [
+    '/Images/Help_Slideshow.swf',
+    '/0214%20Sunburst%20and%20BLI%20Form%20partnership%20for%20HELP%20Math2.pdf',
+  ] as const) {
+    const response = await request.get(intentionallyUnavailable, {maxRedirects: 0});
+    expect(response.status(), intentionallyUnavailable).toBe(404);
+    expect(response.headers()['x-robots-tag'], intentionallyUnavailable).toBe(
+      'noindex, nofollow',
+    );
+  }
+
+  const queryResponse = await request.get('/Contact.htm?source=cutover&campaign=legacy', {
+    maxRedirects: 0,
+  });
+  expect(queryResponse.status()).toBe(308);
+  expect(queryResponse.headers().location).toBe('/contact?source=cutover&campaign=legacy');
 });
 
 test('robots and sitemap publish crawl policy and both locale variants', async ({request}) => {

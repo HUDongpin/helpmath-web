@@ -4,6 +4,7 @@ import {Turnstile} from '@marsidev/react-turnstile';
 import type {TurnstileInstance} from '@marsidev/react-turnstile';
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import type {ContactContent, Locale} from '@/content/types';
+import {Link} from '@/i18n/navigation';
 import {CONTACT_LIMITS, normalizeContactTopic, type ContactField} from '@/lib/contact-schema';
 
 const DEVELOPMENT_TURNSTILE_TOKEN = 'development-bypass';
@@ -69,6 +70,7 @@ export function ContactForm({content, locale}: ContactFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const contactEnabled = process.env.NEXT_PUBLIC_CONTACT_ENABLED === 'true';
   const publicSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const localSimulation = process.env.NODE_ENV !== 'production' && !publicSiteKey;
   const [turnstileToken, setTurnstileToken] = useState(
@@ -93,7 +95,7 @@ export function ContactForm({content, locale}: ContactFormProps) {
     }
   }, [content.form.topicOptions]);
 
-  if (!publicSiteKey && !localSimulation) {
+  if (!contactEnabled || (!publicSiteKey && !localSimulation)) {
     return (
       <div className="demo-unavailable" role="status">
         <h2>
@@ -321,22 +323,31 @@ export function ContactForm({content, locale}: ContactFormProps) {
         <FieldError id="contact-message-error" message={errors.message} />
       </label>
 
-      <label className="flex items-start gap-3 font-bold">
+      <div className="flex items-start gap-3 font-bold">
         <input
           aria-describedby={errors.privacyConsent ? 'contact-consent-error' : undefined}
           aria-invalid={Boolean(errors.privacyConsent)}
           className="mt-1 h-5 w-5 shrink-0 accent-[var(--blue)]"
+          id="contact-privacy-consent"
           name="privacyConsent"
           required
           type="checkbox"
           value="true"
         />
         <span>
-          {content.form.fields.privacyConsent}
-          <RequiredMark label={content.form.validation.required} />
+          <label htmlFor="contact-privacy-consent">
+            {content.form.fields.privacyConsent}
+            <RequiredMark label={content.form.validation.required} />
+          </label>{' '}
+          <Link
+            className="underline decoration-2 underline-offset-2"
+            href={locale === 'es' ? '/es/privacy' : '/privacy'}
+          >
+            {content.form.fields.privacyNoticeLinkLabel}
+          </Link>
           <FieldError id="contact-consent-error" message={errors.privacyConsent} />
         </span>
-      </label>
+      </div>
 
       <div aria-describedby={errors.turnstileToken ? 'contact-turnstile-error' : undefined}>
         {publicSiteKey ? (

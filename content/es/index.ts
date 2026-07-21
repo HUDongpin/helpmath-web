@@ -782,6 +782,7 @@ export const esContent = {
           message: "¿Cómo podemos ayudarte?",
           privacyConsent:
             "He leído el aviso de privacidad y entiendo que este formulario no debe incluir expedientes estudiantiles, contraseñas ni otra información personal sensible.",
+          privacyNoticeLinkLabel: "Abrir el aviso de privacidad",
         },
         placeholders: {
           name: "Tu nombre",

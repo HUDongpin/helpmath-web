@@ -5,3 +5,17 @@ tests/
 playwright.config.ts
 *.tsbuildinfo
 
+# Defense in depth: the production deployment must never package the private
+# Flash workbench, migration evidence, archive payload, or raw Flash binaries.
+catalog/
+migrations/
+output/
+outputs/
+source/
+source-assets/
+ruffle/
+public/ruffle/
+public/flash/
+**/HELP MATH_ORIGINAL FILES/
+**/*.fla
+**/*.swf

@@ -26,9 +26,14 @@ Reviewed runtime files and image derivatives are pinned in
 
 Import this private repository into Vercel with the repository root as the
 project root. Configure the variables in `.env.example`; production contact
-delivery fails closed when Turnstile or Resend is missing. See
+delivery fails closed unless it is explicitly enabled and Turnstile and Resend
+are fully configured. See
 `docs/DEPLOYMENT.md` before promoting a deployment or changing DNS.
 
 The publicly readable Privacy and Terms pages are explicitly marked as drafts,
 send `noindex, follow`, and remain outside the sitemap until owner/legal review
 is complete. They must not be described as final policies.
+
+The exact non-secret decisions still required from the project owner are kept
+in [`docs/LAUNCH_DECISIONS.md`](docs/LAUNCH_DECISIONS.md). Do not paste API
+keys, DNS credentials, or other secrets into that file, GitHub, or chat.

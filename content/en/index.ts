@@ -782,6 +782,7 @@ export const enContent = {
           message: "How can we help?",
           privacyConsent:
             "I have read the privacy notice and understand that this form must not include student records, passwords, or other sensitive personal information.",
+          privacyNoticeLinkLabel: "Open the privacy notice",
         },
         placeholders: {
           name: "Your name",

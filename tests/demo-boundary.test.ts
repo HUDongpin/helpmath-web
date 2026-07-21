@@ -6,6 +6,8 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const forbiddenArchiveDirectory =
+  /(?:^|\/)(?:catalog|flash|HELP MATH_ORIGINAL FILES|migrations|output|outputs|ruffle|source|source-assets)(?:\/|$)/i;
 
 async function filesBelow(directory: string): Promise<string[]> {
   const entries = await readdir(directory, {withFileTypes: true});
@@ -32,6 +34,5 @@ test('the public repository contains no raw Flash or Ruffle payload', async () =
   const files = await filesBelow(repositoryRoot);
   const relevant = files.filter((file) => !file.includes(`${path.sep}node_modules${path.sep}`));
   assert.deepEqual(relevant.filter((file) => /\.(?:fla|swf)$/i.test(file)), []);
-  assert.deepEqual(relevant.filter((file) => /(?:^|\/)(?:ruffle|source-assets)(?:\/|$)/i.test(file)), []);
+  assert.deepEqual(relevant.filter((file) => forbiddenArchiveDirectory.test(file)), []);
 });
-
