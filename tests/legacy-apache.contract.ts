@@ -1,0 +1,315 @@
+import assert from 'node:assert/strict';
+import {execFile, spawn, type ChildProcess} from 'node:child_process';
+import {access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
+import {createServer} from 'node:net';
+import {tmpdir, userInfo} from 'node:os';
+import path from 'node:path';
+import {promisify} from 'node:util';
+import {describe, it} from 'node:test';
+
+import {
+  LEGACY_APACHE_OUTPUT_PATHS,
+  LEGACY_TARGET_ORIGIN,
+} from '../scripts/generate-apache-legacy-redirects';
+
+const execFileAsync = promisify(execFile);
+const expectedApacheVersion = 'Apache/2.4.66';
+const retiredFileMarker = 'RETIRED_SOURCE_MUST_NOT_BE_SERVED';
+const debugEnabled = process.env.HELP_MATH_APACHE_DEBUG === '1';
+
+type DeploymentMode = 'htaccess' | 'directory-include';
+
+function debug(message: string) {
+  if (debugEnabled) {
+    process.stderr.write(`[legacy-apache] ${message}\n`);
+  }
+}
+
+function configValue(value: string): string {
+  if (value.includes('"') || value.includes('\n') || value.includes('\r')) {
+    throw new Error(`Unsafe Apache test configuration value: ${value}`);
+  }
+  return `"${value}"`;
+}
+
+async function findHttpd(): Promise<string> {
+  const candidates = [
+    process.env.HELP_MATH_HTTPD_BIN,
+    '/usr/sbin/httpd',
+    '/opt/homebrew/opt/httpd/bin/httpd',
+    '/usr/local/opt/httpd/bin/httpd',
+  ].filter((candidate): candidate is string => Boolean(candidate));
+
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      return candidate;
+    } catch {
+      // Continue to the next explicit candidate.
+    }
+  }
+
+  throw new Error(
+    'Apache httpd was not found. Set HELP_MATH_HTTPD_BIN to an Apache 2.4.66 binary.',
+  );
+}
+
+async function reservePort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  const port = address.port;
+  await new Promise<void>((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve())),
+  );
+  return port;
+}
+
+function apacheModulePath(name: string): string {
+  return `/usr/libexec/apache2/${name}.so`;
+}
+
+async function stopApache(child: ChildProcess): Promise<void> {
+  debug(`stopping pid ${child.pid ?? 'unknown'}`);
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+
+  child.kill('SIGTERM');
+  await Promise.race([
+    new Promise<void>((resolve) => child.once('exit', () => resolve())),
+    new Promise<void>((resolve) => setTimeout(resolve, 2_000)),
+  ]);
+  if (child.exitCode === null && child.signalCode === null) {
+    child.kill('SIGKILL');
+  }
+  debug(`stop signal complete for pid ${child.pid ?? 'unknown'}`);
+}
+
+async function waitForApache(baseUrl: string, child: ChildProcess, diagnostics: () => string) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`Apache exited before accepting requests.\n${diagnostics()}`);
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/`, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(500),
+      });
+      await response.arrayBuffer();
+      if (response.status === 301) {
+        return;
+      }
+    } catch {
+      // The listener is not ready yet.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  throw new Error(`Apache did not become ready.\n${diagnostics()}`);
+}
+
+async function startApache(httpd: string, mode: DeploymentMode) {
+  debug(`starting ${mode}`);
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), `helpmath-apache-${mode}-`));
+  const serverRoot = path.join(temporaryRoot, 'server');
+  const documentRoot = path.join(temporaryRoot, 'htdocs');
+  const logPath = path.join(serverRoot, 'error.log');
+  const configPath = path.join(serverRoot, 'httpd.conf');
+  const port = await reservePort();
+
+  await mkdir(path.join(documentRoot, 'Images'), {recursive: true});
+  await mkdir(serverRoot, {recursive: true});
+  await writeFile(
+    path.join(documentRoot, 'Images/Help_Slideshow.swf'),
+    retiredFileMarker,
+    'utf8',
+  );
+  await writeFile(
+    path.join(
+      documentRoot,
+      '0214 Sunburst and BLI Form partnership for HELP Math2.pdf',
+    ),
+    retiredFileMarker,
+    'utf8',
+  );
+  await writeFile(path.join(documentRoot, 'unknown-secret.txt'), retiredFileMarker, 'utf8');
+
+  const generatedHtaccess = LEGACY_APACHE_OUTPUT_PATHS[0];
+  const generatedInclude = LEGACY_APACHE_OUTPUT_PATHS[1];
+  const installedInclude = path.join(serverRoot, 'helpmath-legacy-redirects.conf');
+  if (mode === 'htaccess') {
+    await copyFile(generatedHtaccess, path.join(documentRoot, '.htaccess'));
+  } else {
+    // macOS's system httpd sandbox cannot Include directly from Desktop.
+    // Copy the checked generated bytes into the isolated ServerRoot, matching
+    // the way operations installs an approved include on the legacy host.
+    await copyFile(generatedInclude, installedInclude);
+  }
+
+  const directoryRules =
+    mode === 'htaccess'
+      ? '  AllowOverride FileInfo'
+      : `  AllowOverride None\n  Include ${configValue(installedInclude)}`;
+  const currentUser = userInfo();
+  const config = [
+    `ServerRoot ${configValue(serverRoot)}`,
+    `PidFile ${configValue(path.join(serverRoot, 'httpd.pid'))}`,
+    `Listen 127.0.0.1:${port}`,
+    'ServerName 127.0.0.1',
+    `LoadModule mpm_prefork_module ${configValue(apacheModulePath('mod_mpm_prefork'))}`,
+    `LoadModule authz_core_module ${configValue(apacheModulePath('mod_authz_core'))}`,
+    `LoadModule unixd_module ${configValue(apacheModulePath('mod_unixd'))}`,
+    `LoadModule rewrite_module ${configValue(apacheModulePath('mod_rewrite'))}`,
+    `User ${configValue(currentUser.username)}`,
+    `Group ${configValue(`#${process.getgid?.() ?? currentUser.gid}`)}`,
+    `ErrorLog ${configValue(logPath)}`,
+    'LogLevel warn',
+    'KeepAlive Off',
+    `DocumentRoot ${configValue(documentRoot)}`,
+    'AccessFileName .htaccess',
+    `<Directory ${configValue(documentRoot)}>`,
+    directoryRules,
+    '  Require all granted',
+    '</Directory>',
+    '',
+  ].join('\n');
+  await writeFile(configPath, config, 'utf8');
+
+  try {
+    await execFileAsync(httpd, ['-t', '-f', configPath]);
+  } catch (error) {
+    const errorLog = await readFile(logPath, 'utf8').catch(() => '');
+    throw new Error(`Apache configuration validation failed.\n${String(error)}\n${errorLog}`);
+  }
+  debug(`${mode} config valid`);
+
+  const stderr: string[] = [];
+  const stdout: string[] = [];
+  const child = spawn(httpd, ['-X', '-f', configPath], {stdio: ['ignore', 'pipe', 'pipe']});
+  child.stderr?.on('data', (chunk) => stderr.push(String(chunk)));
+  child.stdout?.on('data', (chunk) => stdout.push(String(chunk)));
+
+  const diagnostics = () => [...stdout, ...stderr].join('').slice(-8_000);
+  const baseUrl = `http://127.0.0.1:${port}`;
+  try {
+    await waitForApache(baseUrl, child, diagnostics);
+  } catch (error) {
+    await stopApache(child);
+    await rm(temporaryRoot, {recursive: true, force: true});
+    throw error;
+  }
+  debug(`${mode} ready at ${baseUrl}`);
+
+  return {baseUrl, child, diagnostics, temporaryRoot};
+}
+
+async function assertRedirect(
+  baseUrl: string,
+  requestPath: string,
+  expected: {pathname: string; search?: string; hash?: string},
+) {
+  debug(`GET ${requestPath}`);
+  const response = await fetch(`${baseUrl}${requestPath}`, {redirect: 'manual'});
+  const location = response.headers.get('location');
+  await response.arrayBuffer();
+  assert.equal(response.status, 301, requestPath);
+  assert.ok(location, `${requestPath} did not return Location`);
+  const target = new URL(location);
+  const diagnostic = `${requestPath}: ${location}`;
+  assert.equal(target.origin, LEGACY_TARGET_ORIGIN, diagnostic);
+  assert.equal(target.pathname, expected.pathname, diagnostic);
+  assert.equal(target.search, expected.search ?? '', diagnostic);
+  assert.equal(target.hash, expected.hash ?? '', diagnostic);
+  if (!expected.search) {
+    assert.doesNotMatch(location, /\?#/, diagnostic);
+  }
+  debug(`301 ${requestPath} -> ${location}`);
+}
+
+async function assertNotFoundWithoutLeak(baseUrl: string, requestPath: string) {
+  debug(`GET ${requestPath}`);
+  const response = await fetch(`${baseUrl}${requestPath}`, {redirect: 'manual'});
+  const body = await response.text();
+  assert.equal(response.status, 404, requestPath);
+  assert.equal(response.headers.get('location'), null, requestPath);
+  assert.doesNotMatch(body, new RegExp(retiredFileMarker), requestPath);
+  assert.equal(body.trim(), 'Not Found', requestPath);
+  debug(`404 ${requestPath}`);
+}
+
+async function exerciseContract(baseUrl: string) {
+  debug(`exercising ${baseUrl}`);
+  await assertRedirect(baseUrl, '/', {pathname: '/'});
+  await assertRedirect(baseUrl, '/About.htm', {pathname: '/about'});
+  await assertRedirect(
+    baseUrl,
+    '/HELP%20Math%20Privacy%20Policy%203.12.07.pdf',
+    {pathname: '/privacy'},
+  );
+  await assertRedirect(baseUrl, '/Home.htm?utm_source=legacy&utm_campaign=cutover', {
+    pathname: '/',
+    search: '?utm_source=legacy&utm_campaign=cutover',
+  });
+  await assertRedirect(baseUrl, '/ProgramInfo.htm?campaign=board', {
+    pathname: '/curriculum',
+    search: '?campaign=board',
+    hash: '#help-math-1-catalog',
+  });
+  await assertRedirect(baseUrl, '/Content.htm', {
+    pathname: '/curriculum',
+    hash: '#help-math-1-catalog',
+  });
+  await assertRedirect(baseUrl, '/DealerDocs/unmapped%20guide.pdf?ref=archive', {
+    pathname: '/resources',
+    search: '?ref=archive',
+  });
+  await assertRedirect(
+    baseUrl,
+    '/DealerDocs/HELP%20Math%20Overview%20of%20Reports%20%282010%29.pdf',
+    {
+      pathname: '/curriculum',
+      hash: '#help-math-1-catalog',
+    },
+  );
+  await assertRedirect(baseUrl, '/Beta/historical-unit', {pathname: '/curriculum'});
+  await assertRedirect(baseUrl, '/beta/historical-unit', {pathname: '/curriculum'});
+
+  await assertNotFoundWithoutLeak(baseUrl, '/Images/Help_Slideshow.swf');
+  await assertNotFoundWithoutLeak(
+    baseUrl,
+    '/0214%20Sunburst%20and%20BLI%20Form%20partnership%20for%20HELP%20Math2.pdf',
+  );
+  await assertNotFoundWithoutLeak(baseUrl, '/unknown-secret.txt');
+  debug(`contract complete for ${baseUrl}`);
+}
+
+describe('Apache 2.4 legacy-host cutover contract', () => {
+  it(
+    'passes through both generated deployment forms on the pinned local Apache',
+    {timeout: 30_000},
+    async () => {
+      const httpd = await findHttpd();
+      const version = await execFileAsync(httpd, ['-v']);
+      assert.match(`${version.stdout}\n${version.stderr}`, new RegExp(expectedApacheVersion.replace('.', '\\.')));
+
+      for (const mode of ['htaccess', 'directory-include'] as const) {
+        const server = await startApache(httpd, mode);
+        try {
+          await exerciseContract(server.baseUrl);
+        } catch (error) {
+          throw new Error(`${mode} contract failed: ${String(error)}\n${server.diagnostics()}`);
+        } finally {
+          await stopApache(server.child);
+          await rm(server.temporaryRoot, {recursive: true, force: true});
+          debug(`${mode} cleanup complete`);
+        }
+      }
+    },
+  );
+});

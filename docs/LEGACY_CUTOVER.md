@@ -13,6 +13,13 @@ the Playwright suite are release gates for the complete mapping and
 representative `308` responses; any mapping change is incomplete until both
 suites are synchronized and pass against a production build.
 
+For the preferred direct one-hop old-host topology, the operational handoff is
+the generated Apache 2.4 package in `ops/legacy-host/`. It is derived from the
+same `next.config.ts` authority, fails closed for unlisted files, and must pass
+`npm run check:legacy-apache`, `npm run test:legacy-apache`, and the actual
+host's `httpd -t` before installation. Preparing this package does not deploy
+it or authorize a DNS change.
+
 `LEGACY_RESOURCE_MAP.md` records the editorial reason, preferred stable source,
 and rights disposition for high-value historical documents. Complete its
 source-custody work before redirecting the old domain: a live legacy URL will
@@ -41,7 +48,7 @@ become circular evidence once it points back to the modern page.
 | Exact DealerDocs scope, reports, and RtI files; teacher guide v3.1.2 | `/curriculum#help-math-1-catalog` |
 | Exact DealerDocs WWC, DOI-linked study, ERIC-linked article, media report, and brochure files | Matching `/resources#...` record listed in `LEGACY_RESOURCE_MAP.md` |
 | Other `/DealerDocs/*`, `/teacher_guide/*` paths | `/resources` |
-| `/Beta/*` | `/curriculum` |
+| `/Beta/*`, `/beta/*` | `/curriculum` |
 
 The crawl intentionally keeps two exceptions out of production redirects:
 
@@ -115,11 +122,11 @@ DNS. Do not store registrar credentials or mail secrets in the repository.
 | Prior TTL and any planned TTL reduction time | Pending |
 | MX/SPF/DKIM/DMARC and ownership-record comparison | Pending |
 | Old mailbox continuity test | Pending |
-| Release commit and Vercel deployment ID | Pending |
+| Release commit and Vercel deployment ID | Pre-cutover baseline: `ff3176a0c4b98874613e759df738f27b4b04ce84` / `dpl_5z1uh1S5aURhcB6X2Yt66BVcoNQz`; see `docs/releases/2026-07-21-pr8.md`. Replace with the final reviewed cutover candidate before DNS changes. |
 | Chosen one-hop or temporary two-hop topology | Pending |
-| Legacy source archive manifest and hash record | Pending |
+| Legacy source archive manifest and hash record | Local pre-cutover capture: 23/23 governed locators, 23 content-addressed objects, 14,280,549 bytes. Metadata evidence is in `docs/evidence/legacy-source-crawl-2026-07-21.{json,csv,sha256}`; JSON SHA-256 `9e12d758ff2b0d37805da1d1f34cfcfad4a45e517c86831248df59015882927a`. Original bytes are in the restricted local sibling archive. Durable off-device/remote custody and restore verification remain pending. |
 | Rights/accessibility disposition for owner-held PDFs | Pending |
-| External-source link review and resource-map revision | Pending |
+| External-source link review and resource-map revision | 2026-07-21 baseline complete in `LEGACY_RESOURCE_MAP.md` and `data/legacy-source-registry.json`; repeat immediately before cutover. |
 | Quantitative rollback threshold | Pending |
 | Search Console owners for both domains | Pending |
 
@@ -135,15 +142,18 @@ DNS. Do not store registrar credentials or mail secrets in the repository.
    continuity.
 4. Record any planned TTL reduction early enough for the previous TTL to
    expire. Change only website records during the cutover.
-5. Implement the preferred direct path rules on the old host. If the provider
-   permits only a host-wide path-preserving redirect, record the temporary
-   two-hop exception before attaching old apex and `www` to the new service.
+5. Review `ops/legacy-host/README.md`, run `npm run check:legacy-apache` and
+   `npm run test:legacy-apache`, choose exactly one generated deployment form,
+   back up the actual virtual-host configuration, install the direct path
+   rules, and run `httpd -t` before reload. If the provider permits only a
+   host-wide path-preserving redirect, record the temporary two-hop exception
+   before attaching old apex and `www` to the new service.
 6. Probe old apex and `www` over HTTP and HTTPS. For each origin, verify `/`,
    `/Home.htm`, `/Contact.htm?source=cutover`, the historical privacy PDF,
    samples under `/PR/`, the exact document routes in
    `LEGACY_RESOURCE_MAP.md`, wildcard fallbacks under `/DealerDocs/` and
-   `/teacher_guide/`, `/shortdemo/`, and `/Beta/`, the intentionally
-   unavailable SWF, and a true unknown path.
+   `/teacher_guide/`, `/shortdemo/`, `/Beta/`, and `/beta/`, the
+   intentionally unavailable SWF, and a true unknown path.
 7. Retain status, `Location` headers, redirect-hop count, final canonical URL,
    query preservation, fragment preservation for deep routes, target-element
    existence, TLS result, and response body type. There must be no loop,

@@ -247,7 +247,8 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
   },
   {source: '/DealerDocs/:path*', destination: '/resources', permanent: true},
   {source: '/teacher_guide/:path*', destination: '/resources', permanent: true},
-  {source: '/Beta/:path*', destination: '/curriculum', permanent: true}
+  {source: '/Beta/:path*', destination: '/curriculum', permanent: true},
+  {source: '/beta/:path*', destination: '/curriculum', permanent: true}
 ];
 
 const nextConfig: NextConfig = {

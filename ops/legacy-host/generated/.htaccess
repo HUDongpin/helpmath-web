@@ -1,0 +1,222 @@
+# GENERATED FILE. DO NOT EDIT.
+# Source of redirect truth: next.config.ts legacyRedirects.
+# Regenerate with: npm run generate:legacy-apache
+# Use as the legacy DocumentRoot .htaccess or include inside its <Directory> block.
+
+ErrorDocument 404 "Not Found"
+RewriteEngine On
+
+# Never expose retired binary or unverified partnership artifacts.
+# 404 /Images/Help_Slideshow.swf
+RewriteRule "^/?Images/Help_Slideshow\.swf$" "-" [R=404,L]
+# 404 /0214%20Sunburst%20and%20BLI%20Form%20partnership%20for%20HELP%20Math2.pdf
+RewriteRule "^/?0214 Sunburst and BLI Form partnership for HELP Math2\.pdf$" "-" [R=404,L]
+
+# Permanent one-hop redirects. Exact paths precede directory wildcards.
+# / -> / (old-host root)
+RewriteRule "^/?$" "https://www.helpmath.ai/" [R=301,L,NE]
+# /favicon.ico -> /icon.svg
+RewriteRule "^/?favicon\.ico$" "https://www.helpmath.ai/icon.svg" [R=301,L,NE]
+# /Home.htm -> /
+RewriteRule "^/?Home\.htm$" "https://www.helpmath.ai/" [R=301,L,NE]
+# /Index.htm -> /
+RewriteRule "^/?Index\.htm$" "https://www.helpmath.ai/" [R=301,L,NE]
+# /About.htm -> /about
+RewriteRule "^/?About\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /ProgramInfo.htm -> /curriculum#help-math-1-catalog
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?ProgramInfo\.htm$" "https://www.helpmath.ai/curriculum?%{QUERY_STRING}#help-math-1-catalog" [R=301,L,NE]
+RewriteRule "^/?ProgramInfo\.htm$" "https://www.helpmath.ai/curriculum#help-math-1-catalog" [R=301,L,NE]
+# /Kf.htm -> /about
+RewriteRule "^/?Kf\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /Mph.htm -> /about
+RewriteRule "^/?Mph\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /Mth.htm -> /about
+RewriteRule "^/?Mth\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /Csh.htm -> /about
+RewriteRule "^/?Csh\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /Bah.htm -> /about
+RewriteRule "^/?Bah\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /Bdh.htm -> /about
+RewriteRule "^/?Bdh\.htm$" "https://www.helpmath.ai/about" [R=301,L,NE]
+# /AcademicLanguage.htm -> /approach
+RewriteRule "^/?AcademicLanguage\.htm$" "https://www.helpmath.ai/approach" [R=301,L,NE]
+# /Ped.htm -> /approach
+RewriteRule "^/?Ped\.htm$" "https://www.helpmath.ai/approach" [R=301,L,NE]
+# /SIOP.htm -> /approach
+RewriteRule "^/?SIOP\.htm$" "https://www.helpmath.ai/approach" [R=301,L,NE]
+# /Sheltered.htm -> /approach
+RewriteRule "^/?Sheltered\.htm$" "https://www.helpmath.ai/approach" [R=301,L,NE]
+# /Sheltered%20Instruction.wmv -> /approach
+RewriteRule "^/?Sheltered Instruction\.wmv$" "https://www.helpmath.ai/approach" [R=301,L,NE]
+# /Content.htm -> /curriculum#help-math-1-catalog
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?Content\.htm$" "https://www.helpmath.ai/curriculum?%{QUERY_STRING}#help-math-1-catalog" [R=301,L,NE]
+RewriteRule "^/?Content\.htm$" "https://www.helpmath.ai/curriculum#help-math-1-catalog" [R=301,L,NE]
+# /Standards.htm -> /curriculum
+RewriteRule "^/?Standards\.htm$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+# /As.htm -> /curriculum
+RewriteRule "^/?As\.htm$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+# /HELP%20Math%20Correlations%20CCS%203-4-5%209%2028%2010%20v2.pdf -> /curriculum
+RewriteRule "^/?HELP Math Correlations CCS 3-4-5 9 28 10 v2\.pdf$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+# /HELP%20Math%20Correlations%20CCS%206%207%208.pdf -> /curriculum
+RewriteRule "^/?HELP Math Correlations CCS 6 7 8\.pdf$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+# /HELP_Alignment_CO.pdf -> /curriculum
+RewriteRule "^/?HELP_Alignment_CO\.pdf$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+# /Evidence.htm -> /research
+RewriteRule "^/?Evidence\.htm$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /Awards.htm -> /research
+RewriteRule "^/?Awards\.htm$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /Testimonials.htm -> /research
+RewriteRule "^/?Testimonials\.htm$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /PR.htm -> /research
+RewriteRule "^/?PR\.htm$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /Rb.htm -> /research
+RewriteRule "^/?Rb\.htm$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /onlineprogram.html -> /research
+RewriteRule "^/?onlineprogram\.html$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf -> /resources#codie-past-winners
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?CODiE Award for Best Instructional Solution\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#codie-past-winners" [R=301,L,NE]
+RewriteRule "^/?CODiE Award for Best Instructional Solution\.pdf$" "https://www.helpmath.ai/resources#codie-past-winners" [R=301,L,NE]
+# /Codie%20Release%20DDI.pdf -> /resources#codie-past-winners
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?Codie Release DDI\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#codie-past-winners" [R=301,L,NE]
+RewriteRule "^/?Codie Release DDI\.pdf$" "https://www.helpmath.ai/resources#codie-past-winners" [R=301,L,NE]
+# /DDI%206-22-09NEWS%20RELEASE%20\(final\).pdf -> /research
+RewriteRule "^/?DDI 6-22-09NEWS RELEASE \(final\)\.pdf$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /HELP%20evaluation%20white%20paper%20June%202005.pdf -> /research
+RewriteRule "^/?HELP evaluation white paper June 2005\.pdf$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /U%20S%20%20Department%20of%20Education%20Research%20Summary%205-2013.pdf -> /research
+RewriteRule "^/?U S  Department of Education Research Summary 5-2013\.pdf$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /THE%20IMPORTANCE%20OF%20ACADEMIC%20LANGUAGE%20in%20Achieving%20Content%20Area%20Mastery.pdf -> /research
+RewriteRule "^/?THE IMPORTANCE OF ACADEMIC LANGUAGE in Achieving Content Area Mastery\.pdf$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /Resources.htm -> /resources
+RewriteRule "^/?Resources\.htm$" "https://www.helpmath.ai/resources" [R=301,L,NE]
+# /Tst.htm -> /resources
+RewriteRule "^/?Tst\.htm$" "https://www.helpmath.ai/resources" [R=301,L,NE]
+# /Pd.htm -> /resources
+RewriteRule "^/?Pd\.htm$" "https://www.helpmath.ai/resources" [R=301,L,NE]
+# /Sales.htm -> /resources
+RewriteRule "^/?Sales\.htm$" "https://www.helpmath.ai/resources" [R=301,L,NE]
+# /Trial.htm -> /contact
+RewriteRule "^/?Trial\.htm$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /Purchasing.htm -> /contact
+RewriteRule "^/?Purchasing\.htm$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /PurchaseInfo.htm -> /contact
+RewriteRule "^/?PurchaseInfo\.htm$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /Contact.htm -> /contact
+RewriteRule "^/?Contact\.htm$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /Pricing.htm -> /contact
+RewriteRule "^/?Pricing\.htm$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /Gfs.htm -> /contact
+RewriteRule "^/?Gfs\.htm$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /trial_register.aspx -> /contact
+RewriteRule "^/?trial_register\.aspx$" "https://www.helpmath.ai/contact" [R=301,L,NE]
+# /Login.htm -> /login
+RewriteRule "^/?Login\.htm$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /district_login.aspx -> /login
+RewriteRule "^/?district_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /school_login.aspx -> /login
+RewriteRule "^/?school_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /student_login.aspx -> /login
+RewriteRule "^/?student_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /teacher_login.aspx -> /login
+RewriteRule "^/?teacher_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /user_studentlogin.aspx -> /login
+RewriteRule "^/?user_studentlogin\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /student_register.aspx -> /login
+RewriteRule "^/?student_register\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /teacher_register.aspx -> /login
+RewriteRule "^/?teacher_register\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /trialuser_login.aspx -> /login
+RewriteRule "^/?trialuser_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /Project_Admin_Login.aspx -> /login
+RewriteRule "^/?Project_Admin_Login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+# /TechSpecs.htm -> /support
+RewriteRule "^/?TechSpecs\.htm$" "https://www.helpmath.ai/support" [R=301,L,NE]
+# /Ti.htm -> /support
+RewriteRule "^/?Ti\.htm$" "https://www.helpmath.ai/support" [R=301,L,NE]
+# /Privacy.htm -> /privacy
+RewriteRule "^/?Privacy\.htm$" "https://www.helpmath.ai/privacy" [R=301,L,NE]
+# /HELP%20Math%20Privacy%20Policy%203.12.07.pdf -> /privacy
+RewriteRule "^/?HELP Math Privacy Policy 3\.12\.07\.pdf$" "https://www.helpmath.ai/privacy" [R=301,L,NE]
+# /HELP%20Math%20Privacy%20Policy%203.12.07.doc -> /privacy
+RewriteRule "^/?HELP Math Privacy Policy 3\.12\.07\.doc$" "https://www.helpmath.ai/privacy" [R=301,L,NE]
+# /Demo.htm -> /demos
+RewriteRule "^/?Demo\.htm$" "https://www.helpmath.ai/demos" [R=301,L,NE]
+# /DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf -> /research#help-math-pilot
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/HELP Math Evaluation White Paper 5-13\.pdf$" "https://www.helpmath.ai/research?%{QUERY_STRING}#help-math-pilot" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/HELP Math Evaluation White Paper 5-13\.pdf$" "https://www.helpmath.ai/research#help-math-pilot" [R=301,L,NE]
+# /DealerDocs/U%20S%20%20Department%20of%20Education%20Research%20Summary%205-2013.pdf -> /research#wwc-tran-study
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/U S  Department of Education Research Summary 5-2013\.pdf$" "https://www.helpmath.ai/research?%{QUERY_STRING}#wwc-tran-study" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/U S  Department of Education Research Summary 5-2013\.pdf$" "https://www.helpmath.ai/research#wwc-tran-study" [R=301,L,NE]
+# /DealerDocs/HELP%20Math%20self-efficacy%20in%20secondary%20students%20R.pdf -> /resources#freeman-2012-doi
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/HELP Math self-efficacy in secondary students R\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#freeman-2012-doi" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/HELP Math self-efficacy in secondary students R\.pdf$" "https://www.helpmath.ai/resources#freeman-2012-doi" [R=301,L,NE]
+# /DealerDocs/What%20Works%20Clearinghouse_help_102312.pdf -> /resources#wwc-single-study-review
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/What Works Clearinghouse_help_102312\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#wwc-single-study-review" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/What Works Clearinghouse_help_102312\.pdf$" "https://www.helpmath.ai/resources#wwc-single-study-review" [R=301,L,NE]
+# /DealerDocs/SCOPE%20and%20Sequence%202012.pdf -> /curriculum#help-math-1-catalog
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/SCOPE and Sequence 2012\.pdf$" "https://www.helpmath.ai/curriculum?%{QUERY_STRING}#help-math-1-catalog" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/SCOPE and Sequence 2012\.pdf$" "https://www.helpmath.ai/curriculum#help-math-1-catalog" [R=301,L,NE]
+# /DealerDocs/Sheltered%20Instruction%20and%20scaffolding%20techniques%20in%20HELP%20Math%20final%202012.pdf -> /approach#support-layers
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/Sheltered Instruction and scaffolding techniques in HELP Math final 2012\.pdf$" "https://www.helpmath.ai/approach?%{QUERY_STRING}#support-layers" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/Sheltered Instruction and scaffolding techniques in HELP Math final 2012\.pdf$" "https://www.helpmath.ai/approach#support-layers" [R=301,L,NE]
+# /DealerDocs/Sheltered%20Instruction%20and%20SPED%202012.pdf -> /approach#support-layers
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/Sheltered Instruction and SPED 2012\.pdf$" "https://www.helpmath.ai/approach?%{QUERY_STRING}#support-layers" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/Sheltered Instruction and SPED 2012\.pdf$" "https://www.helpmath.ai/approach#support-layers" [R=301,L,NE]
+# /DealerDocs/INTEGRATION%20OF%20ACADEMIC%20LANGUAGE%20IN%20HELP%20MATH.pdf -> /approach#support-layers
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/INTEGRATION OF ACADEMIC LANGUAGE IN HELP MATH\.pdf$" "https://www.helpmath.ai/approach?%{QUERY_STRING}#support-layers" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/INTEGRATION OF ACADEMIC LANGUAGE IN HELP MATH\.pdf$" "https://www.helpmath.ai/approach#support-layers" [R=301,L,NE]
+# /DealerDocs/HELP%20Math%20Overview%20of%20Reports%20\(2010\).pdf -> /curriculum#help-math-1-catalog
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/HELP Math Overview of Reports \(2010\)\.pdf$" "https://www.helpmath.ai/curriculum?%{QUERY_STRING}#help-math-1-catalog" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/HELP Math Overview of Reports \(2010\)\.pdf$" "https://www.helpmath.ai/curriculum#help-math-1-catalog" [R=301,L,NE]
+# /DealerDocs/HELP%20Math%20as%20an%20RtI%20Solution%202012.pdf -> /curriculum#help-math-1-catalog
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/HELP Math as an RtI Solution 2012\.pdf$" "https://www.helpmath.ai/curriculum?%{QUERY_STRING}#help-math-1-catalog" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/HELP Math as an RtI Solution 2012\.pdf$" "https://www.helpmath.ai/curriculum#help-math-1-catalog" [R=301,L,NE]
+# /DealerDocs/Ed%20Week%20Article.pdf -> /resources#education-week-2013
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/Ed Week Article\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#education-week-2013" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/Ed Week Article\.pdf$" "https://www.helpmath.ai/resources#education-week-2013" [R=301,L,NE]
+# /DealerDocs/TechnologyInnovations.pdf -> /resources#technology-innovations-report
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/TechnologyInnovations\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#technology-innovations-report" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/TechnologyInnovations\.pdf$" "https://www.helpmath.ai/resources#technology-innovations-report" [R=301,L,NE]
+# /DealerDocs/Sage%20Publications%20article.pdf -> /resources#ell-curriculum-eric
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/Sage Publications article\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#ell-curriculum-eric" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/Sage Publications article\.pdf$" "https://www.helpmath.ai/resources#ell-curriculum-eric" [R=301,L,NE]
+# /DealerDocs/HelpMath%20print%208.5%20x%2011%20each.pdf -> /resources#about-help-math
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?DealerDocs/HelpMath print 8\.5 x 11 each\.pdf$" "https://www.helpmath.ai/resources?%{QUERY_STRING}#about-help-math" [R=301,L,NE]
+RewriteRule "^/?DealerDocs/HelpMath print 8\.5 x 11 each\.pdf$" "https://www.helpmath.ai/resources#about-help-math" [R=301,L,NE]
+# /teacher_guide/HELP%20Alignment%20v3.1.2-%20NCTM.pdf -> /curriculum#help-math-1-catalog
+RewriteCond "%{QUERY_STRING}" "!^$"
+RewriteRule "^/?teacher_guide/HELP Alignment v3\.1\.2- NCTM\.pdf$" "https://www.helpmath.ai/curriculum?%{QUERY_STRING}#help-math-1-catalog" [R=301,L,NE]
+RewriteRule "^/?teacher_guide/HELP Alignment v3\.1\.2- NCTM\.pdf$" "https://www.helpmath.ai/curriculum#help-math-1-catalog" [R=301,L,NE]
+# /shortdemo/:path* -> /demos
+RewriteRule "^/?shortdemo(?:/.*)?$" "https://www.helpmath.ai/demos" [R=301,L,NE]
+# /PR/:path* -> /research
+RewriteRule "^/?PR(?:/.*)?$" "https://www.helpmath.ai/research" [R=301,L,NE]
+# /DealerDocs/:path* -> /resources
+RewriteRule "^/?DealerDocs(?:/.*)?$" "https://www.helpmath.ai/resources" [R=301,L,NE]
+# /teacher_guide/:path* -> /resources
+RewriteRule "^/?teacher_guide(?:/.*)?$" "https://www.helpmath.ai/resources" [R=301,L,NE]
+# /Beta/:path* -> /curriculum
+RewriteRule "^/?Beta(?:/.*)?$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+# /beta/:path* -> /curriculum
+RewriteRule "^/?beta(?:/.*)?$" "https://www.helpmath.ai/curriculum" [R=301,L,NE]
+
+# Fail closed: no unlisted legacy path or residual file is publicly served.
+RewriteRule "^" "-" [R=404,L]

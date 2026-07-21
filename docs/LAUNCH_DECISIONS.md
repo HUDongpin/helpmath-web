@@ -166,7 +166,7 @@ file, shell history, retained command output, or this record.
 | Keep automatic `main` production assignment, or require manual promotion | Pending | Pending |
 | GitHub Pro upgrade for required PR checks on the private repository, or documented manual control | Pending | Pending |
 | Release owner and rollback owner | Pending | Pending |
-| Final production commit and Vercel deployment ID | Application release `548496d5464971b087b59ed70c9a4160d8644e60`; Vercel deployment `dpl_8yRNUiYtVyYCXzfyJqzJ4bSVQQT1`; GitHub Quality run `29808884999` passed. A subsequent smoke-only change corrects verification of Vercel-compressed JavaScript without changing the served application. | Engineering release / 2026-07-21 |
+| Most recent application release baseline (historical evidence gaps disclosed) | Historical curriculum/resource release `ff3176a0c4b98874613e759df738f27b4b04ce84`; Vercel deployment `dpl_5z1uh1S5aURhcB6X2Yt66BVcoNQz`; production Quality run `29816653924` passed. `docs/releases/2026-07-21-pr8.md` records the retained evidence and explicitly identifies the missing protected-Preview smoke record and unassigned exception ownership/review dates. Do not call this a complete release-evidence record. Each later release must retain its own PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-21 |
 
 Until private-repository branch protection is available, every production
 change should still use a PR, wait for the complete `Quality` workflow, and
