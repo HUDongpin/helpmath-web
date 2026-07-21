@@ -6,6 +6,12 @@ it does not collect evidence or prove the post-change result. Registrar, mail,
 Search Console, Vercel, legacy-host, DNS, and HTTP/TLS operators must produce
 the underlying evidence through approved procedures.
 
+**Current revision:** the code-level holding-only transition lock forces this
+command to return `NO_GO` with exit code `2` for every input. The conditional
+`GO_TO_CHANGE` behavior described below is dormant design documentation and
+cannot authorize a cutover until a separate reviewed lifecycle removes the
+lock and updates this contract.
+
 Do not copy placeholder values into a real plan and do not store these files in
 the repository. The plan, evidence artifacts, underlying collector outputs,
 and retained receipt must use absolute paths in a restricted external store.
@@ -181,6 +187,10 @@ remains an owner attestation, not an independent login to the source system.
 | `preCutoverHttpTlsObservation` | 15 minutes | `allFourLegacyOriginsReachable`, `currentRedirectStateMatchesBaseline`, `targetCanonicalRoutesPassed`, `tlsIdentityAndExpiryPassed` |
 
 ## Decision and exit behavior
+
+The current holding-only revision always returns `NO_GO` with exit `2`. The
+remaining section describes the additional conditions a future unlocked
+revision would still have to satisfy; none of them bypass the current lock.
 
 The preflight returns `GO_TO_CHANGE` and exit `0` only when all plan, evidence,
 launch-gate, repository, command, destination, and receipt-store checks pass

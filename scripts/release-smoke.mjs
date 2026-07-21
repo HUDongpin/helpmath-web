@@ -11,12 +11,24 @@ import {
   retryDelayMs,
   retryOperation,
 } from './release-smoke-helpers.mjs';
+import {
+  parseCanonicalLaunchGateManifest,
+  validateHoldingOnlyLaunchGateManifest,
+} from '../lib/launch-gate-transition-lock.js';
 
 const launchGateManifestText = await readFile(
   new URL('../config/launch-gates.json', import.meta.url),
   'utf8',
 );
-const launchGateManifest = JSON.parse(launchGateManifestText);
+const parsedLaunchGateManifest = parseCanonicalLaunchGateManifest(launchGateManifestText);
+if (parsedLaunchGateManifest.errors.length > 0) {
+  throw new Error(parsedLaunchGateManifest.errors.join('; '));
+}
+const launchGateManifest = parsedLaunchGateManifest.manifest;
+const transitionLockErrors = validateHoldingOnlyLaunchGateManifest(launchGateManifest);
+if (transitionLockErrors.length > 0) {
+  throw new Error(transitionLockErrors.join('; '));
+}
 const launchGateManifestSha256 = createHash('sha256')
   .update(launchGateManifestText)
   .digest('hex');
@@ -26,7 +38,7 @@ for (const [gate, state] of [
   ['legalPublication', legalPublicationState],
   ['contactIntake', contactIntakeState],
 ]) {
-  if (!['holding', 'approved'].includes(state)) {
+  if (state !== 'holding') {
     throw new Error(`config/launch-gates.json has invalid ${gate} state ${state ?? 'missing'}.`);
   }
 }

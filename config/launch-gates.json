@@ -1,41 +1,55 @@
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-07-21T18:06:45.000Z",
+  "schemaVersion": 2,
+  "updatedAt": "2026-07-21T21:45:13.000Z",
   "gates": {
     "legalPublication": {
       "description": "Publish the English and Spanish Privacy and Terms pages as approved legal notices.",
       "status": "holding",
       "dependencies": [],
       "approval": null,
-      "evidenceRefs": [],
-      "blockerRefs": ["docs/LAUNCH_DECISIONS.md"]
+      "evidence": [],
+      "blockerRefs": [
+        "docs/LEGAL_REVIEW.md"
+      ]
     },
     "contactIntake": {
       "description": "Accept and deliver public contact-form submissions.",
       "status": "holding",
-      "dependencies": ["legalPublication"],
+      "dependencies": [
+        "legalPublication"
+      ],
       "approval": null,
-      "evidenceRefs": [],
-      "blockerRefs": ["docs/LAUNCH_DECISIONS.md"]
+      "evidence": [],
+      "blockerRefs": [
+        "docs/CONTACT_DELIVERY.md"
+      ]
     },
     "demoPublication": {
       "description": "Make reviewed JavaScript demo routes and assets publicly accessible or indexable.",
       "status": "holding",
       "dependencies": [],
       "approval": null,
-      "evidenceRefs": [],
-      "blockerRefs": ["docs/DEMO_PROMOTION.md", "docs/LAUNCH_DECISIONS.md"]
+      "evidence": [],
+      "blockerRefs": [
+        "docs/DEMO_PROMOTION.md",
+        "docs/LAUNCH_DECISIONS.md"
+      ]
     },
     "legacyCutover": {
-      "description": "Redirect the legacy HELP Math domains to the new canonical website.",
+      "description": "Authorize the controlled legacy-domain redirect change under the reviewed cutover and rollback plan.",
       "status": "holding",
-      "dependencies": ["legalPublication", "contactIntake"],
+      "dependencies": [
+        "legalPublication",
+        "contactIntake"
+      ],
       "approval": null,
-      "evidenceRefs": [],
-      "blockerRefs": ["docs/LEGACY_CUTOVER.md"]
+      "evidence": [],
+      "blockerRefs": [
+        "docs/LEGACY_CUTOVER.md"
+      ]
     },
     "productionLaunch": {
-      "description": "Declare the website migration fully launched rather than operating in its current holding state.",
+      "description": "Declare the website migration fully launched after post-cutover verification and final release approval.",
       "status": "holding",
       "dependencies": [
         "legalPublication",
@@ -44,8 +58,10 @@
         "legacyCutover"
       ],
       "approval": null,
-      "evidenceRefs": [],
-      "blockerRefs": ["docs/LAUNCH_DECISIONS.md"]
+      "evidence": [],
+      "blockerRefs": [
+        "docs/LAUNCH_DECISIONS.md"
+      ]
     }
   }
 }

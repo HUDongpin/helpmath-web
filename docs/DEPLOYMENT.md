@@ -3,12 +3,15 @@
 ## Release gate
 
 The repository gate manifest is `config/launch-gates.json`. Both `npm test`
-and `npm run build` validate it before continuing. Approval entries require a
-named approver, canonical UTC approval time, at least one non-secret evidence
-reference, no open blocker reference, and approved dependencies. The validator
-also rejects a build with `NEXT_PUBLIC_CONTACT_ENABLED=true` while the legal
-or contact repository gate is still holding. Record the manifest SHA-256 in
-the release evidence.
+and `npm run build` validate it before continuing. This revision has a
+code-level holding-only transition lock: all five gates must remain exactly
+`holding`, and neither manifest edits nor environment variables can unlock
+them. The validator also enforces canonical manifest bytes and rejects future
+or inconsistent approval data, arbitrary Markdown evidence, unsafe paths,
+symbolic files, credential-shaped content, and a build with
+`NEXT_PUBLIC_CONTACT_ENABLED=true`. The typed evidence shapes in
+[`LAUNCH_GATE_EVIDENCE.md`](./LAUNCH_GATE_EVIDENCE.md) are preparatory and do
+not authorize a status change. Record the manifest SHA-256 in release evidence.
 
 1. Require the GitHub `Quality` workflow on `main`.
 2. Review Privacy and Terms with the project owner or qualified counsel.
@@ -28,11 +31,9 @@ the release evidence.
    navigation, private-demo route/asset boundary, metadata, accessibility, and
    raw-Flash 404 probes pass.
 
-Changing a manifest status is itself a reviewed code release. Legal approval
-removes the draft indexing boundary only when the approved English and Spanish
-copy and their tests are updated in the same change. Contact intake opens only
-when both repository gates are approved and the deployment flag is exactly
-`true`; the API independently recomputes that same two-key decision.
+Changing a manifest status is currently forbidden. A later reviewed lifecycle
+change must keep legal publishing, contact intake, demos, cutover, and release
+consumers fail closed throughout each approval and activation transition.
 
 After promotion, run `npm run smoke:production` against the canonical domain.
 This checks the exact sitemap set, metadata and reciprocal language alternates,

@@ -387,10 +387,12 @@ describe('legacy-domain external evidence', () => {
 });
 
 describe('legacy-domain cutover decision', () => {
-  it('returns GO_TO_CHANGE only when every repository, evidence, command, and receipt gate passes', () => {
+  it('keeps the cutover at NO_GO while the holding-only transition lock is active', () => {
     const evaluation = evaluateLegacyCutoverPreflight(goInput(validPlan()));
-    assert.equal(evaluation.decision, 'GO_TO_CHANGE');
-    assert.deepEqual(evaluation.failures, []);
+    assert.equal(evaluation.decision, 'NO_GO');
+    assert.deepEqual(evaluation.failures, [
+      'holding-only-transition-lock: launch-gate transitions are locked; legacy cutover cannot be authorized',
+    ]);
   });
 
   it('fails closed for holding gates, a dirty tree, incomplete evidence, missing commands, and no receipt store', () => {

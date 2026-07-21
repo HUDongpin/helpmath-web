@@ -11,7 +11,15 @@ the two approved bundles, the two API route traces contain exactly the expected
 12 PNG and two runtime files, and `.next/static` contains neither a known text
 fingerprint nor a byte-for-byte SHA-256 match for any private PNG.
 
-To promote a later conversion:
+Public demo promotion is intentionally disabled in this repository revision.
+The holding-only transition lock rejects `demoPublication=approved`, so do not
+change the snapshot to public or describe the evidence contracts as an
+executable release procedure. A later, separately reviewed implementation must
+provide a protected publication-candidate state, a distinct activation switch,
+server-side route, runtime, and asset enforcement, and post-activation
+Production verification without invalidating or replaying candidate evidence.
+
+Before that implementation may be proposed:
 
 1. Complete the workbench audit, deterministic keyframe capture, behavior
    tests, visual comparison, accessibility checks, and acceptance checklist.
@@ -21,12 +29,17 @@ To promote a later conversion:
    the server-only directories in this repository. Do not copy FLA, SWF,
    Ruffle, catalogs, or source paths, and do not place unapproved derivatives
    under `public/`.
-4. Obtain the separate top-level `demoPublication` approval in
-   `config/launch-gates.json`, then update `demos/SNAPSHOT.json` and its
-   integrity test. Neither record can substitute for the other.
-5. Keep the public label `conditional` until the strict migration gate is
+4. Obtain and retain the underlying publication-rights and product-acceptance
+   records outside the repository; the preparatory envelope shapes in
+   `docs/LAUNCH_GATE_EVIDENCE.md` do not unlock the current gate.
+5. Design and validate the protected candidate-to-activation lifecycle before
+   changing `demos/SNAPSHOT.json`, the generated registry, public routes, or
+   asset access. Candidate and final release evidence must not claim a future
+   deployment or rely on a digest invalidated by activation.
+6. Keep the public label `conditional` until the strict migration gate is
    actually complete and owner-accepted.
-6. Run the full Quality workflow and inspect the Vercel Preview before merge.
+7. Run the full Quality workflow and inspect the protected Vercel candidate
+   before any later activation change is eligible for review.
 
 ## CEO Executive Preview is not promotion
 
