@@ -187,7 +187,7 @@
     "scripts/build-executive-demo-runtime.mjs": "0167cd4d7d468bba837944639d6066c17f2465d4798f86852926033668272869",
     "scripts/check-private-demo-leaks.mjs": "21d0be77d1b96188a61d1975daf1fbbc19b8ae320a00fbedea756d3abc4bf6a2",
     "scripts/generate-registry.mjs": "dff90e5e6105ece559c7254afb167d1bc1c80d3a746c6694e12ef2474a01f5db",
-    "scripts/release-smoke.mjs": "2cd8e2feaa1efc399e931fe85fc09738622d556094dd7143fedb1972ffb166d2",
+    "scripts/release-smoke.mjs": "f666e68c56bd6ef3e8947e3f35b05a3703cc2695d13148b4c81aefd1b8e587e1",
     "scripts/verify-private-demo-traces.mjs": "80a4a70da172d449039df82f905c4286d54c7df7c721986e65d5f2d683604fd7"
   }
 }

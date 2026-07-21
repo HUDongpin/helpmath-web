@@ -142,8 +142,8 @@ session cookie here.
 | Approved demo scope: `conversion-1-2` and `conversion-1-4` only | Project-team-requested scope; public status remains unchanged | HELP Math project researcher/software engineer request / 2026-07-21 |
 | Review start and absolute expiry time | Configured for Production only; all dynamic Preview deployments fail closed. Production closes `2026-07-28T15:59:00Z` (`2026-07-28 23:59` China Standard Time) | Engineering configuration / 2026-07-21 |
 | Private channel used to deliver the access passphrase | Pending (channel name only; never the value) | Pending |
-| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented; unit, browser, and authenticated release-smoke checks passed | Engineering verification / 2026-07-21 |
-| Vercel WAF rate limit on executive session POST (IP, 15 requests / 10 minutes, default `429`) | Published rule `rule_executive_preview_session_post_limit_e7i95N`: exact path + POST, fixed window, IP, 15 requests / 600 seconds, default rate-limit action. Production `429` probe remains pending. Application defense in depth separately blocks the eighth failed attempt per warm instance. | Engineering configuration / 2026-07-21; runtime verification pending |
+| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented; unit, browser, and authenticated production release-smoke checks passed with both entries, 12 private images, and 2 private runtimes validated and `failures: []` | Engineering verification / 2026-07-21 |
+| Vercel WAF rate limit on executive session POST (IP, 15 requests / 10 minutes, default `429`) | Published rule `rule_executive_preview_session_post_limit_e7i95N`: exact path + POST, fixed window, IP, 15 requests / 600 seconds, default rate-limit action. In the production probe, requests 1–7 received the application’s expected `303`, request 8 onward received `429`, request 16 received `429`, and a follow-up edge response included `X-Vercel-Mitigated: deny`. Application defense in depth separately blocks the eighth failed attempt per warm instance. | Engineering configuration and production verification / 2026-07-21 |
 | Post-meeting action: disable access or rotate passphrase and signing secret | Pending | Pending |
 | Confirm no recording, forwarding, republication, or public presentation was authorized | Pending | Pending |
 | Separate rights/publication approval | Pending; not granted by this executive review | Pending |
@@ -165,7 +165,7 @@ file, shell history, retained command output, or this record.
 | Keep automatic `main` production assignment, or require manual promotion | Pending | Pending |
 | GitHub Pro upgrade for required PR checks on the private repository, or documented manual control | Pending | Pending |
 | Release owner and rollback owner | Pending | Pending |
-| Final production commit and Vercel deployment ID | Pending | Pending |
+| Final production commit and Vercel deployment ID | Application release `548496d5464971b087b59ed70c9a4160d8644e60`; Vercel deployment `dpl_8yRNUiYtVyYCXzfyJqzJ4bSVQQT1`; GitHub Quality run `29808884999` passed. A subsequent smoke-only change corrects verification of Vercel-compressed JavaScript without changing the served application. | Engineering release / 2026-07-21 |
 
 Until private-repository branch protection is available, every production
 change should still use a PR, wait for the complete `Quality` workflow, and
