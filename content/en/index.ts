@@ -1069,7 +1069,7 @@ export const enContent = {
         ],
       },
       safetyNote:
-        "If another website asks for your old HELP Math password, stop and confirm the web address with a trusted adult or your school. The official modern public site does not ask visitors to sign in.",
+        "If another website asks for a former student or educator HELP Math password, stop and confirm the address with a trusted adult or your school. The modern site never asks for a former account password. Only a named reviewer may enter a separate preview passphrase on the clearly labeled Executive Preview page after receiving it through an approved private channel.",
     },
     contact: {
       metadata: {
@@ -1168,7 +1168,8 @@ export const enContent = {
       previewNotice: {
         title: "No public demo is currently approved",
         body:
-          "Source provenance alone does not establish publication rights or fidelity. Each prototype must receive written rights approval, complete the required validation, and record technical acceptance before its route and extracted assets can open.",
+          "Source provenance alone does not establish publication rights or fidelity. Each prototype must receive written rights approval, complete the required validation, and record technical acceptance before its route and extracted assets can open. Authorized reviewers can check the restricted entry page; access opens only during a separately approved, time-boxed review and does not release any demo publicly.",
+        action: { label: "Authorized reviewer access", href: "/executive-preview" },
       },
       listLabel: "Approved demonstrations",
       items: [],

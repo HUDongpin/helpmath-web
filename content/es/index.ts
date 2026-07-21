@@ -1069,7 +1069,7 @@ export const esContent = {
         ],
       },
       safetyNote:
-        "Si otro sitio pide tu antigua contraseña de HELP Math, detente y confirma la dirección web con un adulto de confianza o con tu escuela. El sitio público oficial no pide iniciar sesión.",
+        "Si otro sitio pide una antigua contraseña de estudiante o educador de HELP Math, detente y confirma la dirección con un adulto de confianza o con tu escuela. El sitio moderno nunca pide la contraseña de una cuenta anterior. Solo un revisor designado puede introducir una frase de acceso distinta en la página claramente identificada como Vista previa ejecutiva, después de recibirla por un canal privado aprobado.",
     },
     contact: {
       metadata: {
@@ -1168,7 +1168,8 @@ export const esContent = {
       previewNotice: {
         title: "Actualmente no hay demostraciones públicas aprobadas",
         body:
-          "La procedencia de las fuentes no demuestra por sí sola derechos de publicación ni fidelidad. Cada prototipo debe recibir aprobación escrita de derechos, completar la validación requerida y registrar la aceptación técnica antes de abrir su ruta y recursos extraídos.",
+          "La procedencia de las fuentes no demuestra por sí sola derechos de publicación ni fidelidad. Cada prototipo debe recibir aprobación escrita de derechos, completar la validación requerida y registrar la aceptación técnica antes de abrir su ruta y recursos extraídos. Los revisores autorizados pueden consultar la página de acceso restringido; el acceso solo se abre durante una revisión aprobada y limitada en el tiempo, y no publica ninguna demo.",
+        action: { label: "Acceso de revisores autorizados", href: "/es/executive-preview" },
       },
       listLabel: "Demostraciones aprobadas",
       items: [],

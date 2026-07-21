@@ -1897,6 +1897,7 @@ svg {
   line-height: 0.98;
   margin: 0;
   max-width: 850px;
+  overflow-wrap: anywhere;
 }
 
 .page-hero__copy > p {

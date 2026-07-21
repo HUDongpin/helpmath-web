@@ -25,6 +25,7 @@ const copy = {
     restrictedBody:
       'These prototypes are not validated as faithful or complete. Audio, technical acceptance, visual validation, and rights review remain pending. Do not forward, record, republish, or present them as finished HELP Math products.',
     loginTitle: 'Enter the executive preview',
+    loginShortcut: 'Enter private preview',
     loginBody:
       'Use the high-entropy review passphrase supplied through the approved private channel. Access is temporary and expires automatically.',
     expiryLabel: 'Review window closes:',
@@ -55,6 +56,7 @@ const copy = {
     restrictedBody:
       'Estos prototipos no están validados como fieles ni completos. El audio, la aceptación técnica, la validación visual y la revisión de derechos siguen pendientes. No los reenvíes, grabes, publiques ni presentes como productos terminados de HELP Math.',
     loginTitle: 'Entrar a la vista previa ejecutiva',
+    loginShortcut: 'Entrar a la vista previa privada',
     loginBody:
       'Usa la frase de acceso de alta entropía enviada por el canal privado aprobado. El acceso es temporal y vence automáticamente.',
     expiryLabel: 'La ventana de revisión cierra:',
@@ -101,6 +103,12 @@ export function ExecutivePreviewPage({
               <p className="mt-5 max-w-2xl text-lg text-[var(--ink-soft)] md:text-xl">
                 {text.intro}
               </p>
+              {state === 'login' ? (
+                <a className="action action--primary mt-6 w-fit" href="#executive-preview-login">
+                  <span>{text.loginShortcut}</span>
+                  <ArrowRight aria-hidden="true" size={18} strokeWidth={2.4} />
+                </a>
+              ) : null}
             </div>
           </div>
         </Container>
@@ -156,7 +164,7 @@ function LoginPanel({
   return (
     <Section className="pt-0">
       <Container className="max-w-3xl">
-        <div className="contact-form-shell">
+        <div className="contact-form-shell scroll-mt-24" id="executive-preview-login">
           <div className="flex items-start gap-4">
             <KeyRound aria-hidden="true" className="mt-1 shrink-0 text-[var(--blue)]" size={30} />
             <div>
