@@ -133,6 +133,12 @@ DNS. Do not store registrar credentials or mail secrets in the repository.
 
 ## Executable preflight
 
+**Current revision:** the code-level holding-only transition lock makes every
+invocation return `NO_GO` with exit code `2`, even if all historical preflight
+inputs are structurally complete. The `GO_TO_CHANGE` contract below is dormant
+design documentation for a future reviewed lifecycle; it cannot authorize a
+cutover in this revision.
+
 Run the fail-closed preflight from the exact clean release commit before any
 legacy-host or DNS change:
 

@@ -1,6 +1,8 @@
 .github/
 docs/*
 !docs/DEMO_PROMOTION.md
+!docs/LEGAL_REVIEW.md
+!docs/CONTACT_DELIVERY.md
 !docs/LAUNCH_DECISIONS.md
 !docs/LEGACY_CUTOVER.md
 e2e/

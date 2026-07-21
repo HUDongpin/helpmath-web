@@ -864,6 +864,11 @@ export function evaluateLegacyCutoverPreflight(input: LegacyCutoverPreflightInpu
 } {
   const checks: PreflightCheck[] = [];
   checks.push({
+    id: 'holding-only-transition-lock',
+    pass: false,
+    detail: 'launch-gate transitions are locked; legacy cutover cannot be authorized',
+  });
+  checks.push({
     id: 'plan-valid',
     pass: Boolean(input.plan) && input.planErrors.length === 0,
     detail: input.planErrors.length === 0 ? 'cutover plan is valid' : input.planErrors.join('; '),

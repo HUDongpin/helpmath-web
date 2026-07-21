@@ -8,12 +8,17 @@ or reference.
 
 The machine-readable mirror is
 [`config/launch-gates.json`](../config/launch-gates.json). Run
-`npm run check:launch-gates` after every decision update. A gate may change
-from `holding` to `approved` only when this record names the approver and date,
-the manifest points to non-secret evidence, its blocker references are empty,
-and every declared dependency is approved. The manifest makes unresolved
-state fail closed; it does not authenticate an approver or replace counsel,
-rights-owner, provider, DNS, mail, or release evidence.
+`npm run check:launch-gates` after every decision update. This repository
+revision is locked to the all-`holding` state: every attempted approval fails
+build validation even when its proposed evidence is structurally complete.
+The dependency graph and preparatory evidence requirements are fixed in code
+rather than trusted from the manifest.
+Follow [`LAUNCH_GATE_EVIDENCE.md`](./LAUNCH_GATE_EVIDENCE.md) for the non-secret
+envelope contract and required follow-up lifecycle work. The manifest makes
+unresolved state fail closed; it does not authenticate an approver or replace
+counsel, rights-owner, provider, DNS, mail, or release evidence. Do not change a
+gate away from `holding` until a separate reviewed change removes the code-level
+transition lock and implements every listed intermediate and terminal state.
 
 ## Operational holding state while decisions are open
 
@@ -120,13 +125,15 @@ adaptation, Spanish localization, PNG derivatives, and Vercel/CDN distribution:
 | `conversion-1-2` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
 | `conversion-1-4` | `demos/SNAPSHOT.json` and workbench migration record | Pending | Pending |
 
-The current code can technically represent a non-indexed, `conditional`
-public preview after publication-rights approval while reserving indexing for
-strict validation and technical acceptance. The owner must decide whether that
+A future candidate-to-activation lifecycle may support a non-indexed,
+`conditional` public preview after publication-rights approval while reserving
+indexing for strict validation and technical acceptance. The current code does
+not enable that transition. The owner must decide whether the future
 intermediate public-preview policy is allowed or whether technical/product
-acceptance is required for every public route. Until the following row is
-resolved, keep the top-level `demoPublication` gate and both demo records
-private regardless of rights evidence:
+acceptance is required for every public route. Until both that decision and the
+separate lifecycle implementation are complete, keep the top-level
+`demoPublication` gate and both demo records private regardless of rights
+evidence:
 
 | Demo publication policy decision | Owner answer or evidence reference | Approved by / date |
 | --- | --- | --- |
@@ -226,7 +233,9 @@ mail continuity, and Search Console checks all have retained evidence.
 | Legacy-domain cutover | Pending | Pending | Pending |
 | Production release | Pending | Pending | Pending |
 
-After a row is genuinely completed, update the matching manifest gate in the
-same reviewed change. Do not delete `Pending` text or set a gate to `approved`
-in anticipation of evidence. `productionLaunch` depends on all four preceding
-gates and therefore remains `holding` while any one of them is unresolved.
+Completing a row records an external decision but does not unlock the current
+manifest. Only after a separate reviewed lifecycle implementation removes the
+holding-only transition lock may a later change update the matching gate. Do
+not delete `Pending` text or set a gate to `approved` in anticipation of
+evidence. `productionLaunch` remains `holding` while the lock is active or any
+required decision is unresolved.
