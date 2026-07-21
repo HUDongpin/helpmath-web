@@ -101,6 +101,13 @@ export interface HomeContent {
   status: CalloutContent & {
     label: string;
   };
+  partnership: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    statusNote: string;
+    actions: LinkContent[];
+  };
   audiences: {
     eyebrow: string;
     title: string;

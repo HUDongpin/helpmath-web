@@ -62,8 +62,8 @@ export const esContent = {
         title: "Descubre el lenguaje dentro de cada idea matemática.",
         summary:
           "HELP Math conecta modelos visuales, explicaciones claras, vocabulario académico y práctica guiada para que los estudiantes multilingües comprendan tanto las matemáticas como las palabras que se usan para describirlas.",
-        primaryAction: { label: "Comprobar estado de demostraciones", href: "/es/demos" },
-        secondaryAction: { label: "Obtener ayuda con el proyecto", href: "/es/support" },
+        primaryAction: { label: "Revisar la investigación", href: "/es/research" },
+        secondaryAction: { label: "Conocer el programa y los socios", href: "/es/about#program-lineage" },
         supportingNote:
           "El nuevo sitio informativo es una versión preliminar pública. Los prototipos JavaScript siguen privados mientras estén incompletas la validación y la revisión de derechos.",
       },
@@ -73,6 +73,19 @@ export const esContent = {
         body:
           "Conservamos las ideas didácticas de HELP Math y sustituimos la tecnología obsoleta por experiencias web accesibles y sostenibles. Esta versión no incluye cuentas, tareas ni registros de progreso estudiantil.",
         action: { label: "Leer el estado de la modernización", href: "/es/about#today" },
+      },
+      partnership: {
+        eyebrow: "Alianza estratégica confirmada",
+        title:
+          "Boulder Learning y PedaNova son socios estratégicos para modernizar HELP Math 1.0 y convertirlo en HELP Math 2.0.",
+        body:
+          "Ambas organizaciones han confirmado esta alianza bilateral. Boulder Learning es la empresa responsable de HELP Math 2.0; PedaNova, fundada y dirigida por su director ejecutivo, el Dr. Peter Hu, aporta experiencia en investigación educativa y desarrollo de aplicaciones.",
+        statusNote:
+          "La alianza está confirmada. Las funciones concretas y el calendario de lanzamiento de HELP Math 2.0 siguen sujetos a decisiones independientes de desarrollo, validación y publicación.",
+        actions: [
+          {label: "Explorar Boulder Learning", href: "https://www.boulderlearning.com/products"},
+          {label: "Visitar PedaNova", href: "https://www.pedanova.tech/"},
+        ],
       },
       audiences: {
         eyebrow: "Diseñado en torno a necesidades reales",
@@ -236,7 +249,7 @@ export const esContent = {
               {label: "Conocer al equipo de PedaNova", href: "https://www.pedanova.tech/team/"},
             ],
             sourceNote:
-              "Estado de la relación: alianza estratégica bilateral confirmada para este proyecto por el Dr. Peter Hu, director ejecutivo de PedaNova, el 21 de julio de 2026. Los datos de la empresa y su fundador proceden del sitio público de PedaNova.",
+              "Estado de la relación: Boulder Learning y PedaNova han confirmado bilateralmente esta alianza estratégica para el proyecto de modernización de HELP Math. La confirmación quedó registrada el 21 de julio de 2026. Los datos de la empresa y su fundador proceden del sitio público de PedaNova.",
           },
         ],
       },

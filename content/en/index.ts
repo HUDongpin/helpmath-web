@@ -62,8 +62,8 @@ export const enContent = {
         title: "See the language inside every math idea.",
         summary:
           "HELP Math connects visual models, clear explanations, academic vocabulary, and guided practice so multilingual learners can make sense of both the mathematics and the words used to describe it.",
-        primaryAction: { label: "Check demo status", href: "/demos" },
-        secondaryAction: { label: "Get project support", href: "/support" },
+        primaryAction: { label: "Review the research", href: "/research" },
+        secondaryAction: { label: "Meet the program and partners", href: "/about#program-lineage" },
         supportingNote:
           "The new informational website is a public preview. JavaScript prototypes remain private while validation and publication-rights review are incomplete.",
       },
@@ -73,6 +73,19 @@ export const enContent = {
         body:
           "We are preserving HELP Math’s instructional ideas while replacing legacy delivery technology with accessible, maintainable web experiences. Accounts, assignments, and student progress records are not part of this launch.",
         action: { label: "Read the modernization status", href: "/about#today" },
+      },
+      partnership: {
+        eyebrow: "Confirmed strategic partnership",
+        title:
+          "Boulder Learning and PedaNova are strategic partners in modernizing HELP Math 1.0 into HELP Math 2.0.",
+        body:
+          "Both organizations have confirmed this bilateral partnership. Boulder Learning is the company behind HELP Math 2.0; PedaNova, founded and led by CEO Dr. Peter Hu, contributes educational-research and application-development expertise.",
+        statusNote:
+          "The partnership is confirmed. Individual HELP Math 2.0 features and release timing remain subject to separate development, validation, and publication decisions.",
+        actions: [
+          {label: "Explore Boulder Learning", href: "https://www.boulderlearning.com/products"},
+          {label: "Visit PedaNova", href: "https://www.pedanova.tech/"},
+        ],
       },
       audiences: {
         eyebrow: "Built around real learning needs",
@@ -236,7 +249,7 @@ export const enContent = {
               {label: "Meet the PedaNova team", href: "https://www.pedanova.tech/team/"},
             ],
             sourceNote:
-              "Relationship status: bilateral strategic partnership confirmed for this project by Dr. Peter Hu, CEO of PedaNova, on July 21, 2026. Company and founder details come from PedaNova’s public website.",
+              "Relationship status: Boulder Learning and PedaNova have bilaterally confirmed this strategic partnership for the HELP Math modernization project. The confirmation was recorded on July 21, 2026. Company and founder details come from PedaNova’s public website.",
           },
         ],
       },
