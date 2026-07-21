@@ -469,10 +469,102 @@ svg {
   padding-top: 0.85rem;
 }
 
+.historical-catalog__source {
+  align-items: center;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  display: flex;
+  gap: 1.25rem;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
+.historical-catalog__source p {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 750;
+  margin: 0;
+  max-width: 900px;
+}
+
 .evidence-list,
 .resource-list {
   border-top: 2px solid var(--ink);
   margin-top: 1rem;
+}
+
+.resource-library,
+.resource-entry,
+.evidence-entry,
+.text-section,
+#program-lineage,
+#help-math-1-catalog {
+  scroll-margin-top: 130px;
+}
+
+.resource-filters {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.resource-filters button {
+  align-items: center;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 900;
+  gap: 0.65rem;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 0.6rem 0.85rem;
+}
+
+.resource-filters button:hover,
+.resource-filters button[aria-pressed='true'] {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.resource-filters button:active {
+  box-shadow: 1px 1px 0 var(--ink);
+  transform: translate(2px, 2px);
+}
+
+.resource-filters__count {
+  align-items: center;
+  background: var(--yellow);
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.72rem;
+  height: 25px;
+  justify-content: center;
+  min-width: 25px;
+  padding-inline: 0.35rem;
+}
+
+.resource-results {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin: 1.25rem 0 0;
+}
+
+.resource-empty {
+  border: 2px dashed var(--ink-soft);
+  color: var(--ink-soft);
+  margin: 1rem 0 0;
+  padding: 2rem;
+  text-align: center;
 }
 
 .evidence-entry {
@@ -2242,6 +2334,11 @@ svg {
   }
 
   .callout {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .historical-catalog__source {
     align-items: flex-start;
     flex-direction: column;
   }

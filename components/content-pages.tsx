@@ -2,7 +2,6 @@ import {
   Archive,
   Building2,
   CheckCircle2,
-  CircleAlert,
   FileCheck2,
   Handshake,
   History,
@@ -21,12 +20,12 @@ import type {
   LegalContent,
   LoginContent,
   ResearchContent,
-  ResourceStatus,
   ResourcesContent,
   SupportContent
 } from '@/content/types';
 import {FeatureGrid} from './feature-grid';
 import {PageHero} from './page-hero';
+import {ResourceLibrary} from './resource-library';
 import {TextSection} from './text-section';
 import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
@@ -161,6 +160,20 @@ export function CurriculumPage({content}: {content: CurriculumContent}) {
           <FeatureGrid cards={content.domains.cards} columns={3} />
         </Container>
       </Section>
+      <Section className="surface-grid" id="help-math-1-catalog">
+        <Container>
+          <SectionHeading
+            eyebrow={content.historicalCatalog.eyebrow}
+            intro={content.historicalCatalog.intro}
+            title={content.historicalCatalog.title}
+          />
+          <FeatureGrid cards={content.historicalCatalog.cards} columns={4} />
+          <div className="historical-catalog__source">
+            <p>{content.historicalCatalog.sourceNote}</p>
+            <Action action={content.historicalCatalog.action} kind="quiet" />
+          </div>
+        </Container>
+      </Section>
       <Section className="surface-mint">
         <Container>
           <SectionHeading
@@ -211,7 +224,7 @@ export function ResearchPage({content}: {content: ResearchContent}) {
             {content.entries.map((entry) => {
               const Icon = evidenceIcons[entry.status];
               return (
-                <article className="evidence-entry" key={entry.id}>
+                <article className="evidence-entry" id={entry.id} key={entry.id}>
                   <div className="evidence-entry__meta">
                     <Icon aria-hidden="true" size={22} />
                     <span className={`status-badge status-badge--${entry.status}`}>
@@ -248,12 +261,6 @@ export function ResearchPage({content}: {content: ResearchContent}) {
   );
 }
 
-const resourceIcons: Record<ResourceStatus, typeof Archive> = {
-  available: CheckCircle2,
-  review: SearchCheck,
-  request: CircleAlert
-};
-
 export function ResourcesPage({content}: {content: ResourcesContent}) {
   return (
     <>
@@ -265,30 +272,7 @@ export function ResourcesPage({content}: {content: ResourcesContent}) {
       </Section>
       <Section>
         <Container>
-          <div className="resource-list">
-            {content.items.map((item) => {
-              const Icon = resourceIcons[item.status];
-              return (
-                <article className="resource-entry" key={item.id}>
-                  <div aria-hidden="true" className="resource-entry__icon">
-                    <Icon size={27} />
-                  </div>
-                  <div className="resource-entry__body">
-                    <div className="resource-entry__meta">
-                      <span className={`status-badge status-badge--${item.status}`}>
-                        {item.statusLabel}
-                      </span>
-                      <span>{item.format}</span>
-                      <span>{item.dateLabel}</span>
-                    </div>
-                    <h2>{item.title}</h2>
-                    <p>{item.description}</p>
-                  </div>
-                  <Action action={item.action} kind="quiet" />
-                </article>
-              );
-            })}
-          </div>
+          <ResourceLibrary filters={content.filters} items={content.items} />
         </Container>
       </Section>
       <Section className="section--compact">

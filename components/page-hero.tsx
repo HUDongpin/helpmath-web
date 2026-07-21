@@ -3,6 +3,7 @@ import type {ReactNode} from 'react';
 import type {HeroContent} from '@/content/types';
 
 import {Action, Container, DotPattern, Eyebrow} from './ui';
+import {PageHeroMotif} from './page-hero-motif';
 
 export function PageHero({
   content,
@@ -33,21 +34,5 @@ export function PageHero({
       </Container>
       <DotPattern className="page-hero__dots" />
     </section>
-  );
-}
-
-function PageHeroMotif() {
-  return (
-    <div aria-hidden="true" className="page-hero__motif">
-      <div className="motif-card motif-card--equation">8 × 4 = 32</div>
-      <div className="motif-card motif-card--words">eight groups of four</div>
-      <div className="motif-grid">
-        {Array.from({length: 12}, (_, index) => (
-          <span className={index < 8 ? 'is-filled' : ''} key={index} />
-        ))}
-      </div>
-      <span className="motif-symbol motif-symbol--plus">+</span>
-      <span className="motif-symbol motif-symbol--divide">÷</span>
-    </div>
   );
 }

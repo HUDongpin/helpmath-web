@@ -1,9 +1,32 @@
+import {
+  isRetryableHttpStatus,
+  mapWithConcurrency,
+  retryDelayMs,
+  retryOperation,
+} from './release-smoke-helpers.mjs';
+
 const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? 'https://www.helpmath.ai');
 const canonicalBaseUrl = new URL(
   process.env.SMOKE_CANONICAL_ORIGIN ?? 'https://www.helpmath.ai',
 );
 const expectContactEnabled = process.env.EXPECT_CONTACT_ENABLED === 'true';
 const fetchTimeoutMs = Number(process.env.SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
+const internalLinkConcurrency = Number(process.env.SMOKE_INTERNAL_LINK_CONCURRENCY ?? 6);
+const requestMaxAttempts = Number(
+  process.env.SMOKE_REQUEST_MAX_ATTEMPTS ??
+    process.env.SMOKE_INTERNAL_LINK_MAX_ATTEMPTS ??
+    3,
+);
+const requestRetryBaseDelayMs = Number(
+  process.env.SMOKE_REQUEST_RETRY_BASE_DELAY_MS ??
+    process.env.SMOKE_INTERNAL_LINK_RETRY_BASE_DELAY_MS ??
+    300,
+);
+const requestRetryMaxDelayMs = Number(
+  process.env.SMOKE_REQUEST_RETRY_MAX_DELAY_MS ??
+    process.env.SMOKE_INTERNAL_LINK_RETRY_MAX_DELAY_MS ??
+    2_000,
+);
 const vercelBypassSecret = process.env.SMOKE_VERCEL_BYPASS_SECRET?.trim();
 const executivePreviewAccessKey = process.env.SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
 
@@ -21,6 +44,31 @@ for (const [name, value] of [
 
 if (!Number.isFinite(fetchTimeoutMs) || fetchTimeoutMs < 1_000) {
   throw new Error('SMOKE_FETCH_TIMEOUT_MS must be a number of at least 1000.');
+}
+if (
+  !Number.isInteger(internalLinkConcurrency) ||
+  internalLinkConcurrency < 1 ||
+  internalLinkConcurrency > 12
+) {
+  throw new Error('SMOKE_INTERNAL_LINK_CONCURRENCY must be an integer from 1 to 12.');
+}
+if (
+  !Number.isInteger(requestMaxAttempts) ||
+  requestMaxAttempts < 1 ||
+  requestMaxAttempts > 5
+) {
+  throw new Error('SMOKE_REQUEST_MAX_ATTEMPTS must be an integer from 1 to 5.');
+}
+if (!Number.isFinite(requestRetryBaseDelayMs) || requestRetryBaseDelayMs < 0) {
+  throw new Error('SMOKE_REQUEST_RETRY_BASE_DELAY_MS must be a non-negative number.');
+}
+if (
+  !Number.isFinite(requestRetryMaxDelayMs) ||
+  requestRetryMaxDelayMs < requestRetryBaseDelayMs
+) {
+  throw new Error(
+    'SMOKE_REQUEST_RETRY_MAX_DELAY_MS must be at least SMOKE_REQUEST_RETRY_BASE_DELAY_MS.',
+  );
 }
 
 const origin = baseUrl.origin;
@@ -108,39 +156,52 @@ function canonicalUrl(path) {
 }
 
 async function fetchWithTimeout(target, init = {}) {
-  const method = (init.method ?? 'GET').toUpperCase();
-  const attempts = method === 'GET' || method === 'HEAD' ? 2 : 1;
-  let lastError;
-
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const timeoutSignal = AbortSignal.timeout(fetchTimeoutMs);
-    const signal = init.signal
-      ? AbortSignal.any([init.signal, timeoutSignal])
-      : timeoutSignal;
-
-    try {
-      const headers = new Headers(init.headers);
-      const targetUrl = new URL(target);
-      if (
-        vercelBypassSecret &&
-        targetUrl.protocol === 'https:' &&
-        targetUrl.origin === origin
-      ) {
-        headers.set('x-vercel-protection-bypass', vercelBypassSecret);
-      }
-      return await fetch(target, {redirect: 'manual', ...init, headers, signal});
-    } catch (error) {
-      lastError = error;
-      if (attempt === attempts) break;
-    }
+  const timeoutSignal = AbortSignal.timeout(fetchTimeoutMs);
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutSignal])
+    : timeoutSignal;
+  const headers = new Headers(init.headers);
+  const targetUrl = new URL(target);
+  if (
+    vercelBypassSecret &&
+    targetUrl.protocol === 'https:' &&
+    targetUrl.origin === origin
+  ) {
+    headers.set('x-vercel-protection-bypass', vercelBypassSecret);
   }
 
-  const detail = lastError instanceof Error ? lastError.message : String(lastError);
-  throw new Error(`Request failed for ${target} after ${attempts} attempt(s): ${detail}`);
+  return fetch(target, {redirect: 'manual', ...init, headers, signal});
+}
+
+async function fetchWithRetry(target, init = {}) {
+  const method = (init.method ?? 'GET').toUpperCase();
+  const idempotent = method === 'GET' || method === 'HEAD';
+
+  try {
+    return await retryOperation(
+      async () => {
+        const response = await fetchWithTimeout(target, init);
+        if (method === 'GET') await response.clone().arrayBuffer();
+        return response;
+      },
+      {
+        maxAttempts: idempotent ? requestMaxAttempts : 1,
+        shouldRetryResult: (response) => isRetryableHttpStatus(response.status),
+        delayForAttempt: (attempt) =>
+          retryDelayMs(attempt, requestRetryBaseDelayMs, requestRetryMaxDelayMs),
+      },
+    );
+  } catch (error) {
+    const attempts = idempotent ? requestMaxAttempts : 1;
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Request failed for ${target} after ${attempts} attempt(s): ${detail}`, {
+      cause: error,
+    });
+  }
 }
 
 async function get(path, init = {}) {
-  return fetchWithTimeout(url(path), init);
+  return fetchWithRetry(url(path), init);
 }
 
 function decodeMarkup(value) {
@@ -446,13 +507,15 @@ for (const route of contentRoutes) {
   }
 }
 
-const checkedLinks = await Promise.all(
-  [...internalLinks.entries()].sort().map(async ([link, requestPath]) => {
+const checkedLinks = await mapWithConcurrency(
+  [...internalLinks.entries()].sort(),
+  internalLinkConcurrency,
+  async ([link, requestPath]) => {
     const response = await get(requestPath);
     await response.arrayBuffer();
     check(response.status < 300, `internal link ${link} returned ${response.status}`);
     return {link, status: response.status};
-  }),
+  },
 );
 
 function relativeRedirectLocation(location, requestPath) {
@@ -884,7 +947,7 @@ if (origin === 'https://www.helpmath.ai') {
 
     for (const testCase of cases) {
       domainMatrixCases += 1;
-      const response = await fetchWithTimeout(testCase.request);
+      const response = await fetchWithRetry(testCase.request);
       await response.arrayBuffer();
       const location = response.headers.get('location');
       check(
@@ -903,6 +966,10 @@ const summary = {
   baseUrl: origin,
   canonicalOrigin,
   fetchTimeoutMs,
+  internalLinkConcurrency,
+  requestMaxAttempts,
+  requestRetryBaseDelayMs,
+  requestRetryMaxDelayMs,
   expectedSitemapPages: expectedSitemapUrls.length,
   publicPages: publicPages.length,
   internalLinks: checkedLinks.length,

@@ -133,6 +133,7 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
     'scripts/build-executive-demo-runtime.mjs',
     'scripts/check-private-demo-leaks.mjs',
     'scripts/generate-registry.mjs',
+    'scripts/release-smoke-helpers.mjs',
     'scripts/release-smoke.mjs',
     'scripts/verify-private-demo-traces.mjs',
   ].sort();

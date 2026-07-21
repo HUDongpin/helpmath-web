@@ -192,7 +192,8 @@ test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with c
     page.getByRole('heading', {level: 2, name: 'From HELP Math 1.0 to a proposed next generation'}),
   ).toBeVisible();
   for (const href of [
-    'https://www.helpprogram.net/',
+    '/curriculum#help-math-1-catalog',
+    '/resources#codie-past-winners',
     'https://www.boulderlearning.com/products',
     'https://www.boulderlearning.com/about-us',
     'https://solve.mit.edu/solutions/88712',
@@ -214,6 +215,97 @@ test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with c
   await expect(page.getByText(/son socios estratégicos en la modernización de HELP Math 1\.0 hacia HELP Math 2\.0/i)).toBeVisible();
   await expect(page.getByText(/han confirmado bilateralmente esta alianza estratégica/i)).toBeVisible();
   expectNoRuntimeIssues(issues);
+});
+
+test('historical curriculum publishes a dated HELP Math 1.0 catalog without making current-product promises', async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  await expectDocument(page, '/curriculum', 'en');
+
+  const catalog = page.locator('#help-math-1-catalog');
+  await expect(
+    catalog.getByRole('heading', {
+      level: 2,
+      name: 'What dated 2007–2012 program records described',
+    }),
+  ).toBeVisible();
+  await expect(catalog.getByRole('heading', {level: 3, name: /44 historical lessons/i})).toBeVisible();
+  await expect(catalog.getByRole('heading', {level: 3, name: /29 historical lessons/i})).toBeVisible();
+  await expect(catalog.getByText(/different counting conventions/i).first()).toBeVisible();
+  await expect(catalog.getByText(/does not provide accounts, assignments, quizzes/i)).toBeVisible();
+  await expect(catalog.getByRole('link', {name: 'Review the program lineage'})).toHaveAttribute(
+    'href',
+    '/about#program-lineage',
+  );
+
+  await expectDocument(page, '/es/curriculum', 'es');
+  const spanishCatalog = page.locator('#help-math-1-catalog');
+  await expect(spanishCatalog.getByRole('heading', {level: 3, name: /44 lecciones históricas/i})).toBeVisible();
+  await expect(spanishCatalog.getByText(/convenciones de conteo distintas/i)).toBeVisible();
+  expectNoRuntimeIssues(issues);
+});
+
+test('resource library filters eighteen sourced records in both languages', async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  await expectDocument(page, '/resources', 'en');
+
+  const library = page.locator('#resource-library');
+  await expect(library.getByRole('status')).toHaveText('18 resources shown');
+  await expect(library.locator('.resource-entry')).toHaveCount(18);
+  await expect(library.getByRole('link', {name: 'Open the WWC study record'})).toHaveAttribute(
+    'href',
+    'https://ies.ed.gov/ncee/wwc/Study/72999',
+  );
+  await expect(library.getByRole('link', {name: 'Open the CODiE winners archive'})).toHaveAttribute(
+    'href',
+    'https://codieawards.com/past-winners',
+  );
+  await expect(library.getByRole('link', {name: 'Open the DOI record'})).toHaveAttribute(
+    'href',
+    'https://doi.org/10.1016/j.compedu.2011.11.003',
+  );
+
+  await library.getByRole('button', {name: /Research/}).click();
+  await expect(library.getByRole('status')).toHaveText('12 resources shown');
+  await expect(library.locator('.resource-entry')).toHaveCount(12);
+  await expect(library.getByRole('heading', {name: 'About HELP Math'})).toHaveCount(0);
+
+  await expectDocument(page, '/es/resources', 'es');
+  const spanishLibrary = page.locator('#resource-library');
+  await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 18 recursos');
+  await spanishLibrary.getByRole('button', {name: /Modernización/}).click();
+  await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 2 recursos');
+  await expect(spanishLibrary.locator('.resource-entry')).toHaveCount(2);
+  await expect(spanishLibrary.getByRole('heading', {name: 'Notas de modernización y recuperación'})).toBeVisible();
+  expectNoRuntimeIssues(issues);
+});
+
+test('page hero motif localizes its visible math phrase', async ({page}) => {
+  await expectDocument(page, '/contact', 'en');
+  await expect(page.locator('.motif-card--words')).toHaveText('eight groups of four');
+
+  await expectDocument(page, '/es/contact', 'es');
+  await expect(page.locator('.motif-card--words')).toHaveText('ocho grupos de cuatro');
+});
+
+test('deep-link targets remain visible below the sticky site header', async ({page}) => {
+  for (const [path, selector] of [
+    ['/approach#support-layers', '#support-layers'],
+    ['/about#program-lineage', '#program-lineage'],
+    ['/about#preservation', '#preservation'],
+    ['/research#wwc-tran-study', '#wwc-tran-study'],
+    ['/resources#freeman-2012-doi', '#freeman-2012-doi'],
+  ] as const) {
+    await page.goto(path, {waitUntil: 'networkidle'});
+    const headerBottom = await page.locator('.site-header').evaluate(
+      (header) => header.getBoundingClientRect().bottom,
+    );
+    const targetTop = await page.locator(selector).evaluate(
+      (target) => target.getBoundingClientRect().top,
+    );
+    expect(targetTop, `${path} must clear the sticky header`).toBeGreaterThanOrEqual(
+      headerBottom,
+    );
+  }
 });
 
 test('research register cites WWC and preserves both positive and limiting historical evidence', async ({page}) => {
@@ -584,6 +676,14 @@ test('audited legacy pages and document directories redirect permanently', async
     ['/Project_Admin_Login.aspx', '/login'],
     ['/trial_register.aspx', '/contact'],
     ['/PR.htm', '/research'],
+    ['/ProgramInfo.htm', '/curriculum#help-math-1-catalog'],
+    ['/Sales.htm', '/resources'],
+    ['/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf', '/research#help-math-pilot'],
+    ['/DealerDocs/U%20S%20%20Department%20of%20Education%20Research%20Summary%205-2013.pdf', '/research#wwc-tran-study'],
+    ['/DealerDocs/HELP%20Math%20self-efficacy%20in%20secondary%20students%20R.pdf', '/resources#freeman-2012-doi'],
+    ['/DealerDocs/What%20Works%20Clearinghouse_help_102312.pdf', '/resources#wwc-single-study-review'],
+    ['/DealerDocs/SCOPE%20and%20Sequence%202012.pdf', '/curriculum#help-math-1-catalog'],
+    ['/DealerDocs/Ed%20Week%20Article.pdf', '/resources#education-week-2013'],
     ['/DDI%206-22-09NEWS%20RELEASE%20(final).pdf', '/research'],
     ['/PR/historical-study.pdf', '/research'],
     ['/DealerDocs/historical-guide.pdf', '/resources'],
@@ -628,6 +728,10 @@ test('audited legacy pages and document directories redirect permanently', async
   });
   expect(spoofedInternalHeader.status()).toBe(308);
   expect(spoofedInternalHeader.headers().location).toBe('/about');
+
+  const favicon = await request.get('/favicon.ico', {maxRedirects: 0});
+  expect(favicon.status()).toBe(308);
+  expect(favicon.headers().location).toBe('/icon.svg');
 });
 
 test('every sitemap page has one heading, canonical metadata, and the expected language', async ({request}) => {

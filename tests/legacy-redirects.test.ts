@@ -8,14 +8,15 @@ describe('legacy HELP Program redirects', () => {
     const destinations = new Map(
       redirects.map((redirect) => [redirect.source, redirect.destination]),
     );
-    assert.equal(redirects.length, 65);
+    assert.equal(redirects.length, 81);
 
+    assert.equal(destinations.get('/favicon.ico'), '/icon.svg');
     assert.equal(destinations.get('/Home.htm'), '/');
     assert.equal(destinations.get('/Index.htm'), '/');
     assert.equal(destinations.get('/Contact.htm'), '/contact');
     assert.equal(destinations.get('/Ped.htm'), '/approach');
     assert.equal(destinations.get('/Kf.htm'), '/about');
-    assert.equal(destinations.get('/ProgramInfo.htm'), '/about');
+    assert.equal(destinations.get('/ProgramInfo.htm'), '/curriculum#help-math-1-catalog');
     assert.equal(destinations.get('/PurchaseInfo.htm'), '/contact');
     assert.equal(destinations.get('/Testimonials.htm'), '/research');
     assert.equal(
@@ -49,7 +50,7 @@ describe('legacy HELP Program redirects', () => {
       ['/AcademicLanguage.htm', '/approach'],
       ['/SIOP.htm', '/approach'],
       ['/Sheltered.htm', '/approach'],
-      ['/Content.htm', '/curriculum'],
+      ['/Content.htm', '/curriculum#help-math-1-catalog'],
       ['/Standards.htm', '/curriculum'],
       ['/As.htm', '/curriculum'],
       ['/Evidence.htm', '/research'],
@@ -57,13 +58,13 @@ describe('legacy HELP Program redirects', () => {
       ['/PR.htm', '/research'],
       ['/Rb.htm', '/research'],
       ['/onlineprogram.html', '/research'],
-      ['/CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf', '/research'],
-      ['/Codie%20Release%20DDI.pdf', '/research'],
+      ['/CODiE%20Award%20for%20Best%20Instructional%20Solution.pdf', '/resources#codie-past-winners'],
+      ['/Codie%20Release%20DDI.pdf', '/resources#codie-past-winners'],
       ['/DDI%206-22-09NEWS%20RELEASE%20\\(final\\).pdf', '/research'],
       ['/Tst.htm', '/resources'],
       ['/Pd.htm', '/resources'],
       ['/Resources.htm', '/resources'],
-      ['/Sales.htm', '/contact'],
+      ['/Sales.htm', '/resources'],
       ['/Trial.htm', '/contact'],
       ['/Purchasing.htm', '/contact'],
       ['/Pricing.htm', '/contact'],
@@ -87,6 +88,61 @@ describe('legacy HELP Program redirects', () => {
     }
     assert.equal(destinations.get('/Demo.htm'), '/demos');
     assert.equal(destinations.get('/PR/:path*'), '/research');
+    for (const [source, destination] of [
+      [
+        '/DealerDocs/HELP%20Math%20Evaluation%20White%20Paper%205-13.pdf',
+        '/research#help-math-pilot',
+      ],
+      [
+        '/DealerDocs/U%20S%20%20Department%20of%20Education%20Research%20Summary%205-2013.pdf',
+        '/research#wwc-tran-study',
+      ],
+      [
+        '/DealerDocs/HELP%20Math%20self-efficacy%20in%20secondary%20students%20R.pdf',
+        '/resources#freeman-2012-doi',
+      ],
+      [
+        '/DealerDocs/What%20Works%20Clearinghouse_help_102312.pdf',
+        '/resources#wwc-single-study-review',
+      ],
+      [
+        '/DealerDocs/SCOPE%20and%20Sequence%202012.pdf',
+        '/curriculum#help-math-1-catalog',
+      ],
+      [
+        '/DealerDocs/Sheltered%20Instruction%20and%20scaffolding%20techniques%20in%20HELP%20Math%20final%202012.pdf',
+        '/approach#support-layers',
+      ],
+      [
+        '/DealerDocs/Sheltered%20Instruction%20and%20SPED%202012.pdf',
+        '/approach#support-layers',
+      ],
+      [
+        '/DealerDocs/INTEGRATION%20OF%20ACADEMIC%20LANGUAGE%20IN%20HELP%20MATH.pdf',
+        '/approach#support-layers',
+      ],
+      [
+        '/DealerDocs/HELP%20Math%20Overview%20of%20Reports%20\\(2010\\).pdf',
+        '/curriculum#help-math-1-catalog',
+      ],
+      [
+        '/DealerDocs/HELP%20Math%20as%20an%20RtI%20Solution%202012.pdf',
+        '/curriculum#help-math-1-catalog',
+      ],
+      ['/DealerDocs/Ed%20Week%20Article.pdf', '/resources#education-week-2013'],
+      [
+        '/DealerDocs/TechnologyInnovations.pdf',
+        '/resources#technology-innovations-report',
+      ],
+      ['/DealerDocs/Sage%20Publications%20article.pdf', '/resources#ell-curriculum-eric'],
+      ['/DealerDocs/HelpMath%20print%208.5%20x%2011%20each.pdf', '/resources#about-help-math'],
+      [
+        '/teacher_guide/HELP%20Alignment%20v3.1.2-%20NCTM.pdf',
+        '/curriculum#help-math-1-catalog',
+      ],
+    ] as const) {
+      assert.equal(destinations.get(source), destination, source);
+    }
     assert.equal(destinations.get('/DealerDocs/:path*'), '/resources');
     assert.equal(destinations.get('/teacher_guide/:path*'), '/resources');
     assert.equal(destinations.get('/shortdemo/:path*'), '/demos');
