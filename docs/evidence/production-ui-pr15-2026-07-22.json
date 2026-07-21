@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-21T20:08:01.000Z",
+  "source": {
+    "method": "Focused Playwright checks against canonical Production after PR #15 deployment",
+    "evidenceLevel": "operator-observed command result",
+    "standaloneReportRetained": false,
+    "traceRetained": false,
+    "screenshotRetained": false
+  },
+  "identity": {
+    "pullRequest": 15,
+    "repositoryCommit": "d3b84e8dcf539d8859641bdb58cbaa5237efc461",
+    "githubDeploymentId": 5544827753,
+    "vercelDeploymentId": "dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ",
+    "canonicalUrl": "https://www.helpmath.ai"
+  },
+  "browserCheck": {
+    "testsPassed": 2,
+    "testsFailed": 0,
+    "observedDurationSeconds": 14.1,
+    "checks": {
+      "englishAndSpanishDemoPagesLinkToTheBareAuthorizedReviewerEntry": true,
+      "demoPagesContainNoDirectPrototypeRouteAnchors": true,
+      "demoPagesContainNoFlashAssetSources": true,
+      "spanishTermsHeroFitsAt320PxAfterFontsLoad": true,
+      "spanishTermsHeroFitsAt390PxAfterFontsLoad": true
+    }
+  },
+  "corroboratingEvidence": {
+    "candidateQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863225868",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863649827",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863684054"
+  },
+  "limitations": [
+    "This is a reduced operator record of two targeted production tests, not a retained standalone Playwright report or whole-site visual acceptance artifact.",
+    "The reviewer-entry test asserts the two exact locale-specific entry hrefs, zero direct prototype-route anchors, and zero rendered /flash-assets/ sources. It does not inspect every possible runtime, asset, or credential-shaped string.",
+    "The Spanish terms check resolves the PR #13 clipping exception at the two named viewport widths only.",
+    "This record does not grant public demo rights or establish strict Flash migration fidelity."
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-21T20:08:01.000Z",
+  "source": {
+    "method": "Authenticated Vercel CLI inspect with JSON output, reduced to non-secret deployment identity fields",
+    "cliVersion": "56.4.1",
+    "scope": "peter-dongpin-hu-s-projects",
+    "rawOutputRetained": false,
+    "rawOutputRetentionReason": "The full response contains extensive internal build metadata that is unnecessary for alias identity."
+  },
+  "project": {
+    "name": "helpmath-web"
+  },
+  "deployment": {
+    "vercelDeploymentId": "dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ",
+    "githubDeploymentId": 5544827753,
+    "repositoryCommit": "d3b84e8dcf539d8859641bdb58cbaa5237efc461",
+    "target": "production",
+    "readyState": "READY",
+    "createdAt": "2026-07-21T19:56:43.210Z",
+    "immutableUrl": "https://helpmath-peh16hg5x-peter-dongpin-hu-s-projects.vercel.app",
+    "currentInspectGitSourceStatus": "field-not-exposed-by-cli-json"
+  },
+  "aliases": [
+    "https://www.helpmath.ai",
+    "https://helpmath.ai",
+    "https://helpmath-web.vercel.app",
+    "https://helpmath-web-peter-dongpin-hu-s-projects.vercel.app",
+    "https://helpmath-web-git-main-peter-dongpin-hu-s-projects.vercel.app"
+  ],
+  "corroboratingEvidence": {
+    "githubDeploymentStatus": "https://api.github.com/repos/HUDongpin/helpmath-web/deployments/5544827753/statuses",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863649827",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863684054",
+    "stableExternalLinkRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863927541"
+  },
+  "checks": {
+    "canonicalWwwAliasAssigned": true,
+    "canonicalApexAliasAssigned": true,
+    "deploymentReady": true,
+    "productionTarget": true,
+    "githubDeploymentMatchesCommit": true,
+    "githubDeploymentStatusMatchesImmutableUrl": true,
+    "vercelInspectMatchesImmutableUrl": true,
+    "productionSmokeMatchesCommit": true
+  },
+  "limitations": [
+    "The retained Vercel CLI JSON did not expose a gitSource field; projecting that absent field with jq returned null. Commit association is corroborated by the successful GitHub Production deployment event, which binds the repository commit and the same immutable URL, rather than by direct Vercel Git metadata.",
+    "This owner-authenticated operational observation is not a registrar or DNS-provider zone export.",
+    "It does not authorize a helpprogram.net DNS or hosting change.",
+    "It does not grant public demo rights, strict migration fidelity acceptance, or product acceptance."
+  ]
+}

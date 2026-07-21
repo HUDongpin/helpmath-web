@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-21T20:08:01.000Z",
+  "source": {
+    "method": "Owner-authenticated canonical production smoke executed locally while the exact PR #15 production commit was checked out",
+    "identityAssociation": "Operator-recorded correlation to the checkout and production deployment evidence in this envelope; the canonical result itself contains no commit, deployment, or observation-time field.",
+    "canonicalResultRetained": true,
+    "canonicalResultPath": "docs/evidence/executive-preview-canonical-pr15-2026-07-22.json",
+    "canonicalResultSha256": "05c5297a04b12ab934272f8946a7b1105e4a1920ee28e582cd981bb690f9ac63",
+    "sensitiveInputOrSessionOutputRetained": false
+  },
+  "identity": {
+    "pullRequest": 15,
+    "repositoryCommit": "d3b84e8dcf539d8859641bdb58cbaa5237efc461",
+    "githubDeploymentId": 5544827753,
+    "vercelDeploymentId": "dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ",
+    "canonicalUrl": "https://www.helpmath.ai",
+    "immutableUrl": "https://helpmath-peh16hg5x-peter-dongpin-hu-s-projects.vercel.app",
+    "entryPath": "/executive-preview"
+  },
+  "preview": {
+    "state": "login",
+    "expiresAt": "2026-07-28T15:59:00.000Z",
+    "authentication": "validated",
+    "authenticatedDemoRoutes": 4,
+    "expectedAuthenticatedDemoRoutes": 4,
+    "authenticatedPrivateAssets": 12,
+    "expectedAuthenticatedPrivateAssets": 12,
+    "authenticatedRuntimes": 2,
+    "expectedAuthenticatedRuntimes": 2,
+    "failures": []
+  },
+  "browserCheck": {
+    "name": "executive preview grants a short-lived private session for both JavaScript demos",
+    "evidenceLevel": "operator-observed focused Playwright result; no standalone report retained",
+    "result": "pass",
+    "testsPassed": 1,
+    "testsFailed": 0,
+    "observedDurationSeconds": 30.1,
+    "traceRetained": false,
+    "screenshotRetained": false
+  },
+  "sensitiveValueHandling": {
+    "inputStorage": "Operator macOS login Keychain",
+    "injectedOnlyIntoEachTemporaryVerificationProcess": true,
+    "sensitiveValuesRetainedInRepositoryOrEvidence": false,
+    "sessionStateRetained": false
+  },
+  "privacyBoundary": {
+    "publicDemoRoutesRemainClosed": true,
+    "unauthenticatedPrivateResourcesRemainClosed": true,
+    "noIndexBoundaryRetained": true,
+    "publicDemoPublicationGate": "holding"
+  },
+  "corroboratingEvidence": {
+    "githubProductionDeployment": "https://api.github.com/repos/HUDongpin/helpmath-web/deployments/5544827753",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863649827",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29863684054",
+    "vercelAliasEvidence": "docs/evidence/vercel-production-alias-pr15-2026-07-22.json"
+  },
+  "limitations": [
+    "The retained canonical result is a credential-free machine-readable outcome; it contains no sensitive input, cookie, trace, screenshot, or browser state.",
+    "The canonical result does not independently identify PR #15, a repository commit, a deployment, or an observation time. Those associations are operator-recorded in this envelope and corroborated by the separate GitHub deployment and Vercel alias evidence.",
+    "The focused browser result is an operator observation because no standalone Playwright report, trace, or screenshot was retained.",
+    "Canonical application behavior and Vercel alias assignment are separate evidence claims; the alias record binds the formal domains to the immutable deployment.",
+    "This verifies current private playback and resource delivery only. It is not public-display permission, strict Flash fidelity evidence, audio acceptance, or product acceptance.",
+    "Private delivery to the named executive, recipient acknowledgement of the review boundary, and the post-meeting close action remain owner tasks."
+  ]
+}

@@ -7,6 +7,8 @@ const evidencePath = 'docs/evidence/vercel-production-alias-2026-07-21.json';
 const expectedSha256 = '990d6c47d053f32ca4e37803832297c8e081a11e1e34bfce982862d38c876828';
 const currentEvidencePath = 'docs/evidence/vercel-production-alias-2026-07-22.json';
 const currentExpectedSha256 = 'a60271a276b4301d1877761e455b92a93afc851fe9079a3f207b23645f8eb0f0';
+const pr15EvidencePath = 'docs/evidence/vercel-production-alias-pr15-2026-07-22.json';
+const pr15ExpectedSha256 = 'a1650827c4a08ecb8d577f2f385126a0d66395674d9616f34528f12afda18cd3';
 
 type AliasEvidence = {
   schemaVersion: number;
@@ -22,6 +24,7 @@ type AliasEvidence = {
     repositoryCommit: string;
     target: string;
     readyState: string;
+    createdAt: string;
     immutableUrl: string;
   };
   aliases: string[];
@@ -66,7 +69,7 @@ describe('authenticated Vercel production alias evidence', () => {
   });
 });
 
-describe('current PR #13 Vercel production alias evidence', () => {
+describe('historical PR #13 Vercel production alias evidence', () => {
   it('pins the current deployment, repository lineage, aliases, and corroborating runs', async () => {
     const bytes = await readFile(currentEvidencePath);
     const evidence = JSON.parse(bytes.toString('utf8')) as AliasEvidence & {
@@ -110,6 +113,61 @@ describe('current PR #13 Vercel production alias evidence', () => {
 
   it('contains no credential-shaped field names or values', async () => {
     const serialized = await readFile(currentEvidencePath, 'utf8');
+
+    assert.doesNotMatch(serialized, /"(?:token|secret|password|passphrase|cookie|privateKey)"\s*:/iu);
+    assert.doesNotMatch(serialized, /(?:Bearer\s+|gh[opsu]_[A-Za-z0-9]+|vercel_[A-Za-z0-9]+)/u);
+  });
+});
+
+describe('current PR #15 Vercel production alias evidence', () => {
+  it('pins the exact deployment, immutable URL, formal aliases, and same-commit runs', async () => {
+    const bytes = await readFile(pr15EvidencePath);
+    const evidence = JSON.parse(bytes.toString('utf8')) as AliasEvidence & {
+      deployment: AliasEvidence['deployment'] & {
+        currentInspectGitSourceStatus: string;
+      };
+      corroboratingEvidence: Record<string, string>;
+    };
+
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), pr15ExpectedSha256);
+    assert.equal(evidence.schemaVersion, 1);
+    assert.equal(evidence.source.cliVersion, '56.4.1');
+    assert.equal(evidence.source.rawOutputRetained, false);
+    assert.equal(evidence.deployment.vercelDeploymentId, 'dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ');
+    assert.equal(evidence.deployment.githubDeploymentId, 5544827753);
+    assert.equal(
+      evidence.deployment.repositoryCommit,
+      'd3b84e8dcf539d8859641bdb58cbaa5237efc461',
+    );
+    assert.equal(evidence.deployment.target, 'production');
+    assert.equal(evidence.deployment.readyState, 'READY');
+    assert.equal(evidence.deployment.createdAt, '2026-07-21T19:56:43.210Z');
+    assert.equal(
+      evidence.deployment.immutableUrl,
+      'https://helpmath-peh16hg5x-peter-dongpin-hu-s-projects.vercel.app',
+    );
+    assert.equal(
+      evidence.deployment.currentInspectGitSourceStatus,
+      'field-not-exposed-by-cli-json',
+    );
+    assert.deepEqual(evidence.aliases, [
+      'https://www.helpmath.ai',
+      'https://helpmath.ai',
+      'https://helpmath-web.vercel.app',
+      'https://helpmath-web-peter-dongpin-hu-s-projects.vercel.app',
+      'https://helpmath-web-git-main-peter-dongpin-hu-s-projects.vercel.app',
+    ]);
+    assert.equal(new Set(evidence.aliases).size, evidence.aliases.length);
+    assert.ok(Object.values(evidence.checks).every(Boolean));
+    assert.match(evidence.corroboratingEvidence.productionQualityRun, /29863649827$/u);
+    assert.match(evidence.corroboratingEvidence.productionSmokeRun, /29863684054$/u);
+    assert.match(evidence.corroboratingEvidence.stableExternalLinkRun, /29863927541$/u);
+    assert.ok(evidence.limitations.some((value) => /did not expose a gitSource field/iu.test(value)));
+    assert.ok(evidence.limitations.some((value) => /not a registrar or DNS-provider zone export/iu.test(value)));
+  });
+
+  it('contains no credential-shaped field names or values', async () => {
+    const serialized = await readFile(pr15EvidencePath, 'utf8');
 
     assert.doesNotMatch(serialized, /"(?:token|secret|password|passphrase|cookie|privateKey)"\s*:/iu);
     assert.doesNotMatch(serialized, /(?:Bearer\s+|gh[opsu]_[A-Za-z0-9]+|vercel_[A-Za-z0-9]+)/u);

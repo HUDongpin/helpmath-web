@@ -97,7 +97,10 @@ describe('release evidence records', () => {
     assert.match(aliasAssignment, /`READY` Production deployment/iu);
     assert.match(aliasAssignment, /https:\/\/www\.helpmath\.ai/u);
     assert.match(aliasAssignment, /https:\/\/helpmath\.ai/u);
-    assert.match(aliasAssignment, /docs\/evidence\/vercel-production-alias-\d{4}-\d{2}-\d{2}\.json/u);
+    assert.match(
+      aliasAssignment,
+      /docs\/evidence\/vercel-production-alias(?:-pr\d+)?-\d{4}-\d{2}-\d{2}\.json/u,
+    );
     assert.match(aliasAssignment, /SHA-256 `[0-9a-f]{64}`/u);
 
     assert.match(tableValue(record, 'Contact mode'), /^Disabled;/u);
@@ -105,6 +108,7 @@ describe('release evidence records', () => {
       (match) =>
         JSON.parse(match[1]) as {
           baseUrl?: string;
+          launchGates?: Record<string, string>;
           failures?: unknown[];
         },
     );
@@ -117,11 +121,44 @@ describe('release evidence records', () => {
       ),
       'No valid zero-failure smoke JSON was retained.',
     );
+    const canonicalSmoke = smokeBlocks.find(
+      (smoke) => smoke.baseUrl === 'https://www.helpmath.ai',
+    );
+    assert.deepEqual(canonicalSmoke?.launchGates, {
+      legalPublication: 'holding',
+      contactIntake: 'holding',
+      demoPublication: 'holding',
+      legacyCutover: 'holding',
+      productionLaunch: 'holding',
+    });
     assert.match(record, /^## Exceptions and follow-up gates$/mu);
     assert.match(record, /^## Alias-assignment evidence$/mu);
     assert.match(record, /semantic smoke behind the protected PR #\d+ Preview was not retained/iu);
     assert.match(record, /did not request executive authentication/iu);
     assert.match(record, /off-device custody/iu);
     assert.match(record, /not authorization|not authoriz(?:e|ation)/iu);
+
+    if (latest.pullRequest === 15) {
+      assert.equal(candidateCommit, '`3a948166354915bbab609515e28091b68a2bb534`');
+      assert.equal(productionCommit, '`d3b84e8dcf539d8859641bdb58cbaa5237efc461`');
+      assert.match(record, /GitHub deployment `5544743798`/u);
+      assert.match(record, /dpl_Dy85MWu5qTaDGMLfFy6sNtmPf8Ws/u);
+      assert.match(record, /GitHub deployment `5544827753`/u);
+      assert.match(record, /dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ/u);
+      assert.match(record, /actions\/runs\/29863225868/u);
+      assert.match(record, /actions\/runs\/29863649827/u);
+      assert.match(record, /actions\/runs\/29863684054/u);
+      assert.match(record, /actions\/runs\/29863927541/u);
+      assert.match(
+        record,
+        /sha256:99e0bc42733b1751da3f0792d6169900898d07ba27ea9f745ff538e453ee05b4/u,
+      );
+      assert.match(record, /immutable URL's Vercel SSO `302` protection boundary/iu);
+      assert.match(record, /semantic\s+smoke was not run behind that boundary/iu);
+      assert.match(
+        record,
+        /Application semantics were checked\s+separately on the canonical alias/iu,
+      );
+    }
   });
 });

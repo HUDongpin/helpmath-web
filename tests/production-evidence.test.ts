@@ -9,6 +9,19 @@ const uiEvidencePath = 'docs/evidence/production-ui-audit-2026-07-22.json';
 const uiEvidenceSha256 = '28b3b2adafb81abac31e675af7dc37b9ed1e0e5fe620c2db08133193b2614c33';
 const productionCommit = '05c3b460db78ac61b88b6d34479d925af634d724';
 const vercelDeploymentId = 'dpl_2CCekiWMGdnwc78gdifVSs1NWNsX';
+const pr15CanonicalEvidencePath =
+  'docs/evidence/executive-preview-canonical-pr15-2026-07-22.json';
+const pr15CanonicalEvidenceSha256 =
+  '05c5297a04b12ab934272f8946a7b1105e4a1920ee28e582cd981bb690f9ac63';
+const pr15ExecutiveEvidencePath =
+  'docs/evidence/executive-preview-production-pr15-2026-07-22.json';
+const pr15ExecutiveEvidenceSha256 =
+  '798efec3041590068a5cc7dfe8ece2d6786252e66ff67fb6d1f368c81561ac25';
+const pr15UiEvidencePath = 'docs/evidence/production-ui-pr15-2026-07-22.json';
+const pr15UiEvidenceSha256 =
+  'd7fb8dde8fad4346872ca016ecbd43c94fab177430b1679cdf437a7ed148080e';
+const pr15ProductionCommit = 'd3b84e8dcf539d8859641bdb58cbaa5237efc461';
+const pr15VercelDeploymentId = 'dpl_GAwLFodMFiqAE7RDibwp77mgwjUQ';
 
 type ScreenshotEvidence = {
   screenshot: string;
@@ -45,7 +58,7 @@ async function assertScreenshot(evidence: ScreenshotEvidence): Promise<void> {
   assert.equal(dimensions.height, evidence.screenshotHeight);
 }
 
-describe('current Production evidence', () => {
+describe('historical PR #13 Production evidence', () => {
   it('pins the non-secret authenticated executive-preview operator attestation', async () => {
     const bytes = await readFile(executiveEvidencePath);
     const evidence = JSON.parse(bytes.toString('utf8')) as {
@@ -179,5 +192,230 @@ describe('current Production evidence', () => {
       assertScreenshot(evidence.visualReview.desktop),
       assertScreenshot(evidence.visualReview.mobile),
     ]);
+  });
+});
+
+describe('PR #15 current Production evidence', () => {
+  it('pins the retained credential-free authenticated canonical result', async () => {
+    const bytes = await readFile(pr15CanonicalEvidencePath);
+    const evidence = JSON.parse(bytes.toString('utf8')) as {
+      baseUrl: string;
+      canonicalOrigin: string;
+      launchGateManifestSha256: string;
+      launchGates: Record<string, string>;
+      expectedSitemapPages: number;
+      publicPages: number;
+      internalLinks: number;
+      privateDemoRoutes: number;
+      closedLegacyDemoAssets: number;
+      executivePreviewAssets: number;
+      privateDemoOptimizerProbes: number;
+      executivePreviewEntries: number;
+      executivePreviewExpectedState: string;
+      executivePreviewExpectedExpiresAt: string;
+      executivePreviewState: string;
+      executivePreviewExpiresAt: string;
+      executivePreviewAuthentication: string;
+      executivePreviewAuthenticatedDemoRoutes: number;
+      executivePreviewAuthenticatedAssets: number;
+      executivePreviewAuthenticatedRuntimes: number;
+      legalPublicationGate: string;
+      legalDrafts: number;
+      legalPublishedPages: number;
+      contactRepositoryGate: string;
+      contactExpectation: string;
+      failures: unknown[];
+    };
+
+    assert.equal(sha256(bytes), pr15CanonicalEvidenceSha256);
+    assert.equal(evidence.baseUrl, 'https://www.helpmath.ai');
+    assert.equal(evidence.canonicalOrigin, evidence.baseUrl);
+    assert.equal(
+      evidence.launchGateManifestSha256,
+      'd32e105c55729568f645ac058b55d33e923b76eee893e6e80d61aa907bed1530',
+    );
+    assert.deepEqual(evidence.launchGates, {
+      legalPublication: 'holding',
+      contactIntake: 'holding',
+      demoPublication: 'holding',
+      legacyCutover: 'holding',
+      productionLaunch: 'holding',
+    });
+    assert.equal(evidence.expectedSitemapPages, 20);
+    assert.equal(evidence.publicPages, 20);
+    assert.equal(evidence.internalLinks, 54);
+    assert.equal(evidence.privateDemoRoutes, 4);
+    assert.equal(evidence.closedLegacyDemoAssets, 12);
+    assert.equal(evidence.executivePreviewAssets, 12);
+    assert.equal(evidence.privateDemoOptimizerProbes, 4);
+    assert.equal(evidence.executivePreviewEntries, 2);
+    assert.equal(evidence.executivePreviewExpectedState, 'login');
+    assert.equal(evidence.executivePreviewState, 'login');
+    assert.equal(
+      evidence.executivePreviewExpectedExpiresAt,
+      '2026-07-28T15:59:00.000Z',
+    );
+    assert.equal(evidence.executivePreviewExpiresAt, evidence.executivePreviewExpectedExpiresAt);
+    assert.equal(evidence.executivePreviewAuthentication, 'validated');
+    assert.equal(evidence.executivePreviewAuthenticatedDemoRoutes, 4);
+    assert.equal(evidence.executivePreviewAuthenticatedAssets, 12);
+    assert.equal(evidence.executivePreviewAuthenticatedRuntimes, 2);
+    assert.equal(evidence.legalPublicationGate, 'holding');
+    assert.equal(evidence.legalDrafts, 4);
+    assert.equal(evidence.legalPublishedPages, 0);
+    assert.equal(evidence.contactRepositoryGate, 'holding');
+    assert.equal(evidence.contactExpectation, 'disabled');
+    assert.deepEqual(evidence.failures, []);
+    assert.equal(Object.hasOwn(evidence, 'repositoryCommit'), false);
+    assert.equal(Object.hasOwn(evidence, 'githubDeploymentId'), false);
+    assert.equal(Object.hasOwn(evidence, 'vercelDeploymentId'), false);
+    assert.equal(Object.hasOwn(evidence, 'recordedAt'), false);
+  });
+
+  it('pins the accompanying operator identity record and privacy boundary', async () => {
+    const bytes = await readFile(pr15ExecutiveEvidencePath);
+    const evidence = JSON.parse(bytes.toString('utf8')) as {
+      source: {
+        identityAssociation: string;
+        canonicalResultRetained: boolean;
+        canonicalResultPath: string;
+        canonicalResultSha256: string;
+        sensitiveInputOrSessionOutputRetained: boolean;
+      };
+      identity: {
+        pullRequest: number;
+        repositoryCommit: string;
+        githubDeploymentId: number;
+        vercelDeploymentId: string;
+        canonicalUrl: string;
+        immutableUrl: string;
+      };
+      preview: {
+        authentication: string;
+        authenticatedDemoRoutes: number;
+        expectedAuthenticatedDemoRoutes: number;
+        authenticatedPrivateAssets: number;
+        expectedAuthenticatedPrivateAssets: number;
+        authenticatedRuntimes: number;
+        expectedAuthenticatedRuntimes: number;
+        failures: unknown[];
+      };
+      browserCheck: {
+        evidenceLevel: string;
+        result: string;
+        testsPassed: number;
+        testsFailed: number;
+        traceRetained: boolean;
+        screenshotRetained: boolean;
+      };
+      privacyBoundary: Record<string, boolean | string>;
+      sensitiveValueHandling: {
+        injectedOnlyIntoEachTemporaryVerificationProcess: boolean;
+      };
+      limitations: string[];
+    };
+
+    assert.equal(sha256(bytes), pr15ExecutiveEvidenceSha256);
+    assert.equal(evidence.source.canonicalResultRetained, true);
+    assert.match(evidence.source.identityAssociation, /contains no commit, deployment, or observation-time field/iu);
+    assert.equal(evidence.source.canonicalResultPath, pr15CanonicalEvidencePath);
+    assert.equal(evidence.source.canonicalResultSha256, pr15CanonicalEvidenceSha256);
+    assert.equal(evidence.source.sensitiveInputOrSessionOutputRetained, false);
+    assert.equal(evidence.identity.pullRequest, 15);
+    assert.equal(evidence.identity.repositoryCommit, pr15ProductionCommit);
+    assert.equal(evidence.identity.githubDeploymentId, 5544827753);
+    assert.equal(evidence.identity.vercelDeploymentId, pr15VercelDeploymentId);
+    assert.equal(evidence.identity.canonicalUrl, 'https://www.helpmath.ai');
+    assert.equal(
+      evidence.identity.immutableUrl,
+      'https://helpmath-peh16hg5x-peter-dongpin-hu-s-projects.vercel.app',
+    );
+    assert.equal(evidence.preview.authentication, 'validated');
+    assert.equal(
+      evidence.preview.authenticatedDemoRoutes,
+      evidence.preview.expectedAuthenticatedDemoRoutes,
+    );
+    assert.equal(
+      evidence.preview.authenticatedPrivateAssets,
+      evidence.preview.expectedAuthenticatedPrivateAssets,
+    );
+    assert.equal(
+      evidence.preview.authenticatedRuntimes,
+      evidence.preview.expectedAuthenticatedRuntimes,
+    );
+    assert.deepEqual(evidence.preview.failures, []);
+    assert.match(evidence.browserCheck.evidenceLevel, /operator-observed/iu);
+    assert.equal(evidence.browserCheck.result, 'pass');
+    assert.equal(evidence.browserCheck.testsPassed, 1);
+    assert.equal(evidence.browserCheck.testsFailed, 0);
+    assert.equal(evidence.browserCheck.traceRetained, false);
+    assert.equal(evidence.browserCheck.screenshotRetained, false);
+    assert.equal(
+      evidence.sensitiveValueHandling.injectedOnlyIntoEachTemporaryVerificationProcess,
+      true,
+    );
+    assert.equal(evidence.privacyBoundary.publicDemoPublicationGate, 'holding');
+    assert.ok(
+      evidence.limitations.some((value) =>
+        /does not independently identify PR #15, a repository commit, a deployment, or an observation time/iu.test(
+          value,
+        ),
+      ),
+    );
+  });
+
+  it('pins the scoped reviewer-entry and Spanish mobile production regression result', async () => {
+    const bytes = await readFile(pr15UiEvidencePath);
+    const evidence = JSON.parse(bytes.toString('utf8')) as {
+      source: {
+        evidenceLevel: string;
+        standaloneReportRetained: boolean;
+        traceRetained: boolean;
+        screenshotRetained: boolean;
+      };
+      identity: {
+        pullRequest: number;
+        repositoryCommit: string;
+        githubDeploymentId: number;
+        vercelDeploymentId: string;
+        canonicalUrl: string;
+      };
+      browserCheck: {
+        testsPassed: number;
+        testsFailed: number;
+        checks: Record<string, boolean>;
+      };
+    };
+
+    assert.equal(sha256(bytes), pr15UiEvidenceSha256);
+    assert.match(evidence.source.evidenceLevel, /operator-observed/iu);
+    assert.equal(evidence.source.standaloneReportRetained, false);
+    assert.equal(evidence.source.traceRetained, false);
+    assert.equal(evidence.source.screenshotRetained, false);
+    assert.equal(evidence.identity.pullRequest, 15);
+    assert.equal(evidence.identity.repositoryCommit, pr15ProductionCommit);
+    assert.equal(evidence.identity.githubDeploymentId, 5544827753);
+    assert.equal(evidence.identity.vercelDeploymentId, pr15VercelDeploymentId);
+    assert.equal(evidence.identity.canonicalUrl, 'https://www.helpmath.ai');
+    assert.equal(evidence.browserCheck.testsPassed, 2);
+    assert.equal(evidence.browserCheck.testsFailed, 0);
+    assert.deepEqual(evidence.browserCheck.checks, {
+      englishAndSpanishDemoPagesLinkToTheBareAuthorizedReviewerEntry: true,
+      demoPagesContainNoDirectPrototypeRouteAnchors: true,
+      demoPagesContainNoFlashAssetSources: true,
+      spanishTermsHeroFitsAt320PxAfterFontsLoad: true,
+      spanishTermsHeroFitsAt390PxAfterFontsLoad: true,
+    });
+  });
+
+  it('contains no retained credential-shaped fields or values', async () => {
+    const serialized = await Promise.all([
+      readFile(pr15CanonicalEvidencePath, 'utf8'),
+      readFile(pr15ExecutiveEvidencePath, 'utf8'),
+      readFile(pr15UiEvidencePath, 'utf8'),
+    ]).then((records) => records.join('\n'));
+
+    assert.doesNotMatch(serialized, /"(?:token|secret|password|passphrase|cookie|privateKey)"\s*:/iu);
+    assert.doesNotMatch(serialized, /(?:Bearer\s+|gh[opsu]_[A-Za-z0-9]+|vercel_[A-Za-z0-9]+)/u);
   });
 });
