@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "npm run check:launch-gates && npm run check:demo-lifecycle && npm run build:executive-runtime && next build && npm run check:private-demo-traces && npm run check:private-demo-leaks",
+    "build": "npm run check:generated && npm run build:executive-runtime && next build && npm run check:private-demo-traces && npm run check:private-demo-leaks",
     "build:executive-runtime": "node scripts/build-executive-demo-runtime.mjs",
     "start": "next start",
     "lint": "eslint .",
@@ -22,11 +22,11 @@
     "smoke:production": "node scripts/release-smoke.mjs",
     "generate:demos": "npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs",
     "generate:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts",
-    "check:generated": "npm run check:launch-gates && npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs && git diff --exit-code -- demos/registry.generated.ts && npm run check:legacy-apache",
+    "check:generated": "npm run check:launch-gates && npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs --check && npm run check:legacy-apache",
     "check:demo-lifecycle": "tsx scripts/validate-demo-lifecycle.ts",
     "check:launch-gates": "tsx scripts/validate-launch-gates.ts",
     "check:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts --check",
-    "check:private-demo-leaks": "node scripts/check-private-demo-leaks.mjs",
+    "check:private-demo-leaks": "tsx scripts/check-private-demo-leaks.mjs",
     "check:private-demo-traces": "node scripts/verify-private-demo-traces.mjs",
     "check:stable-links": "node scripts/check-stable-external-links.mjs"
   },

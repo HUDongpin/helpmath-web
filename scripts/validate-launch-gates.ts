@@ -15,10 +15,10 @@ import {
 import {validateLaunchGateManifest} from '../lib/launch-gate-validation';
 import {isLegalCopyDraft, isLegalCopyReady} from '../lib/legal-copy-readiness';
 import {parseCanonicalLaunchGateManifest} from '../lib/launch-gate-transition-lock.js';
+import {validateEvidenceDirectoryContract} from './evidence-directory-contract';
 
 const repositoryRoot = process.cwd();
 const manifestPath = path.join(repositoryRoot, 'config/launch-gates.json');
-const snapshotPath = path.join(repositoryRoot, 'demos/SNAPSHOT.json');
 const pendingContractByGate = {
   legalPublication: 'docs/LEGAL_REVIEW.md',
   contactIntake: 'docs/CONTACT_DELIVERY.md',
@@ -87,6 +87,26 @@ if (
   );
 }
 
+const launchGateEvidenceReferences = Object.values(manifest.gates ?? {}).flatMap((gate) =>
+  Array.isArray(gate.evidence)
+    ? gate.evidence.flatMap((entry) =>
+        typeof entry.reference === 'string'
+          ? [{
+              reference: entry.reference,
+              sha256: typeof entry.sha256 === 'string' ? entry.sha256 : '',
+            }]
+          : [],
+      )
+    : [],
+);
+errors.push(...(
+  await validateEvidenceDirectoryContract({
+    repositoryRoot,
+    relativeDirectory: 'docs/evidence/launch-gates',
+    references: launchGateEvidenceReferences,
+  })
+).map((error) => `launch-gate evidence directory: ${error}`));
+
 for (const [gateId, gate] of Object.entries(manifest.gates ?? {})) {
   for (const reference of gate.blockerRefs ?? []) {
     const resolved = path.resolve(repositoryRoot, reference);
@@ -134,24 +154,6 @@ for (const [gateId, gate] of Object.entries(manifest.gates ?? {})) {
       ...(subjectDigest ? {repositoryContentSha256: subjectDigest.sha256} : {}),
     });
     errors.push(...verification.errors.map((error) => `gates.${gateId}: ${error}`));
-  }
-}
-
-const snapshot = JSON.parse(await readFile(snapshotPath, 'utf8')) as {
-  sources?: Record<string, {
-    public?: boolean;
-    publication?: {access?: string; indexable?: boolean};
-  }>;
-};
-if (manifest.gates?.demoPublication?.status !== 'approved') {
-  for (const [id, source] of Object.entries(snapshot.sources ?? {})) {
-    if (
-      source.public === true ||
-      source.publication?.access !== 'private' ||
-      source.publication?.indexable === true
-    ) {
-      errors.push(`${id} is public or indexable while demoPublication is not approved`);
-    }
   }
 }
 

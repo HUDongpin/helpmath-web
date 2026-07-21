@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
+import {reviewDemoRoutes} from '../demos/catalog';
 import {
   EXECUTIVE_PREVIEW_COOKIE_NAME,
   EXECUTIVE_PREVIEW_SESSION_TTL_MS,
   EXECUTIVE_PREVIEW_SESSION_TTL_SECONDS,
+  buildExecutivePreviewDemoPaths,
   createExecutivePreviewSession,
   getExecutivePreviewConfig,
   getExecutivePreviewReturnTo,
@@ -138,12 +140,7 @@ describe('executive preview credentials and sessions', () => {
 });
 
 describe('executive preview path boundaries', () => {
-  const allowedDemoPaths = [
-    '/demos/conversion-1-2',
-    '/demos/conversion-1-4',
-    '/es/demos/conversion-1-2',
-    '/es/demos/conversion-1-4',
-  ];
+  const allowedDemoPaths = reviewDemoRoutes.flatMap((route) => [route, `/es${route}`]);
 
   it('protects only the two canonical English and Spanish demo paths', () => {
     for (const pathname of allowedDemoPaths) {
@@ -160,6 +157,18 @@ describe('executive preview path boundaries', () => {
     ]) {
       assert.equal(isExecutivePreviewDemoPath(pathname), false, pathname);
     }
+  });
+
+  it('derives protection from private-preview routes and releases omitted public routes', () => {
+    const paths = buildExecutivePreviewDemoPaths(['/demos/conversion-1-2']);
+
+    assert.deepEqual([...paths].sort(), [
+      '/demos/conversion-1-2',
+      '/es/demos/conversion-1-2',
+    ]);
+    assert.equal(paths.has('/demos/conversion-1-4'), false);
+    assert.equal(paths.has('/es/demos/conversion-1-4'), false);
+    assert.equal(paths.has('/demos/../conversion-1-4'), false);
   });
 
   it('protects files below flash-assets but not adjacent paths', () => {

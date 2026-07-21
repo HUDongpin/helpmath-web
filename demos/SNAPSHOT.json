@@ -20,7 +20,6 @@
   },
   "sources": {
     "conversion-1-2": {
-      "public": false,
       "route": "/demos/conversion-1-2",
       "workbenchMigrationId": "formula-elementary-conversion-01-02",
       "flaSha256": "7c59923ebd200f4fb951e1c9a7683861c21af7688d537fa5fca370acf6d9291d",
@@ -55,14 +54,6 @@
         "rmseStatus": "not-run",
         "strictValidator": "not-passed"
       },
-      "publication": {
-        "access": "private",
-        "indexable": false,
-        "internalExecutiveReview": "approved",
-        "internalReviewApprovalRef": "Project researcher/software engineer request, 2026-07-21",
-        "technicalAcceptance": "pending",
-        "rightsApproval": "pending"
-      },
       "knownExceptions": [
         "The private workbench record is preserved but its audit, baseline, RMSE evidence, strict validator, and owner acceptance are incomplete.",
         "Matching English and Spanish source audio is cataloged privately but is not implemented in this public prototype.",
@@ -71,7 +62,6 @@
       ]
     },
     "conversion-1-4": {
-      "public": false,
       "route": "/demos/conversion-1-4",
       "workbenchMigrationId": "formula-elementary-conversion-01-04",
       "flaSha256": "d661c776e239fb59c44278c6e4d5fd75812599eb2dc9fa758b1ba37a59251b1c",
@@ -105,14 +95,6 @@
         "keyframeRows": 0,
         "rmseStatus": "not-run",
         "strictValidator": "not-passed"
-      },
-      "publication": {
-        "access": "private",
-        "indexable": false,
-        "internalExecutiveReview": "approved",
-        "internalReviewApprovalRef": "Project researcher/software engineer request, 2026-07-21",
-        "technicalAcceptance": "pending",
-        "rightsApproval": "pending"
       },
       "knownExceptions": [
         "The private workbench record is preserved but its audit, baseline, RMSE evidence, strict validator, and owner acceptance are incomplete.",

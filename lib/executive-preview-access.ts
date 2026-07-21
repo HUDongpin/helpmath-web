@@ -1,3 +1,5 @@
+import {reviewDemoRoutes} from '../demos/catalog';
+
 export const EXECUTIVE_PREVIEW_COOKIE_NAME = 'helpmath_executive_preview';
 
 export const EXECUTIVE_PREVIEW_SESSION_TTL_SECONDS = 12 * 60 * 60;
@@ -12,12 +14,16 @@ const MIN_UNIQUE_CREDENTIAL_CHARACTERS = 12;
 const BASE64URL_CREDENTIAL = /^[A-Za-z0-9_-]+$/u;
 const ISO_TIMESTAMP_WITH_TIMEZONE =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/u;
-const EXECUTIVE_PREVIEW_DEMO_PATHS = new Set([
-  '/demos/conversion-1-2',
-  '/demos/conversion-1-4',
-  '/es/demos/conversion-1-2',
-  '/es/demos/conversion-1-4',
-]);
+export function buildExecutivePreviewDemoPaths(
+  routes: readonly string[],
+): ReadonlySet<string> {
+  const normalizedRoutes = routes.filter((route) =>
+    /^\/demos\/[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(route),
+  );
+  return new Set(normalizedRoutes.flatMap((route) => [route, `/es${route}`]));
+}
+
+const EXECUTIVE_PREVIEW_DEMO_PATHS = buildExecutivePreviewDemoPaths(reviewDemoRoutes);
 
 export interface ExecutivePreviewConfig {
   readonly accessKey: string;

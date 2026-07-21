@@ -44,7 +44,6 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
       indexingRequires: string[];
     };
     sources: Record<string, {
-      public: boolean;
       route: string;
       workbenchMigrationId: string;
       flaSha256: string;
@@ -65,14 +64,6 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
         keyframeRows: number;
         rmseStatus: string;
         strictValidator: string;
-      };
-      publication: {
-        access: string;
-        indexable: boolean;
-        internalExecutiveReview: string;
-        internalReviewApprovalRef: string;
-        technicalAcceptance: string;
-        rightsApproval: string;
       };
       knownExceptions: string[];
     }>;
@@ -146,16 +137,8 @@ test('the reviewed demo snapshot matches every pinned runtime and image hash', a
     assert.equal(source.evidenceStatus.keyframeRows, 0);
     assert.equal(source.evidenceStatus.rmseStatus, 'not-run');
     assert.equal(source.evidenceStatus.strictValidator, 'not-passed');
-    assert.equal(source.publication.indexable, false);
-    assert.equal(source.publication.internalExecutiveReview, 'approved');
-    assert.equal(
-      source.publication.internalReviewApprovalRef,
-      'Project researcher/software engineer request, 2026-07-21',
-    );
-    assert.equal(source.publication.technicalAcceptance, 'pending');
-    assert.equal(source.public, false);
-    assert.equal(source.publication.access, 'private');
-    assert.equal(source.publication.rightsApproval, 'pending');
+    assert.equal(Object.hasOwn(source, 'public'), false);
+    assert.equal(Object.hasOwn(source, 'publication'), false);
     assert.equal(animationModule, undefined);
     assert.ok(reviewAnimationModule, id);
     assert.equal(reviewAnimationModule.key, id);

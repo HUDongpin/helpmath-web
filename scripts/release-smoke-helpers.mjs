@@ -1,11 +1,108 @@
 const RETRYABLE_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const DEMO_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
-export const EXECUTIVE_PREVIEW_AUTHENTICATED_DEMO_CASES = Object.freeze([
-  Object.freeze({path: '/demos/conversion-1-2', locale: 'en', heading: 'Conversion 1.2'}),
-  Object.freeze({path: '/demos/conversion-1-4', locale: 'en', heading: 'Conversion 1.4'}),
-  Object.freeze({path: '/es/demos/conversion-1-2', locale: 'es', heading: 'Conversión 1.2'}),
-  Object.freeze({path: '/es/demos/conversion-1-4', locale: 'es', heading: 'Conversión 1.4'}),
-]);
+function normalizedUniqueIds(values, label) {
+  if (!Array.isArray(values) || values.some((value) =>
+    typeof value !== 'string' || !DEMO_ID_PATTERN.test(value)
+  )) {
+    throw new TypeError(`${label} must contain canonical demo ids`);
+  }
+  if (new Set(values).size !== values.length) {
+    throw new TypeError(`${label} must not contain duplicate demo ids`);
+  }
+  return [...values];
+}
+
+function assertSubset(values, candidates, label) {
+  for (const value of values) {
+    if (!candidates.has(value)) throw new TypeError(`${label} contains unknown demo ${value}`);
+  }
+}
+
+export function buildDemoLifecycleSmokeModel({
+  assetsById,
+  candidateIds,
+  headingsByLocale,
+  indexableIds,
+  publicIds,
+  reviewIds,
+}) {
+  const candidates = normalizedUniqueIds(candidateIds, 'candidateIds');
+  const publicDemos = normalizedUniqueIds(publicIds, 'publicIds');
+  const reviewDemos = normalizedUniqueIds(reviewIds, 'reviewIds');
+  const indexableDemos = normalizedUniqueIds(indexableIds, 'indexableIds');
+  const candidateSet = new Set(candidates);
+  const publicSet = new Set(publicDemos);
+  const reviewSet = new Set(reviewDemos);
+
+  assertSubset(publicDemos, candidateSet, 'publicIds');
+  assertSubset(reviewDemos, candidateSet, 'reviewIds');
+  assertSubset(indexableDemos, publicSet, 'indexableIds');
+  for (const id of publicDemos) {
+    if (reviewSet.has(id)) throw new TypeError(`demo ${id} cannot be public and private-review`);
+  }
+
+  const ownedAssets = {};
+  for (const id of candidates) {
+    const assets = assetsById?.[id];
+    if (!Array.isArray(assets)) {
+      throw new TypeError(`assetsById.${id} must be an array`);
+    }
+    const prefix = `/api/executive-preview/assets/${id}/`;
+    if (
+      assets.some((asset) => {
+        if (typeof asset !== 'string' || !asset.startsWith(prefix)) return true;
+        const suffix = asset.slice(prefix.length);
+        return (
+          suffix.length === 0 ||
+          suffix.includes('\\') ||
+          suffix.includes('?') ||
+          suffix.includes('#') ||
+          suffix.split('/').some((segment) => !segment || segment === '.' || segment === '..')
+        );
+      }) ||
+      new Set(assets).size !== assets.length
+    ) {
+      throw new TypeError(`assetsById.${id} must contain unique namespaced asset paths`);
+    }
+    ownedAssets[id] = Object.freeze([...assets]);
+  }
+
+  const privateDemos = candidates.filter((id) => !publicSet.has(id));
+  const demoRoutes = (ids) => ids.flatMap((id) => [`/demos/${id}`, `/es/demos/${id}`]);
+  const assetsFor = (ids) => ids.flatMap((id) => ownedAssets[id]);
+  const authenticatedDemoCases = reviewDemos.flatMap((id) => {
+    const englishHeading = headingsByLocale?.en?.[id];
+    const spanishHeading = headingsByLocale?.es?.[id];
+    if (typeof englishHeading !== 'string' || typeof spanishHeading !== 'string') {
+      throw new TypeError(`headingsByLocale is missing ${id}`);
+    }
+    return [
+      Object.freeze({path: `/demos/${id}`, locale: 'en', heading: englishHeading}),
+      Object.freeze({path: `/es/demos/${id}`, locale: 'es', heading: spanishHeading}),
+    ];
+  });
+
+  return Object.freeze({
+    authenticatedDemoCases: Object.freeze(authenticatedDemoCases),
+    indexableDemoIds: Object.freeze(indexableDemos),
+    indexableDemoRoutes: Object.freeze(demoRoutes(indexableDemos)),
+    privateAssetPaths: Object.freeze(assetsFor(privateDemos)),
+    privateDemoIds: Object.freeze(privateDemos),
+    privateDemoRoutes: Object.freeze(demoRoutes(privateDemos)),
+    publicAssetPaths: Object.freeze(assetsFor(publicDemos)),
+    publicDemoIds: Object.freeze(publicDemos),
+    publicDemoRoutes: Object.freeze(demoRoutes(publicDemos)),
+    reviewAssetPaths: Object.freeze(assetsFor(reviewDemos)),
+    reviewDemoIds: Object.freeze(reviewDemos),
+    reviewRuntimePaths: Object.freeze(
+      reviewDemos.map((id) => `/api/executive-preview/runtime/${id}.js`),
+    ),
+    runtimeProbePaths: Object.freeze(
+      candidates.map((id) => `/api/executive-preview/runtime/${id}.js`),
+    ),
+  });
+}
 
 export function isRetryableHttpStatus(status) {
   return RETRYABLE_HTTP_STATUSES.has(status);

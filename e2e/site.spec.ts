@@ -1,8 +1,23 @@
 import AxeBuilder from '@axe-core/playwright';
 import {expect, test, type Page} from '@playwright/test';
+import {tsImport} from 'tsx/esm/api';
 import {isLaunchGateApproved} from '../lib/launch-gates';
 
 type RuntimeIssue = {kind: 'console' | 'page'; message: string};
+
+const [demoCatalog, demoCandidateCatalog, contentCatalog] = await Promise.all([
+  tsImport('../demos/catalog.ts', import.meta.url),
+  tsImport('../demos/candidates/index.ts', import.meta.url),
+  tsImport('../content/index.ts', import.meta.url),
+]) as [
+  typeof import('../demos/catalog'),
+  typeof import('../demos/candidates'),
+  typeof import('../content'),
+];
+const {demoIds, indexableDemoIds, reviewDemoIds} = demoCatalog;
+const {DEMO_CANDIDATE_IDS, demoCandidates} = demoCandidateCatalog;
+const {siteContent} = contentCatalog;
+type DemoCandidateId = (typeof DEMO_CANDIDATE_IDS)[number];
 
 const closedLegacyDemoAssets = [
   '/flash-assets/conversion-1-2/gallon-0.png',
@@ -18,24 +33,45 @@ const closedLegacyDemoAssets = [
   '/flash-assets/pitcher-back.png',
   '/flash-assets/pitcher-front.png',
 ] as const;
-const executivePreviewAssets = [
-  '/api/executive-preview/assets/conversion-1-2/gallon-0.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-32.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-64.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-96.png',
-  '/api/executive-preview/assets/conversion-1-2/gallon-128.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-empty-stage.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-full-stage.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-pouring-empty.png',
-  '/api/executive-preview/assets/conversion-1-2/quart-pouring-full.png',
-  '/api/executive-preview/assets/conversion-1-4/cylinder-base.png',
-  '/api/executive-preview/assets/conversion-1-4/pitcher-back.png',
-  '/api/executive-preview/assets/conversion-1-4/pitcher-front.png',
-] as const;
-const executivePreviewRuntimes = [
-  '/api/executive-preview/runtime/conversion-1-2.js',
-  '/api/executive-preview/runtime/conversion-1-4.js',
-] as const;
+const publicDemoIdSet = new Set<string>(demoIds);
+const indexableDemoIdSet = new Set<string>(indexableDemoIds);
+const nonPublicDemoIds = DEMO_CANDIDATE_IDS.filter((id) => !publicDemoIdSet.has(id));
+
+function ownedAssetPaths(ids: readonly DemoCandidateId[]) {
+  return ids.flatMap((id) => {
+    const prefix = `private-demo-assets/${id}/`;
+    return demoCandidates[id].artifacts
+      .map(({path}) => path)
+      .filter((artifactPath) => artifactPath.startsWith(prefix))
+      .map((artifactPath) =>
+        `/api/executive-preview/assets/${artifactPath.slice('private-demo-assets/'.length)}`
+      );
+  });
+}
+
+const privateExecutivePreviewAssets = ownedAssetPaths(nonPublicDemoIds);
+const publicExecutivePreviewAssets = ownedAssetPaths(demoIds);
+const reviewExecutivePreviewAssets = ownedAssetPaths(reviewDemoIds);
+const lifecycleOptimizerProbes = DEMO_CANDIDATE_IDS.flatMap((id) => {
+  const asset = ownedAssetPaths([id])[0];
+  if (!asset) return [];
+  const encodedAsset = encodeURIComponent(asset);
+  return [
+    `/_next/image?url=${encodedAsset}&w=640&q=75`,
+    `/_vercel/image?url=${encodedAsset}&w=640&q=75`,
+  ];
+});
+const executivePreviewRuntimeProbes = DEMO_CANDIDATE_IDS.map(
+  (id) => `/api/executive-preview/runtime/${id}.js`,
+);
+const executivePreviewRuntimes = reviewDemoIds.map(
+  (id) => `/api/executive-preview/runtime/${id}.js`,
+);
+const firstReviewDemoId = reviewDemoIds[0];
+const hasCanonicalExecutiveReviewSet =
+  reviewDemoIds.length === 2 &&
+  reviewDemoIds.includes('conversion-1-2') &&
+  reviewDemoIds.includes('conversion-1-4');
 const executivePreviewAccessKey =
   process.env.PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY?.trim();
 const legalPublicationApproved = isLaunchGateApproved('legalPublication');
@@ -57,7 +93,7 @@ const sitemapBasePaths = [
 
 const sitemapPagePaths = sitemapBasePaths.flatMap((path) =>
   path === '/' ? ['/', '/es'] : [path, `/es${path}`],
-);
+).concat(indexableDemoIds.flatMap((id) => [`/demos/${id}`, `/es/demos/${id}`]));
 
 const browserExperiencePaths = [
   ...sitemapPagePaths,
@@ -66,6 +102,7 @@ const browserExperiencePaths = [
     : []),
   '/executive-preview',
   '/es/executive-preview',
+  ...demoIds.flatMap((id) => [`/demos/${id}`, `/es/demos/${id}`]),
 ] as const;
 
 const browserExperienceViewports = [
@@ -532,56 +569,96 @@ test('contact page fails closed until verified delivery is configured', async ({
   expectNoRuntimeIssues(issues);
 });
 
-test('demo landing pages expose only the restricted reviewer entry, never prototype routes', async ({page}) => {
+test('demo landing pages expose only lifecycle-public demos and eligible reviewer entry', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
 
   await expectDocument(page, '/demos', 'en');
-  await expect(
-    page.getByRole('heading', {
-      level: 1,
-      name: 'Demos remain private while review is incomplete',
-    }),
-  ).toBeVisible();
-  await expect(page.getByRole('link', {name: 'Authorized reviewer access'})).toHaveAttribute(
-    'href',
-    '/executive-preview',
-  );
-  await expect(page.locator('a[href^="/demos/conversion-"]')).toHaveCount(0);
+  if (demoIds.length === 0) {
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Demos remain private while review is incomplete',
+      }),
+    ).toBeVisible();
+  }
+  const englishReviewerEntry = page.getByRole('link', {name: 'Authorized reviewer access'});
+  if (reviewDemoIds.length > 0) {
+    await expect(englishReviewerEntry).toHaveAttribute('href', '/executive-preview');
+  } else {
+    await expect(englishReviewerEntry).toHaveCount(0);
+  }
+  for (const id of demoIds) {
+    await expect(page.locator(`a[href="/demos/${id}"]`)).toHaveCount(1);
+  }
+  for (const id of nonPublicDemoIds) {
+    await expect(page.locator(`a[href="/demos/${id}"]`)).toHaveCount(0);
+  }
   await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
 
   await expectDocument(page, '/es/demos', 'es');
-  await expect(
-    page.getByRole('heading', {
-      level: 1,
-      name: 'Las demostraciones siguen privadas mientras la revisión esté incompleta',
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('link', {name: 'Acceso de revisores autorizados'}),
-  ).toHaveAttribute('href', '/es/executive-preview');
-  await expect(page.locator('a[href^="/es/demos/conversion-"]')).toHaveCount(0);
+  if (demoIds.length === 0) {
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Las demostraciones siguen privadas mientras la revisión esté incompleta',
+      }),
+    ).toBeVisible();
+  }
+  const spanishReviewerEntry = page.getByRole('link', {name: 'Acceso de revisores autorizados'});
+  if (reviewDemoIds.length > 0) {
+    await expect(spanishReviewerEntry).toHaveAttribute('href', '/es/executive-preview');
+  } else {
+    await expect(spanishReviewerEntry).toHaveCount(0);
+  }
+  for (const id of demoIds) {
+    await expect(page.locator(`a[href="/es/demos/${id}"]`)).toHaveCount(1);
+  }
+  for (const id of nonPublicDemoIds) {
+    await expect(page.locator(`a[href="/es/demos/${id}"]`)).toHaveCount(0);
+  }
   await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
   expectNoRuntimeIssues(issues);
 });
 
-test('private demo routes and extracted assets fail closed', async ({request}) => {
-  for (const [path, heading] of [
-    ['/demos/conversion-1-2', 'Page not found'],
-    ['/demos/conversion-1-4', 'Page not found'],
-    ['/es/demos/conversion-1-2', 'Página no encontrada'],
-    ['/es/demos/conversion-1-4', 'Página no encontrada'],
-  ] as const) {
-    const response = await request.get(path, {maxRedirects: 0});
-    const html = await response.text();
-    expect(response.status(), path).toBe(404);
-    expect(response.headers()['x-robots-tag'], path).toContain('noindex');
-    expect(response.headers()['x-robots-tag'], path).toContain('nofollow');
-    expect(response.headers()['cache-control'], path).toContain('no-store');
-    expect(response.headers()['content-type'], path).toContain('text/html');
-    expect(html, path).toContain(heading);
+test('demo routes and owned assets follow the validated publication lifecycle', async ({request}) => {
+  for (const id of nonPublicDemoIds) {
+    for (const [path, heading] of [
+      [`/demos/${id}`, 'Page not found'],
+      [`/es/demos/${id}`, 'Página no encontrada'],
+    ] as const) {
+      const response = await request.get(path, {maxRedirects: 0});
+      const html = await response.text();
+      expect(response.status(), path).toBe(404);
+      expect(response.headers()['x-robots-tag'], path).toContain('noindex');
+      expect(response.headers()['x-robots-tag'], path).toContain('nofollow');
+      expect(response.headers()['cache-control'], path).toContain('no-store');
+      expect(response.headers()['content-type'], path).toContain('text/html');
+      expect(html, path).toContain(heading);
+    }
   }
 
-  for (const asset of [...closedLegacyDemoAssets, ...executivePreviewAssets]) {
+  for (const id of demoIds) {
+    const indexable = indexableDemoIdSet.has(id);
+    for (const [path, locale] of [
+      [`/demos/${id}`, 'en'],
+      [`/es/demos/${id}`, 'es'],
+    ] as const) {
+      const response = await request.get(path, {maxRedirects: 0});
+      const html = await response.text();
+      expect(response.status(), path).toBe(200);
+      expect(html, path).toContain(`lang="${locale}"`);
+      expect(html, path).toContain(siteContent[locale].pages.demoDetails[id].title);
+      if (indexable) {
+        expect(response.headers()['x-robots-tag'] ?? '', path).not.toContain('noindex');
+        expect(html, path).not.toMatch(/<meta[^>]+name="robots"[^>]+noindex/iu);
+      } else {
+        expect(response.headers()['x-robots-tag'], path).toContain('noindex');
+        expect(html, path).toMatch(/<meta[^>]+name="robots"[^>]+noindex/iu);
+      }
+    }
+  }
+
+  for (const asset of [...closedLegacyDemoAssets, ...privateExecutivePreviewAssets]) {
     const response = await request.get(asset, {maxRedirects: 0});
     expect(response.status(), asset).toBe(404);
     expect(response.headers()['x-robots-tag'], asset).toContain('noindex');
@@ -590,7 +667,19 @@ test('private demo routes and extracted assets fail closed', async ({request}) =
     expect(response.headers()['content-type'] ?? '', asset).not.toContain('image/');
   }
 
-  for (const runtime of executivePreviewRuntimes) {
+  for (const asset of publicExecutivePreviewAssets) {
+    const response = await request.get(asset, {maxRedirects: 0});
+    expect(response.status(), asset).toBe(200);
+    expect(response.headers()['content-type'], asset).toContain('image/png');
+    expect(response.headers()['cache-control'], asset).toContain('public');
+    expect(response.headers()['cache-control'], asset).toContain('max-age=0');
+    expect(response.headers()['cache-control'], asset).toContain('must-revalidate');
+    expect(response.headers()['cache-control'], asset).not.toContain('private');
+    expect(response.headers().vary ?? '', asset).not.toMatch(/(?:^|,\s*)cookie(?:,|$)/iu);
+    expect((await response.body()).byteLength, asset).toBeGreaterThan(0);
+  }
+
+  for (const runtime of executivePreviewRuntimeProbes) {
     const response = await request.get(runtime, {maxRedirects: 0});
     expect(response.status(), runtime).toBe(404);
     expect(response.headers()['x-robots-tag'], runtime).toContain('noindex');
@@ -598,22 +687,66 @@ test('private demo routes and extracted assets fail closed', async ({request}) =
     expect(response.headers()['content-type'] ?? '', runtime).not.toContain('javascript');
   }
 
+  // Direct lifecycle routes are the only supported demo-image delivery path;
+  // the Next and Vercel image proxies remain disabled for public and private demos.
   for (const optimizerPath of [
     '/_next/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
     '/_vercel/image?url=%2Fflash-assets%2Fcylinder-base.png&w=640&q=75',
-    '/_next/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
-    '/_vercel/image?url=%2Fapi%2Fexecutive-preview%2Fassets%2Fconversion-1-4%2Fcylinder-base.png&w=640&q=75',
-  ] as const) {
+    ...lifecycleOptimizerProbes,
+  ]) {
     const response = await request.get(optimizerPath, {maxRedirects: 0});
     expect(response.status(), optimizerPath).not.toBe(200);
     expect(response.headers()['content-type'] ?? '', optimizerPath).not.toContain('image/');
   }
 });
 
+test('lifecycle-public demos load an interactive runtime and advance deterministically', async ({
+  page,
+}) => {
+  test.skip(demoIds.length === 0, 'No lifecycle-public demo is currently active.');
+  const issues = monitorRuntimeIssues(page);
+  const failedAssetResponses: string[] = [];
+  page.on('response', (response) => {
+    const responseUrl = new URL(response.url());
+    if (
+      responseUrl.pathname.startsWith('/api/executive-preview/assets/') &&
+      response.status() >= 400
+    ) {
+      failedAssetResponses.push(`${response.status()} ${responseUrl.pathname}`);
+    }
+  });
+
+  for (const id of demoIds) {
+    for (const locale of ['en', 'es'] as const) {
+      const path = `${locale === 'es' ? '/es' : ''}/demos/${id}`;
+      const detail = siteContent[locale].pages.demoDetails[id];
+      await expectDocument(page, path, locale);
+      await expect(page.locator('.demo-unavailable')).toHaveCount(0);
+      await expect(page.locator('.demo-player')).toBeVisible();
+
+      const slider = page.getByRole('slider', {name: detail.frameLabel});
+      await expect(slider).toBeVisible();
+      const terminalFrame = String(demoCandidates[id].movie.frameCount);
+      await expect(slider).toHaveAttribute('max', terminalFrame);
+      await slider.fill(terminalFrame);
+      await expect(slider).toHaveValue(terminalFrame);
+      await page.getByRole('button', {name: detail.restartLabel}).click();
+      await expect(slider).toHaveValue('1');
+    }
+  }
+
+  expect(failedAssetResponses).toEqual([]);
+  expectNoRuntimeIssues(issues);
+});
+
 test('executive preview grants a short-lived private session for both JavaScript demos', async ({
   page,
 }) => {
   test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
+  test.skip(
+    !hasCanonicalExecutiveReviewSet,
+    'The detailed two-demo review flow applies only while both prototypes remain private-review.',
+  );
   await page.clock.install();
   const clockPauseStepMs = 5 * 60 * 1000;
   let nextClockPauseAt = Date.now() + clockPauseStepMs;
@@ -694,7 +827,7 @@ test('executive preview grants a short-lived private session for both JavaScript
   await page.clock.resume();
 
   const authenticatedRequest = page.context().request;
-  for (const asset of executivePreviewAssets) {
+  for (const asset of reviewExecutivePreviewAssets) {
     const response = await authenticatedRequest.get(asset);
     expect(response.status(), asset).toBe(200);
     expect(response.headers()['content-type'], asset).toContain('image/png');
@@ -800,15 +933,16 @@ test('executive preview grants a short-lived private session for both JavaScript
     maxRedirects: 0,
   });
   expect(deniedAfterLogout.status()).toBe(404);
-  expect((await authenticatedRequest.get(executivePreviewRuntimes[0])).status()).toBe(404);
-  expect((await authenticatedRequest.get(executivePreviewAssets[0])).status()).toBe(404);
+  expect((await authenticatedRequest.get(executivePreviewRuntimes[0]!)).status()).toBe(404);
+  expect((await authenticatedRequest.get(reviewExecutivePreviewAssets[0]!)).status()).toBe(404);
   expectNoRuntimeIssues(issues);
 });
 
 test('executive preview reports an invalid passphrase at the input', async ({page}) => {
   test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
+  test.skip(!firstReviewDemoId, 'No lifecycle-private demo currently accepts reviewer return paths.');
 
-  await page.goto('/executive-preview?returnTo=/demos/conversion-1-2', {
+  await page.goto(`/executive-preview?returnTo=/demos/${firstReviewDemoId}`, {
     waitUntil: 'networkidle',
   });
   const passphrase = page.getByLabel('Executive preview passphrase');
@@ -940,10 +1074,13 @@ test('audited legacy pages and document directories redirect permanently', async
   expect(queryResponse.headers().location).toBe('/contact?source=cutover&campaign=legacy');
 
   for (const [englishPrefix, canonical] of [
-    ['/en', '/'],
-    ['/en/about?source=explicit-prefix', '/about?source=explicit-prefix'],
-    ['/en/demos/conversion-1-2', '/demos/conversion-1-2'],
-  ] as const) {
+    ['/en', '/'] as const,
+    ['/en/about?source=explicit-prefix', '/about?source=explicit-prefix'] as const,
+    ...DEMO_CANDIDATE_IDS.slice(0, 1).map((id) => [
+      `/en/demos/${id}`,
+      `/demos/${id}`,
+    ] as const),
+  ]) {
     const response = await request.get(englishPrefix, {maxRedirects: 0});
     expect(response.status(), englishPrefix).toBe(308);
     expect(response.headers().location, englishPrefix).toBe(canonical);
@@ -965,7 +1102,7 @@ test('every sitemap page has one heading, canonical metadata, and the expected l
   const sitemap = await request.get('/sitemap.xml');
   const sitemapText = await sitemap.text();
   const urls = [...sitemapText.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
-  expect(urls).toHaveLength(20);
+  expect(urls).toHaveLength(sitemapPagePaths.length);
   expect(urls.map((url) => new URL(url).pathname).sort()).toEqual(
     [...sitemapPagePaths].sort(),
   );
@@ -1043,9 +1180,19 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   expect(robotsText).toContain('User-Agent: *');
   expect(robotsText).toContain('Disallow: /api/');
   expect(robotsText).toContain('Disallow: /executive-preview');
-  expect(robotsText).toContain('Disallow: /demos/conversion-1-2');
   expect(robotsText).toContain('Disallow: /flash-assets/');
   expect(robotsText).toContain('Sitemap: https://www.helpmath.ai/sitemap.xml');
+  for (const id of DEMO_CANDIDATE_IDS) {
+    const isPublic = publicDemoIdSet.has(id);
+    const indexable = indexableDemoIdSet.has(id);
+    for (const path of [`/demos/${id}`, `/es/demos/${id}`]) {
+      if (isPublic) expect(robotsText).not.toContain(`Disallow: ${path}`);
+      else expect(robotsText).toContain(`Disallow: ${path}`);
+    }
+    const assetAllow = `Allow: /api/executive-preview/assets/${id}/`;
+    if (indexable) expect(robotsText).toContain(assetAllow);
+    else expect(robotsText).not.toContain(assetAllow);
+  }
 
   const sitemap = await request.get('/sitemap.xml');
   expect(sitemap.status()).toBe(200);
@@ -1054,9 +1201,14 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   expect(sitemapText).toContain('<loc>https://www.helpmath.ai/</loc>');
   expect(sitemapText).toContain('<loc>https://www.helpmath.ai/es</loc>');
   expect(sitemapText).toContain('hreflang="x-default"');
-  expect(sitemapText).not.toContain('https://www.helpmath.ai/demos/conversion-1-2');
-  expect(sitemapText).not.toContain('https://www.helpmath.ai/es/demos/conversion-1-4');
   expect(sitemapText).not.toContain('executive-preview');
+  for (const id of DEMO_CANDIDATE_IDS) {
+    for (const path of [`/demos/${id}`, `/es/demos/${id}`]) {
+      const absolute = `https://www.helpmath.ai${path}`;
+      if (indexableDemoIdSet.has(id)) expect(sitemapText).toContain(absolute);
+      else expect(sitemapText).not.toContain(absolute);
+    }
+  }
   for (const legalPath of ['/privacy', '/terms', '/es/privacy', '/es/terms']) {
     if (legalPublicationApproved) {
       expect(sitemapText).toContain(`https://www.helpmath.ai${legalPath}`);

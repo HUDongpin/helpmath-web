@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
+import {mkdir, mkdtemp, rm, symlink, writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
 import {describe, it} from 'node:test';
 
 import launchGateManifest from '../config/launch-gates.json';
@@ -15,6 +19,7 @@ import {
   parseCanonicalLaunchGateManifest,
   validateHoldingOnlyLaunchGateManifest,
 } from '../lib/launch-gate-transition-lock.js';
+import {validateEvidenceDirectoryContract} from '../scripts/evidence-directory-contract';
 
 const NOW_MS = Date.parse('2026-07-21T22:00:00.000Z');
 
@@ -416,7 +421,7 @@ describe('launch gate manifest', () => {
     assert.match(errors, /contactIntake.status must be holding or approved/);
   });
 
-  it('retains blocker contracts but excludes all preparatory evidence from Vercel', () => {
+  it('retains blocker contracts and only direct launch-gate or demo-publication JSON evidence', () => {
     const vercelIgnore = readFileSync('.vercelignore', 'utf8');
     const retainedPaths = new Set(vercelIgnore.split(/\r?\n/));
     const blockers = Object.values(launchGateManifest.gates).flatMap(
@@ -427,9 +432,95 @@ describe('launch gate manifest', () => {
     for (const reference of blockers) {
       assert.equal(retainedPaths.has(`!${reference}`), true, reference);
     }
-    assert.equal(retainedPaths.has('!docs/evidence/'), false);
-    assert.equal(retainedPaths.has('!docs/evidence/launch-gates/'), false);
-    assert.equal(retainedPaths.has('!docs/evidence/launch-gates/*.json'), false);
+    assert.equal(retainedPaths.has('!docs/evidence/'), true);
+    assert.equal(retainedPaths.has('docs/evidence/*'), true);
+    assert.equal(retainedPaths.has('!docs/evidence/launch-gates/'), true);
+    assert.equal(retainedPaths.has('!docs/evidence/launch-gates/*.json'), true);
+    assert.equal(retainedPaths.has('docs/evidence/launch-gates/.*'), true);
+    assert.equal(retainedPaths.has('docs/evidence/launch-gates/*/'), true);
+    assert.equal(retainedPaths.has('!docs/evidence/demo-publication/'), true);
+    assert.equal(retainedPaths.has('!docs/evidence/demo-publication/*.json'), true);
+    assert.equal(retainedPaths.has('docs/evidence/demo-publication/.*'), true);
+    assert.equal(retainedPaths.has('docs/evidence/demo-publication/*/'), true);
+  });
+
+  it('requires the complete launch-gate evidence directory to match references and hashes', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'helpmath-launch-evidence-'));
+    const relativeDirectory = 'docs/evidence/launch-gates';
+    const directory = path.join(root, relativeDirectory);
+    const evidencePath = path.join(directory, 'legal-review.json');
+    const evidenceBytes = Buffer.from('{"status":"pass"}\n');
+    const sha256 = createHash('sha256').update(evidenceBytes).digest('hex');
+    const references = [{
+      reference: `${relativeDirectory}/legal-review.json`,
+      sha256,
+    }];
+
+    try {
+      assert.deepEqual(await validateEvidenceDirectoryContract({
+        repositoryRoot: root,
+        relativeDirectory,
+        references: [],
+      }), []);
+      assert.match(
+        (await validateEvidenceDirectoryContract({
+          repositoryRoot: root,
+          relativeDirectory,
+          references,
+        })).join('\n'),
+        /is missing but evidence references require/u,
+      );
+
+      await mkdir(directory, {recursive: true});
+      await writeFile(evidencePath, evidenceBytes);
+      assert.deepEqual(await validateEvidenceDirectoryContract({
+        repositoryRoot: root,
+        relativeDirectory,
+        references,
+      }), []);
+
+      await writeFile(evidencePath, '{"status":"changed"}\n');
+      assert.match(
+        (await validateEvidenceDirectoryContract({
+          repositoryRoot: root,
+          relativeDirectory,
+          references,
+        })).join('\n'),
+        /SHA-256 does not match its evidence reference/u,
+      );
+      await writeFile(evidencePath, evidenceBytes);
+
+      await writeFile(path.join(directory, '.hidden.json'), evidenceBytes);
+      await writeFile(path.join(directory, 'notes.txt'), evidenceBytes);
+      await mkdir(path.join(directory, 'nested'));
+      await writeFile(path.join(directory, 'nested/receipt.json'), evidenceBytes);
+      const unexpectedEntryErrors = (await validateEvidenceDirectoryContract({
+        repositoryRoot: root,
+        relativeDirectory,
+        references,
+      })).join('\n');
+      assert.match(unexpectedEntryErrors, /complete entry set must exactly equal/u);
+      assert.match(unexpectedEntryErrors, /\.hidden\.json has no evidence reference/u);
+      assert.match(unexpectedEntryErrors, /notes\.txt has no evidence reference/u);
+      assert.match(unexpectedEntryErrors, /nested must be a regular non-symlink file/u);
+
+      await rm(path.join(directory, '.hidden.json'));
+      await rm(path.join(directory, 'notes.txt'));
+      await rm(path.join(directory, 'nested'), {recursive: true});
+      await rm(evidencePath);
+      await writeFile(path.join(root, 'symlink-target.json'), evidenceBytes);
+      await symlink('../../../symlink-target.json', evidencePath);
+      assert.match(
+        (await validateEvidenceDirectoryContract({
+          repositoryRoot: root,
+          relativeDirectory,
+          references,
+        })).join('\n'),
+        /legal-review\.json must be a regular non-symlink file/u,
+      );
+    } finally {
+      await rm(root, {recursive: true, force: true});
+    }
   });
 });
 
