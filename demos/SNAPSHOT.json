@@ -171,7 +171,7 @@
     "components/executive-demo-runtime-loader.tsx": "33dddff54ed7a7df73643f9a82675c894914f550a15ded9787c3446060d2dd56",
     "components/executive-preview-page.tsx": "e6fd17dcde40aec580a106feabdd09ae0315351f9ec1cce6f33927714cfeeacc",
     "components/home-page.tsx": "6048a1e2dd81b5fd298f0f9d84733c7e01d02e67ecfa2e67c5a698fd3241a8a9",
-    "e2e/site.spec.ts": "71dc519655cb105e84f7641900f99f32dd153d6364c642fab3da173a734c0efc",
+    "e2e/site.spec.ts": "f3e7d50efd7d22a2a638738f27a9382c3b51e1c7da1ca4ab66d92367fcc4a8b1",
     "eslint.config.mjs": "66a3a43881ea21aa45ae4ba2ed9ff053a6f4a5239665f39e9fbde70e50fa43bc",
     "lib/executive-preview-access.ts": "41d3c6177590b5e9367ec257ca9a0e6af35a0dda5d0ccab294ab783e729680cf",
     "lib/executive-preview-rate-limit.ts": "c35ebfff6404551cca63746c66239bb14c43bd677883eecf3297c7b54e012043",

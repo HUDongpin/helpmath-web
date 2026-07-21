@@ -601,6 +601,8 @@ test('executive preview grants a short-lived private session for both JavaScript
 }) => {
   test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
   await page.clock.install();
+  const clockPauseStepMs = 5 * 60 * 1000;
+  let nextClockPauseAt = Date.now() + clockPauseStepMs;
   const issues = monitorRuntimeIssues(page);
   await page.emulateMedia({reducedMotion: 'no-preference'});
 
@@ -664,7 +666,7 @@ test('executive preview grants a short-lived private session for both JavaScript
   const restartButton = page.getByRole('button', {name: 'Restart from the beginning'});
   await restartButton.focus();
   const scrollBeforeRestart = await page.evaluate(() => window.scrollY);
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1);
+  await page.clock.pauseAt(nextClockPauseAt);
   await page.keyboard.press('Space');
   await expect(firstSlider).toHaveValue('1');
   await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
@@ -718,7 +720,8 @@ test('executive preview grants a short-lived private session for both JavaScript
   await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '67');
   await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 67 of 67');
   await expect(page.locator('.flash-replay')).toHaveAttribute('opacity', '1');
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1);
+  nextClockPauseAt += clockPauseStepMs;
+  await page.clock.pauseAt(nextClockPauseAt);
   await page.getByRole('button', {name: 'Restart from the beginning'}).click();
   await expect(secondSlider).toHaveValue('1');
   await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
