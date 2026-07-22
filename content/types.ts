@@ -258,6 +258,7 @@ export interface ResourcesContent {
     resultTemplate: string;
     resultsTemplate: string;
     empty: string;
+    noScriptTemplate: string;
   };
   items: ResourceEntry[];
   accessibleCopies: CalloutContent;

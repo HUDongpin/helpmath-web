@@ -713,6 +713,8 @@ export const esContent = {
         resultTemplate: "Se muestra {count} recurso",
         resultsTemplate: "Se muestran {count} recursos",
         empty: "Ningún recurso coincide con la búsqueda y la categoría seleccionadas.",
+        noScriptTemplate:
+          "La búsqueda y los filtros por categoría no están disponibles sin JavaScript. A continuación se muestran los {count} recursos.",
       },
       items: [
         {
