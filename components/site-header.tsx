@@ -1,12 +1,40 @@
 'use client';
 
 import {Menu, Sparkles, X} from 'lucide-react';
-import {useEffect, useRef, useState, type SyntheticEvent} from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FocusEvent,
+  type KeyboardEvent,
+} from 'react';
 
 import type {Locale, SharedContent} from '@/content/types';
 import {Link, stripLocalePrefix, usePathname} from '@/i18n/navigation';
 
 import {LanguageSwitcher} from './language-switcher';
+
+const keyboardFocusableSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+function subscribeToClientReady(): () => void {
+  return () => undefined;
+}
+
+function getClientReady(): boolean {
+  return true;
+}
+
+function getServerNotReady(): boolean {
+  return false;
+}
 
 export function Brand({homeLabel}: {homeLabel: string}) {
   return (
@@ -49,17 +77,39 @@ export function SiteHeader({
 }) {
   const {navigation} = content;
   const pathname = usePathname();
+  const isMobileMenuReady = useSyncExternalStore(
+    subscribeToClientReady,
+    getClientReady,
+    getServerNotReady,
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileMenuMaxHeight, setMobileMenuMaxHeight] = useState<number | null>(null);
-  const mobileNavRef = useRef<HTMLDetailsElement>(null);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+  const mobileNavSummaryRef = useRef<HTMLButtonElement>(null);
   const menuLabel = isMobileMenuOpen ? navigation.closeMenuLabel : navigation.openMenuLabel;
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
 
-    const details = mobileNavRef.current;
-    const panel = details?.querySelector<HTMLElement>('#mobile-navigation-panel');
-    if (!details || !panel) return;
+    function handleDocumentEscape(event: globalThis.KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+
+      event.preventDefault();
+      setIsMobileMenuOpen(false);
+      setMobileMenuMaxHeight(null);
+      mobileNavSummaryRef.current?.focus();
+    }
+
+    document.addEventListener('keydown', handleDocumentEscape, {capture: true});
+    return () => document.removeEventListener('keydown', handleDocumentEscape, {capture: true});
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const container = mobileNavRef.current;
+    const panel = container?.querySelector<HTMLElement>('#mobile-navigation-panel');
+    if (!container || !panel) return;
 
     function updateAvailableHeight() {
       const viewport = window.visualViewport;
@@ -72,7 +122,7 @@ export function SiteHeader({
     updateAvailableHeight();
     const animationFrame = window.requestAnimationFrame(updateAvailableHeight);
     const resizeObserver = new ResizeObserver(updateAvailableHeight);
-    resizeObserver.observe(details.closest('.site-header') ?? details);
+    resizeObserver.observe(container.closest('.site-header') ?? container);
     window.addEventListener('resize', updateAvailableHeight);
     window.addEventListener('scroll', updateAvailableHeight, {passive: true});
     window.visualViewport?.addEventListener('resize', updateAvailableHeight);
@@ -88,15 +138,89 @@ export function SiteHeader({
     };
   }, [isMobileMenuOpen]);
 
-  function handleMobileMenuToggle(event: SyntheticEvent<HTMLDetailsElement>) {
-    const isOpen = event.currentTarget.open;
-    setIsMobileMenuOpen(isOpen);
-    if (!isOpen) setMobileMenuMaxHeight(null);
-  }
-
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
     setMobileMenuMaxHeight(null);
+  }
+
+  function closeMobileMenuAfterActivation() {
+    window.requestAnimationFrame(closeMobileMenu);
+  }
+
+  function closeMobileMenuAndMoveFocus(
+    container: HTMLDivElement,
+    direction: 'backward' | 'forward',
+  ) {
+    const position = direction === 'forward'
+      ? Node.DOCUMENT_POSITION_FOLLOWING
+      : Node.DOCUMENT_POSITION_PRECEDING;
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>(keyboardFocusableSelector),
+    ).filter((element) => {
+      if (container.contains(element) || element.matches(':disabled')) return false;
+
+      const style = window.getComputedStyle(element);
+      return element.getClientRects().length > 0 &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden';
+    });
+    const orderedCandidates = direction === 'forward' ? candidates : candidates.reverse();
+    const nextTarget = orderedCandidates.find((element) =>
+      Boolean(container.compareDocumentPosition(element) & position)) ??
+      document.querySelector<HTMLElement>('.brand');
+
+    closeMobileMenu();
+    nextTarget?.focus();
+  }
+
+  function handleMobileMenuKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (
+      !isMobileMenuOpen &&
+      event.key === 'Tab' &&
+      event.target === mobileNavSummaryRef.current
+    ) {
+      event.preventDefault();
+      closeMobileMenuAndMoveFocus(
+        event.currentTarget,
+        event.shiftKey ? 'backward' : 'forward',
+      );
+      return;
+    }
+
+    if (!isMobileMenuOpen) return;
+
+    if (event.key === 'Tab') {
+      const panel = event.currentTarget.querySelector<HTMLElement>('#mobile-navigation-panel');
+      const panelControls = Array.from(
+        panel?.querySelectorAll<HTMLElement>(keyboardFocusableSelector) ?? [],
+      );
+      const boundaryControl = event.shiftKey
+        ? mobileNavSummaryRef.current
+        : panelControls.at(-1) ?? mobileNavSummaryRef.current;
+
+      if (event.target === boundaryControl) {
+        event.preventDefault();
+        closeMobileMenuAndMoveFocus(
+          event.currentTarget,
+          event.shiftKey ? 'backward' : 'forward',
+        );
+      }
+      return;
+    }
+  }
+
+  function handleMobileMenuBlur(event: FocusEvent<HTMLDivElement>) {
+    if (!isMobileMenuOpen) return;
+
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+    const container = event.currentTarget;
+    window.requestAnimationFrame(() => {
+      const activeElement = document.activeElement;
+      if (!(activeElement instanceof Node && container.contains(activeElement))) {
+        closeMobileMenu();
+      }
+    });
   }
 
   return (
@@ -144,16 +268,24 @@ export function SiteHeader({
               {navigation.supportAction.label}
             </Link>
           </div>
-          <details
+          <div
             className="mobile-nav"
-            onToggle={handleMobileMenuToggle}
-            open={isMobileMenuOpen}
+            onBlur={handleMobileMenuBlur}
+            onKeyDownCapture={handleMobileMenuKeyDown}
             ref={mobileNavRef}
           >
-            <summary
+            <button
               aria-controls="mobile-navigation-panel"
               aria-expanded={isMobileMenuOpen}
               aria-label={menuLabel}
+              className="mobile-nav__trigger"
+              disabled={!isMobileMenuReady}
+              onClick={() => {
+                if (isMobileMenuOpen) closeMobileMenu();
+                else setIsMobileMenuOpen(true);
+              }}
+              ref={mobileNavSummaryRef}
+              type="button"
             >
               {isMobileMenuOpen ? (
                 <X aria-hidden="true" size={24} />
@@ -161,43 +293,45 @@ export function SiteHeader({
                 <Menu aria-hidden="true" size={24} />
               )}
               <span>{menuLabel}</span>
-            </summary>
-            <nav
-              aria-label={navigation.ariaLabel}
-              className="mobile-nav__panel"
-              id="mobile-navigation-panel"
-              style={mobileMenuMaxHeight === null
-                ? undefined
-                : {maxHeight: `${mobileMenuMaxHeight}px`}}
-            >
-              {navigation.links.map((link) => (
-                <Link
-                  aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
-                  href={link.href}
-                  key={link.href}
-                  onClick={closeMobileMenu}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Link
-                aria-current={
-                  isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
-                }
-                href={navigation.supportAction.href}
-                onClick={closeMobileMenu}
+            </button>
+            {isMobileMenuOpen ? (
+              <nav
+                aria-label={navigation.ariaLabel}
+                className="mobile-nav__panel"
+                id="mobile-navigation-panel"
+                style={mobileMenuMaxHeight === null
+                  ? undefined
+                  : {maxHeight: `${mobileMenuMaxHeight}px`}}
               >
-                {navigation.supportAction.label}
-              </Link>
-              <LanguageSwitcher
-                label={navigation.languageLabel}
-                locale={locale}
-                names={navigation.languageNames}
-                onNavigate={closeMobileMenu}
-                pathnameOverride={languageSwitcherPath}
-              />
-            </nav>
-          </details>
+                {navigation.links.map((link) => (
+                  <Link
+                    aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
+                    href={link.href}
+                    key={link.href}
+                    onClick={closeMobileMenuAfterActivation}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <Link
+                  aria-current={
+                    isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
+                  }
+                  href={navigation.supportAction.href}
+                  onClick={closeMobileMenuAfterActivation}
+                >
+                  {navigation.supportAction.label}
+                </Link>
+                <LanguageSwitcher
+                  label={navigation.languageLabel}
+                  locale={locale}
+                  names={navigation.languageNames}
+                  onNavigate={closeMobileMenuAfterActivation}
+                  pathnameOverride={languageSwitcherPath}
+                />
+              </nav>
+            ) : null}
+          </div>
         </div>
       </header>
     </>

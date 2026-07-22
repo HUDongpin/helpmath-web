@@ -355,6 +355,94 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
 });
 
+test('keyboard focus remains visible across the branded surface palette @cross-browser-smoke', async ({page}) => {
+  await expectDocument(page, '/research', 'en');
+  const target = page.getByRole('link', {name: 'Check source-request status'});
+
+  async function focusWithKeyboardModality(locator: typeof target) {
+    await page.keyboard.press('Tab');
+    await locator.focus();
+  }
+
+  await focusWithKeyboardModality(target);
+  await expect(target).toBeFocused();
+  expect(await target.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+
+  const focusIndicator = await target.evaluate((element) => {
+    function resolveColor(value: string): [number, number, number] {
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      document.body.append(probe);
+      const channels = getComputedStyle(probe).color.match(/[\d.]+/gu)?.slice(0, 3).map(Number);
+      probe.remove();
+      if (!channels || channels.length !== 3) throw new Error(`Could not resolve color: ${value}`);
+      return channels as [number, number, number];
+    }
+
+    function luminance([red, green, blue]: [number, number, number]) {
+      const channels = [red, green, blue].map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.03928
+          ? normalized / 12.92
+          : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    }
+
+    function contrast(first: [number, number, number], second: [number, number, number]) {
+      const lighter = Math.max(luminance(first), luminance(second));
+      const darker = Math.min(luminance(first), luminance(second));
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const elementStyle = getComputedStyle(element);
+    const ringColors = [resolveColor(elementStyle.outlineColor)];
+    const shadowColor = elementStyle.boxShadow.match(/rgba?\([^)]+\)/u)?.[0];
+    if (shadowColor) ringColors.push(resolveColor(shadowColor));
+    const surfaces = [
+      '--paper',
+      '--white',
+      '--blue-pale',
+      '--yellow-pale',
+      '--mint-pale',
+      '--ink',
+    ];
+
+    return {
+      boxShadow: elementStyle.boxShadow,
+      outlineStyle: elementStyle.outlineStyle,
+      outlineWidth: Number.parseFloat(elementStyle.outlineWidth),
+      ratios: surfaces.map((token) => ({
+        token,
+        ratio: Math.max(
+          ...ringColors.map((ring) =>
+            contrast(ring, resolveColor(rootStyle.getPropertyValue(token))),
+          ),
+        ),
+      })),
+    };
+  });
+
+  expect(focusIndicator.boxShadow).not.toBe('none');
+  expect(focusIndicator.outlineStyle).toBe('solid');
+  expect(focusIndicator.outlineWidth).toBeGreaterThanOrEqual(3);
+  for (const {ratio, token} of focusIndicator.ratios) {
+    expect(ratio, `${token} focus contrast`).toBeGreaterThanOrEqual(3);
+  }
+
+  const footerLink = page.locator('.site-footer a').first();
+  await focusWithKeyboardModality(footerLink);
+  await expect(footerLink).toBeFocused();
+  expect(await footerLink.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+  const footerFocus = await footerLink.evaluate((element) => ({
+    boxShadow: getComputedStyle(element).boxShadow,
+    outlineStyle: getComputedStyle(element).outlineStyle,
+  }));
+  expect(footerFocus.boxShadow).not.toBe('none');
+  expect(footerFocus.outlineStyle).toBe('solid');
+});
+
 test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', {
   tag: '@production-public-smoke',
 }, async ({page}) => {
@@ -710,12 +798,12 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await expectDocument(page, '/', 'en');
 
   await expect(page.locator('.desktop-nav')).toBeHidden();
-  const menu = page.locator('details.mobile-nav');
-  const trigger = menu.locator(':scope > summary');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
   await expect(trigger).toBeVisible();
+  await expect(trigger).toBeEnabled();
   await expect(trigger).toContainText('Open navigation');
   await trigger.click();
-  await expect(menu).toHaveAttribute('open', '');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(trigger).toContainText('Close navigation');
   await expect(page.locator('.status-strip')).toBeHidden();
@@ -726,6 +814,55 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await approach.click();
   await expect(page).toHaveURL(/\/approach$/);
   await expect(page.getByRole('heading', {level: 1})).toContainText('Make the mathematics');
+  expectNoRuntimeIssues(issues);
+});
+
+test('mobile navigation closes without obscuring keyboard focus', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  await page.setViewportSize({width: 320, height: 568});
+  await expectDocument(page, '/', 'en');
+
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await expect(trigger).toBeEnabled();
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+  await page.keyboard.press('Escape');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('.status-strip')).toBeVisible();
+
+  await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const finalMenuLink = menu.getByRole('link', {name: 'Language: Español'});
+  const forwardFocusTarget = page.getByRole('link', {name: 'Review the research'});
+  await finalMenuLink.focus();
+  await page.keyboard.press('Tab');
+
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.status-strip')).toBeVisible();
+  await expect(forwardFocusTarget).toBeFocused();
+  await expect(forwardFocusTarget).toBeVisible();
+
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await finalMenuLink.focus();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Tab');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(forwardFocusTarget).toBeFocused();
+
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('Shift+Tab');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.site-header .brand')).toBeFocused();
   expectNoRuntimeIssues(issues);
 });
 
@@ -744,10 +881,10 @@ test('native mobile WebKit handles touch navigation and language switching witho
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(1);
 
-  const menu = page.locator('details.mobile-nav');
-  const trigger = menu.locator(':scope > summary');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await expect(trigger).toBeEnabled();
   await trigger.tap();
-  await expect(menu).toHaveAttribute('open', '');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
   const spanish = menu.getByRole('link', {name: 'Language: Español'});
@@ -774,12 +911,13 @@ test('mobile navigation remains reachable in short reflow viewports', {
     await expectDocument(page, `/?reflow=${viewport.width}x${viewport.height}`, 'en');
     await page.evaluate(() => window.scrollTo(0, Math.min(1200, document.body.scrollHeight)));
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-    const menu = page.locator('details.mobile-nav');
-    const trigger = menu.locator(':scope > summary');
+    const menu = page.locator('.mobile-nav');
+    const trigger = menu.locator(':scope > .mobile-nav__trigger');
     await expect(trigger).toBeVisible();
+    await expect(trigger).toBeEnabled();
     await trigger.focus();
     await page.keyboard.press('Enter');
-    await expect(menu).toHaveAttribute('open', '');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('.status-strip')).toBeHidden();
 
     const navigation = menu.getByRole('navigation', {name: 'Main navigation'});
@@ -1290,9 +1428,8 @@ test('unknown routes return a non-indexable branded 404 response', async ({page}
     await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
     await expect(page.getByRole('link', {name: 'Return home'})).toHaveAttribute('href', '/');
     const languageLinks = page.locator('a.language-switcher');
-    await expect(languageLinks).toHaveCount(2);
-    await expect(languageLinks.nth(0)).toHaveAttribute('href', '/es');
-    await expect(languageLinks.nth(1)).toHaveAttribute('href', '/es');
+    await expect(languageLinks).toHaveCount(1);
+    await expect(languageLinks).toHaveAttribute('href', '/es');
     await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
     await expect(page).toHaveTitle('Page not found · HELP Math');
   }
@@ -1307,9 +1444,8 @@ test('Spanish unknown routes keep localized navigation and a non-indexable 404',
   await expect(page.getByRole('heading', {level: 1, name: 'Página no encontrada'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'Volver al inicio'})).toHaveAttribute('href', '/es');
   const languageLinks = page.locator('a.language-switcher');
-  await expect(languageLinks).toHaveCount(2);
-  await expect(languageLinks.nth(0)).toHaveAttribute('href', '/');
-  await expect(languageLinks.nth(1)).toHaveAttribute('href', '/');
+  await expect(languageLinks).toHaveCount(1);
+  await expect(languageLinks).toHaveAttribute('href', '/');
   await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
   await expect(page).toHaveTitle('Página no encontrada · HELP Math');
 });
