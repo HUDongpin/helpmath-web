@@ -3,6 +3,7 @@ import type {Metadata} from 'next';
 import {ContactFormLoader} from '@/components/contact-form-loader';
 import {ContactPage} from '@/components/contact-page';
 import {ContactUnavailable} from '@/components/contact-unavailable';
+import {MainContent} from '@/components/main-content';
 import {getSiteContent} from '@/content';
 import {areContactManifestGatesApproved} from '@/lib/launch-gates';
 import {isLegalCopyReady} from '@/lib/legal-copy-readiness';
@@ -35,8 +36,8 @@ export default async function ContactRoute({params}: {params: Promise<{locale: '
   );
 
   return (
-    <main id="main-content">
+    <MainContent>
       <ContactPage content={content} form={form} />
-    </main>
+    </MainContent>
   );
 }

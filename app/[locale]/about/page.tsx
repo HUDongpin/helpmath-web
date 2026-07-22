@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 
 import {AboutPage} from '@/components/content-pages';
+import {MainContent} from '@/components/main-content';
 import {getSiteContent} from '@/content';
 import {createPageMetadata} from '@/lib/metadata';
 import {getSiteUrl, localizedPath} from '@/lib/site';
@@ -56,9 +57,9 @@ export default async function AboutRoute({
   }).replaceAll('<', '\\u003c');
   return (
     <>
-      <main id="main-content">
+      <MainContent>
         <AboutPage content={content} />
-      </main>
+      </MainContent>
       <script
         dangerouslySetInnerHTML={{__html: structuredData}}
         data-structured-data="about-page"

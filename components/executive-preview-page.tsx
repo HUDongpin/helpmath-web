@@ -5,6 +5,7 @@ import type {Locale} from '@/content/types';
 import {reviewDemoIds} from '@/demos/catalog';
 import {Link} from '@/i18n/navigation';
 
+import {MainContent} from './main-content';
 import {Container, Eyebrow, Section} from './ui';
 
 type ExecutivePreviewState = 'authenticated' | 'login' | 'unavailable';
@@ -86,7 +87,7 @@ export function ExecutivePreviewPage({
   const text = copy[locale];
 
   return (
-    <main id="main-content">
+    <MainContent>
       <header className="border-b-2 border-[var(--ink)] bg-[var(--blue-pale)] py-14 md:py-20">
         <Container className="max-w-5xl">
           <Eyebrow>{text.eyebrow}</Eyebrow>
@@ -140,7 +141,7 @@ export function ExecutivePreviewPage({
       ) : (
         <UnavailablePanel text={text} />
       )}
-    </main>
+    </MainContent>
   );
 }
 

@@ -2,6 +2,7 @@ import NextLink from 'next/link';
 
 import type {Locale} from '@/content/types';
 
+import {MainContent} from './main-content';
 import {Container} from './ui';
 
 export function NotFoundPage({locale}: {locale: Locale}) {
@@ -20,7 +21,7 @@ export function NotFoundPage({locale}: {locale: Locale}) {
       };
 
   return (
-    <main className="page-hero page-hero--yellow" id="main-content">
+    <MainContent className="page-hero page-hero--yellow">
       <Container>
         <div className="page-hero__copy">
           <p className="eyebrow">404</p>
@@ -33,6 +34,6 @@ export function NotFoundPage({locale}: {locale: Locale}) {
           </div>
         </div>
       </Container>
-    </main>
+    </MainContent>
   );
 }

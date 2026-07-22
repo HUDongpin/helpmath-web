@@ -21,7 +21,11 @@ describe('error recovery experience', () => {
         createElement(ErrorRecovery, {locale, onRetry() {}}),
       );
 
-      assert.match(html, /<main\b[^>]*id="main-content"/u, locale);
+      assert.match(
+        html,
+        /<main\b[^>]*id="main-content"[^>]*tabindex="-1"/u,
+        locale,
+      );
       assert.match(html, /<h1\b[^>]*id="error-recovery-title"[^>]*tabindex="-1"/u, locale);
       assert.match(html, new RegExp(copy.title, 'u'), locale);
       assert.match(html, new RegExp(copy.retry, 'u'), locale);

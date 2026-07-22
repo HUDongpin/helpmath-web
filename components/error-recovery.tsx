@@ -5,6 +5,8 @@ import {useEffect, useRef} from 'react';
 
 import type {Locale} from '@/content/types';
 
+import {MainContent} from './main-content';
+
 type ErrorRecoveryCopy = {
   documentTitle: string;
   eyebrow: string;
@@ -68,7 +70,7 @@ export function ErrorRecovery({
   }, []);
 
   return (
-    <main className="error-recovery" id="main-content">
+    <MainContent className="error-recovery">
       <div className="container error-recovery__inner">
         <section
           aria-describedby="error-recovery-description error-recovery-privacy"
@@ -106,6 +108,6 @@ export function ErrorRecovery({
           </div>
         </section>
       </div>
-    </main>
+    </MainContent>
   );
 }

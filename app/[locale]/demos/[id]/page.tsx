@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 
 import {DemoDetailPage} from '@/components/demos-pages';
+import {MainContent} from '@/components/main-content';
 import {demoIds, getSiteContent, isDemoId, isLocale} from '@/content';
 import {isIndexableDemo, isReviewDemoId, reviewDemoIds} from '@/demos/catalog';
 import {hasExecutivePreviewSession} from '@/lib/executive-preview-server';
@@ -52,7 +53,7 @@ export default async function DemoPage({
     : undefined;
 
   return (
-    <main id="main-content">
+    <MainContent>
       <DemoDetailPage
         content={getSiteContent(locale).pages.demoDetails[id]}
         id={id}
@@ -60,6 +61,6 @@ export default async function DemoPage({
         requestedFrame={requestedFrame}
         reviewMode={isReviewDemoId(id)}
       />
-    </main>
+    </MainContent>
   );
 }

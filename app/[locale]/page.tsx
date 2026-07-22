@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 
 import {HomePage} from '@/components/home-page';
+import {MainContent} from '@/components/main-content';
 import {getSiteContent, isLocale} from '@/content';
 import {createPageMetadata} from '@/lib/metadata';
 import {getSiteUrl, SITE_DESCRIPTIONS, SITE_NAME} from '@/lib/site';
@@ -33,9 +34,9 @@ export default async function Home({params}: {params: Promise<{locale: string}>}
     : null;
   return (
     <>
-      <main id="main-content">
+      <MainContent>
         <HomePage content={getSiteContent(locale).pages.home} locale={locale} />
-      </main>
+      </MainContent>
       {websiteData ? (
         <script
           dangerouslySetInnerHTML={{__html: websiteData}}

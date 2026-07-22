@@ -4,6 +4,7 @@ import {createElement, type ComponentType, type ReactNode} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 
 import {ResearchPage, SupportPage} from '../components/content-pages';
+import {MainContent} from '../components/main-content';
 import {Callout, Section} from '../components/ui';
 import {getSiteContent} from '../content';
 import {LocaleProvider} from '../i18n/navigation';
@@ -18,6 +19,17 @@ const TestSection = Section as ComponentType<{
 }>;
 
 describe('section and callout semantics', () => {
+  it('provides one programmatically focusable main-content target', () => {
+    const html = renderToStaticMarkup(
+      createElement(MainContent, {className: 'test-main'}, 'Primary content'),
+    );
+
+    assert.match(html, /<main\b[^>]*class="test-main"/u);
+    assert.match(html, /<main\b[^>]*id="main-content"/u);
+    assert.match(html, /<main\b[^>]*tabindex="-1"/u);
+    assert.match(html, />Primary content<\/main>/u);
+  });
+
   it('gives every callout landmark an accessible name from its visible title', () => {
     const html = renderToStaticMarkup(
       createElement(Callout, {title: 'Evidence status', body: 'Reviewed evidence.'}),
