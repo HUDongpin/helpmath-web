@@ -22,6 +22,8 @@
   --shadow: 0 18px 45px rgb(20 33 61 / 12%);
   --shadow-small: 0 8px 24px rgb(20 33 61 / 9%);
   --radius: 18px;
+  --site-nav-height: 76px;
+  --sticky-content-offset: calc(var(--site-nav-height) + 1rem);
   --font-nunito: "Nunito Sans Variable";
   --font-fredoka: "Fredoka Variable";
   --font-body: var(--font-nunito), "Avenir Next", Avenir, system-ui, sans-serif;
@@ -535,13 +537,14 @@ svg {
   margin-top: 0.05rem;
 }
 
+#main-content,
+.section[id],
 .resource-library,
 .resource-entry,
 .evidence-entry,
 .text-section,
-#program-lineage,
-#help-math-1-catalog {
-  scroll-margin-top: 130px;
+.legal-sections section {
+  scroll-margin-top: var(--sticky-content-offset);
 }
 
 .resource-search {
@@ -901,7 +904,7 @@ svg {
   flex-direction: column;
   padding: 1.3rem;
   position: sticky;
-  top: 130px;
+  top: var(--sticky-content-offset);
 }
 
 .legal-meta span {
@@ -923,7 +926,6 @@ svg {
 .legal-sections section {
   border-bottom: 1px solid var(--line);
   padding-bottom: 3rem;
-  scroll-margin-top: 130px;
 }
 
 .legal-sections ul {
@@ -1622,7 +1624,7 @@ svg {
   border: 2px solid var(--ink);
   padding: clamp(1.3rem, 3vw, 2rem);
   position: sticky;
-  top: 130px;
+  top: var(--sticky-content-offset);
 }
 
 .contact-safety > svg {
@@ -1686,7 +1688,7 @@ svg {
   align-items: center;
   display: flex;
   gap: 1.6rem;
-  min-height: 76px;
+  min-height: var(--site-nav-height);
 }
 
 .brand {
@@ -2345,7 +2347,7 @@ svg {
     display: block;
   }
 
-  .site-header:has(.mobile-nav[open]) .status-strip {
+  .status-strip--menu-open {
     display: none;
   }
 }
@@ -2407,16 +2409,16 @@ svg {
 }
 
 @media (max-width: 720px) {
+  :root {
+    --site-nav-height: 68px;
+  }
+
   body {
     font-size: 16px;
   }
 
   .status-strip__inner {
     padding-block: 0.45rem;
-  }
-
-  .site-header__inner {
-    min-height: 68px;
   }
 
   .section {

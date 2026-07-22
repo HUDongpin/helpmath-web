@@ -539,6 +539,7 @@ test('support FAQ and callout landmarks have localized accessible names', {
 
 test('deep-link targets remain visible below the sticky site header', async ({page}) => {
   for (const [path, selector] of [
+    ['/#strategic-partnership', '#strategic-partnership'],
     ['/approach#support-layers', '#support-layers'],
     ['/about#program-lineage', '#program-lineage'],
     ['/about#preservation', '#preservation'],
@@ -552,6 +553,7 @@ test('deep-link targets remain visible below the sticky site header', async ({pa
     ['/resources#technology-innovations-report', '#technology-innovations-report'],
     ['/resources#ell-curriculum-eric', '#ell-curriculum-eric'],
     ['/resources#about-help-math', '#about-help-math'],
+    ['/contact#main-content', '#main-content'],
   ] as const) {
     await page.goto(path, {waitUntil: 'networkidle'});
     const headerBottom = await page.locator('.site-header').evaluate(
@@ -564,6 +566,70 @@ test('deep-link targets remain visible below the sticky site header', async ({pa
       headerBottom,
     );
   }
+});
+
+test('mobile deep links leave the status strip behind and clear the sticky navigation', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  const locales = [
+    {language: 'en', path: '/research'},
+    {language: 'es', path: '/es/research'},
+  ] as const;
+  const viewports = [
+    {name: 'minimum-phone', width: 320, height: 568},
+    {name: 'standard-phone', width: 390, height: 844},
+    {name: 'short-reflow', width: 320, height: 256},
+  ] as const;
+
+  for (const locale of locales) {
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      const path = `${locale.path}?viewport=${viewport.name}#wwc-tran-study`;
+      await expectDocument(page, path, locale.language);
+      await page.waitForFunction(() => document.fonts.status === 'loaded');
+
+      const metrics = await page.evaluate(() => {
+        const statusStrip = document.querySelector<HTMLElement>('.status-strip');
+        const header = document.querySelector<HTMLElement>('.site-header');
+        const target = document.querySelector<HTMLElement>('#wwc-tran-study');
+        if (!statusStrip || !header || !target) throw new Error('Missing deep-link chrome');
+
+        const statusBounds = statusStrip.getBoundingClientRect();
+        const headerBounds = header.getBoundingClientRect();
+        const targetBounds = target.getBoundingClientRect();
+
+        return {
+          headerBottom: headerBounds.bottom,
+          headerPosition: getComputedStyle(header).position,
+          headerTop: headerBounds.top,
+          horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+          scrollMarginTop: Number.parseFloat(getComputedStyle(target).scrollMarginTop),
+          scrollY: window.scrollY,
+          statusBottom: statusBounds.bottom,
+          statusPosition: getComputedStyle(statusStrip).position,
+          targetTop: targetBounds.top,
+          viewportHeight: window.innerHeight,
+        };
+      });
+      const diagnostic = `${locale.language} ${viewport.width}x${viewport.height}`;
+
+      expect(metrics.scrollY, `${diagnostic} did not follow the deep link`).toBeGreaterThan(0);
+      expect(metrics.statusPosition, `${diagnostic} status strip must stay in document flow`).toBe('static');
+      expect(metrics.statusBottom, `${diagnostic} status strip remained sticky`).toBeLessThanOrEqual(1);
+      expect(metrics.headerPosition, `${diagnostic} navigation must remain sticky`).toBe('sticky');
+      expect(Math.abs(metrics.headerTop), `${diagnostic} navigation did not reach the viewport top`).toBeLessThanOrEqual(1);
+      expect(metrics.targetTop, `${diagnostic} target is hidden behind the navigation`).toBeGreaterThanOrEqual(metrics.headerBottom);
+      expect(metrics.targetTop, `${diagnostic} target starts below the short viewport`).toBeLessThan(metrics.viewportHeight);
+      expect(
+        Math.abs(metrics.targetTop - metrics.scrollMarginTop),
+        `${diagnostic} target does not honor its computed scroll margin`,
+      ).toBeLessThanOrEqual(2);
+      expect(metrics.horizontalOverflow, `${diagnostic} overflows horizontally`).toBeLessThanOrEqual(1);
+    }
+  }
+
+  expectNoRuntimeIssues(issues);
 });
 
 test('every exact legacy fragment redirect lands on its existing target', async ({page}) => {
@@ -615,6 +681,7 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await expect(menu).toHaveAttribute('open', '');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(trigger).toContainText('Close navigation');
+  await expect(page.locator('.status-strip')).toBeHidden();
 
   const approach = menu.getByRole('link', {name: 'Approach', exact: true});
   await expect(approach).toBeVisible();
@@ -676,6 +743,7 @@ test('mobile navigation remains reachable in short reflow viewports', {
     await trigger.focus();
     await page.keyboard.press('Enter');
     await expect(menu).toHaveAttribute('open', '');
+    await expect(page.locator('.status-strip')).toBeHidden();
 
     const navigation = menu.getByRole('navigation', {name: 'Main navigation'});
     await expect(navigation).toBeVisible();

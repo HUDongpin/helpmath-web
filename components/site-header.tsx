@@ -100,8 +100,10 @@ export function SiteHeader({
   }
 
   return (
-    <header className="site-header">
-      <div className="status-strip">
+    <>
+      <div
+        className={`status-strip${isMobileMenuOpen ? ' status-strip--menu-open' : ''}`}
+      >
         <div className="container status-strip__inner">
           <span aria-hidden="true" className="status-strip__icon">
             <Sparkles size={14} />
@@ -111,91 +113,93 @@ export function SiteHeader({
           </span>
         </div>
       </div>
-      <div className="container site-header__inner">
-        <Brand homeLabel={navigation.homeLabel} />
-        <nav aria-label={navigation.ariaLabel} className="desktop-nav">
-          {navigation.links.map((link) => (
-            <Link
-              aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
-              href={link.href}
-              key={link.href}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="site-header__actions">
-          <LanguageSwitcher
-            label={navigation.languageLabel}
-            locale={locale}
-            names={navigation.languageNames}
-            pathnameOverride={languageSwitcherPath}
-          />
-          <Link
-            aria-current={
-              isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
-            }
-            className="header-support"
-            href={navigation.supportAction.href}
-          >
-            {navigation.supportAction.label}
-          </Link>
-        </div>
-        <details
-          className="mobile-nav"
-          onToggle={handleMobileMenuToggle}
-          open={isMobileMenuOpen}
-          ref={mobileNavRef}
-        >
-          <summary
-            aria-controls="mobile-navigation-panel"
-            aria-expanded={isMobileMenuOpen}
-            aria-label={menuLabel}
-          >
-            {isMobileMenuOpen ? (
-              <X aria-hidden="true" size={24} />
-            ) : (
-              <Menu aria-hidden="true" size={24} />
-            )}
-            <span>{menuLabel}</span>
-          </summary>
-          <nav
-            aria-label={navigation.ariaLabel}
-            className="mobile-nav__panel"
-            id="mobile-navigation-panel"
-            style={mobileMenuMaxHeight === null
-              ? undefined
-              : {maxHeight: `${mobileMenuMaxHeight}px`}}
-          >
+      <header className="site-header">
+        <div className="container site-header__inner">
+          <Brand homeLabel={navigation.homeLabel} />
+          <nav aria-label={navigation.ariaLabel} className="desktop-nav">
             {navigation.links.map((link) => (
               <Link
                 aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
                 href={link.href}
                 key={link.href}
-                onClick={closeMobileMenu}
               >
                 {link.label}
               </Link>
             ))}
-            <Link
-              aria-current={
-                isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
-              }
-              href={navigation.supportAction.href}
-              onClick={closeMobileMenu}
-            >
-              {navigation.supportAction.label}
-            </Link>
+          </nav>
+          <div className="site-header__actions">
             <LanguageSwitcher
               label={navigation.languageLabel}
               locale={locale}
               names={navigation.languageNames}
-              onNavigate={closeMobileMenu}
               pathnameOverride={languageSwitcherPath}
             />
-          </nav>
-        </details>
-      </div>
-    </header>
+            <Link
+              aria-current={
+                isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
+              }
+              className="header-support"
+              href={navigation.supportAction.href}
+            >
+              {navigation.supportAction.label}
+            </Link>
+          </div>
+          <details
+            className="mobile-nav"
+            onToggle={handleMobileMenuToggle}
+            open={isMobileMenuOpen}
+            ref={mobileNavRef}
+          >
+            <summary
+              aria-controls="mobile-navigation-panel"
+              aria-expanded={isMobileMenuOpen}
+              aria-label={menuLabel}
+            >
+              {isMobileMenuOpen ? (
+                <X aria-hidden="true" size={24} />
+              ) : (
+                <Menu aria-hidden="true" size={24} />
+              )}
+              <span>{menuLabel}</span>
+            </summary>
+            <nav
+              aria-label={navigation.ariaLabel}
+              className="mobile-nav__panel"
+              id="mobile-navigation-panel"
+              style={mobileMenuMaxHeight === null
+                ? undefined
+                : {maxHeight: `${mobileMenuMaxHeight}px`}}
+            >
+              {navigation.links.map((link) => (
+                <Link
+                  aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
+                  href={link.href}
+                  key={link.href}
+                  onClick={closeMobileMenu}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Link
+                aria-current={
+                  isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
+                }
+                href={navigation.supportAction.href}
+                onClick={closeMobileMenu}
+              >
+                {navigation.supportAction.label}
+              </Link>
+              <LanguageSwitcher
+                label={navigation.languageLabel}
+                locale={locale}
+                names={navigation.languageNames}
+                onNavigate={closeMobileMenu}
+                pathnameOverride={languageSwitcherPath}
+              />
+            </nav>
+          </details>
+        </div>
+      </header>
+    </>
   );
 }
