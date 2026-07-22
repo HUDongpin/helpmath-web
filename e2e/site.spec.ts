@@ -355,6 +355,61 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
 });
 
+test('keyboard focus remains visible across the branded surface palette', async ({page}) => {
+  await expectDocument(page, '/research', 'en');
+  const target = page.getByRole('link', {name: 'Check source-request status'});
+  await target.focus();
+  await expect(target).toBeFocused();
+
+  const focusIndicator = await target.evaluate((element) => {
+    function resolveColor(value: string): [number, number, number] {
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      document.body.append(probe);
+      const channels = getComputedStyle(probe).color.match(/[\d.]+/gu)?.slice(0, 3).map(Number);
+      probe.remove();
+      if (!channels || channels.length !== 3) throw new Error(`Could not resolve color: ${value}`);
+      return channels as [number, number, number];
+    }
+
+    function luminance([red, green, blue]: [number, number, number]) {
+      const channels = [red, green, blue].map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.03928
+          ? normalized / 12.92
+          : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    }
+
+    function contrast(first: [number, number, number], second: [number, number, number]) {
+      const lighter = Math.max(luminance(first), luminance(second));
+      const darker = Math.min(luminance(first), luminance(second));
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const elementStyle = getComputedStyle(element);
+    const outline = resolveColor(elementStyle.outlineColor);
+    const surfaces = ['--paper', '--white', '--blue-pale', '--yellow-pale', '--mint-pale'];
+
+    return {
+      outlineStyle: elementStyle.outlineStyle,
+      outlineWidth: Number.parseFloat(elementStyle.outlineWidth),
+      ratios: surfaces.map((token) => ({
+        token,
+        ratio: contrast(outline, resolveColor(rootStyle.getPropertyValue(token))),
+      })),
+    };
+  });
+
+  expect(focusIndicator.outlineStyle).toBe('solid');
+  expect(focusIndicator.outlineWidth).toBeGreaterThanOrEqual(3);
+  for (const {ratio, token} of focusIndicator.ratios) {
+    expect(ratio, `${token} focus contrast`).toBeGreaterThanOrEqual(3);
+  }
+});
+
 test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', {
   tag: '@production-public-smoke',
 }, async ({page}) => {
@@ -726,6 +781,40 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await approach.click();
   await expect(page).toHaveURL(/\/approach$/);
   await expect(page.getByRole('heading', {level: 1})).toContainText('Make the mathematics');
+  expectNoRuntimeIssues(issues);
+});
+
+test('mobile navigation closes without obscuring keyboard focus', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  await page.setViewportSize({width: 320, height: 568});
+  await expectDocument(page, '/', 'en');
+
+  const menu = page.locator('details.mobile-nav');
+  const trigger = menu.locator(':scope > summary');
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveAttribute('open', '');
+
+  await page.keyboard.press('Escape');
+  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('.status-strip')).toBeVisible();
+
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveAttribute('open', '');
+  const finalMenuLink = menu.getByRole('link', {name: 'Language: Español'});
+  await finalMenuLink.focus();
+  await page.keyboard.press('Tab');
+
+  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(page.locator('.status-strip')).toBeVisible();
+  const activeElement = page.locator(':focus');
+  if (await activeElement.count()) await expect(activeElement).toBeVisible();
+  expect(
+    await page.evaluate(() => document.activeElement?.closest('.mobile-nav') === null),
+  ).toBe(true);
   expectNoRuntimeIssues(issues);
 });
 

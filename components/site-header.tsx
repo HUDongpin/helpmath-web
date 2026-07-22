@@ -1,7 +1,14 @@
 'use client';
 
 import {Menu, Sparkles, X} from 'lucide-react';
-import {useEffect, useRef, useState, type SyntheticEvent} from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type SyntheticEvent,
+} from 'react';
 
 import type {Locale, SharedContent} from '@/content/types';
 import {Link, stripLocalePrefix, usePathname} from '@/i18n/navigation';
@@ -52,6 +59,7 @@ export function SiteHeader({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileMenuMaxHeight, setMobileMenuMaxHeight] = useState<number | null>(null);
   const mobileNavRef = useRef<HTMLDetailsElement>(null);
+  const mobileNavSummaryRef = useRef<HTMLElement>(null);
   const menuLabel = isMobileMenuOpen ? navigation.closeMenuLabel : navigation.openMenuLabel;
 
   useEffect(() => {
@@ -95,8 +103,35 @@ export function SiteHeader({
   }
 
   function closeMobileMenu() {
+    if (mobileNavRef.current) mobileNavRef.current.open = false;
     setIsMobileMenuOpen(false);
     setMobileMenuMaxHeight(null);
+  }
+
+  function closeMobileMenuAfterActivation() {
+    window.requestAnimationFrame(closeMobileMenu);
+  }
+
+  function handleMobileMenuKeyDown(event: KeyboardEvent<HTMLDetailsElement>) {
+    if (event.key !== 'Escape' || !event.currentTarget.open) return;
+
+    event.preventDefault();
+    closeMobileMenu();
+    window.requestAnimationFrame(() => mobileNavSummaryRef.current?.focus());
+  }
+
+  function handleMobileMenuBlur(event: FocusEvent<HTMLDetailsElement>) {
+    if (!event.currentTarget.open) return;
+
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+    const details = event.currentTarget;
+    window.requestAnimationFrame(() => {
+      const activeElement = document.activeElement;
+      if (details.open && !(activeElement instanceof Node && details.contains(activeElement))) {
+        closeMobileMenu();
+      }
+    });
   }
 
   return (
@@ -146,14 +181,16 @@ export function SiteHeader({
           </div>
           <details
             className="mobile-nav"
+            onBlur={handleMobileMenuBlur}
+            onKeyDownCapture={handleMobileMenuKeyDown}
             onToggle={handleMobileMenuToggle}
-            open={isMobileMenuOpen}
             ref={mobileNavRef}
           >
             <summary
               aria-controls="mobile-navigation-panel"
               aria-expanded={isMobileMenuOpen}
               aria-label={menuLabel}
+              ref={mobileNavSummaryRef}
             >
               {isMobileMenuOpen ? (
                 <X aria-hidden="true" size={24} />
@@ -175,7 +212,7 @@ export function SiteHeader({
                   aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
                   href={link.href}
                   key={link.href}
-                  onClick={closeMobileMenu}
+                  onClick={closeMobileMenuAfterActivation}
                 >
                   {link.label}
                 </Link>
@@ -185,7 +222,7 @@ export function SiteHeader({
                   isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
                 }
                 href={navigation.supportAction.href}
-                onClick={closeMobileMenu}
+                onClick={closeMobileMenuAfterActivation}
               >
                 {navigation.supportAction.label}
               </Link>
@@ -193,7 +230,7 @@ export function SiteHeader({
                 label={navigation.languageLabel}
                 locale={locale}
                 names={navigation.languageNames}
-                onNavigate={closeMobileMenu}
+                onNavigate={closeMobileMenuAfterActivation}
                 pathnameOverride={languageSwitcherPath}
               />
             </nav>
