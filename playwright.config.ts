@@ -64,12 +64,23 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      grepInvert: /@mobile-webkit-only/u,
       use: {...devices['Desktop Chrome']},
     },
     {
       name: 'webkit-smoke',
-      grep: /@webkit-smoke/u,
+      grep: /@cross-browser-smoke/u,
       use: {...devices['Desktop Safari']},
+    },
+    {
+      name: 'mobile-webkit-smoke',
+      grep: /@mobile-webkit-smoke/u,
+      use: {...devices['iPhone 13']},
+    },
+    {
+      name: 'firefox-smoke',
+      grep: /@cross-browser-smoke/u,
+      use: {...devices['Desktop Firefox']},
     },
   ],
   use: {

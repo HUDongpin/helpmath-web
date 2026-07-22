@@ -12,6 +12,9 @@ const snapshotDirectory = path.join(
 const expectedSnapshots = [
   'home-desktop.png',
   'home-mobile.png',
+  'partnership-en-desktop.png',
+  'partnership-es-mobile.png',
+  'program-lineage-en-desktop.png',
   'research-hero-desktop.png',
   'spanish-terms-hero-320.png',
 ] as const;
@@ -38,7 +41,7 @@ describe('visual regression quality gate', () => {
     assert.match(visualConfig, /\['junit', \{outputFile: 'artifacts\/playwright-visual-report\/results\.xml'\}\]/u);
   });
 
-  it('retains exactly the four reviewed public-page PNG baselines', async () => {
+  it('retains exactly the seven reviewed public-page PNG baselines', async () => {
     const filenames = (await readdir(snapshotDirectory)).sort();
     assert.deepEqual(filenames, [...expectedSnapshots].sort());
 

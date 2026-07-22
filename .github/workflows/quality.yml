@@ -38,8 +38,6 @@ jobs:
       - run: npm run test:coverage
       - run: npm audit --audit-level=high
       - run: npm run build
-      - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e
 
   browser-quality:
     runs-on: ubuntu-latest
@@ -57,6 +55,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Enforce Chromium, Firefox, and WebKit browser contracts
+        run: npm run test:e2e
       - name: Enforce reviewed visual baselines
         run: npm run test:visual
       - name: Retain visual report and public-page failure diffs

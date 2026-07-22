@@ -8,7 +8,7 @@ locale and Spanish under `/es`.
 
 ```bash
 npm ci
-npx playwright install chromium webkit
+npx playwright install chromium firefox webkit
 npm run lint
 npm run typecheck
 npm run check:generated
@@ -19,11 +19,13 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-The Quality workflow also runs four visual-regression checks in a
-digest-pinned Playwright Linux container and a focused Desktop Safari/WebKit
-project. Visual baselines are container-specific; do not regenerate them from
-a normal host run. `npm run test:e2e:chromium` and `npm run test:e2e:webkit`
-are available for focused local browser diagnostics.
+The Quality workflow also runs seven visual-regression checks in a
+digest-pinned Playwright Linux container. The same job runs the full Chromium
+contract plus focused Desktop Safari/WebKit, native iPhone WebKit touch, and
+Firefox projects. Visual baselines are container-specific; do not regenerate
+them from a normal host run. `npm run test:e2e:chromium`,
+`npm run test:e2e:webkit`, `npm run test:e2e:mobile-webkit`, and
+`npm run test:e2e:firefox` are available for focused local diagnostics.
 
 Every external GitHub Action is pinned to a reviewed full commit SHA.
 Dependabot groups proposed GitHub Actions updates into a weekly pull request;

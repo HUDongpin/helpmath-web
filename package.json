@@ -20,6 +20,8 @@
     "drill:legacy-source-recovery": "node scripts/drill-legacy-source-recovery.mjs",
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox-smoke",
+    "test:e2e:mobile-webkit": "playwright test --project=mobile-webkit-smoke",
     "test:e2e:webkit": "playwright test --project=webkit-smoke",
     "test:visual": "playwright test --config=playwright.visual.config.ts",
     "test:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",

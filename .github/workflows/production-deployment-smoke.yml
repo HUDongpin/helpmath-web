@@ -17,6 +17,8 @@ jobs:
       github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
     env:
       CANONICAL_URL: https://www.helpmath.ai
       DEPLOYMENT_ID: ${{ github.event.deployment.id }}
@@ -158,9 +160,20 @@ jobs:
           export SMOKE_EVIDENCE_DIRECTORY="$RUNNER_TEMP/helpmath-production-smoke"
           node scripts/release-smoke.mjs \
             > "$SMOKE_EVIDENCE_DIRECTORY/canonical-contract.json"
+      - name: Verify public browser hydration
+        id: browser
+        if: always() && steps.identity.outcome == 'success' && steps.canonical.outcome == 'success'
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.CANONICAL_URL }}
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: ${{ runner.temp }}/helpmath-production-smoke/public-browser.xml
+        run: |
+          npx playwright test --project=chromium --grep @production-public-smoke \
+            --reporter=line,junit \
+            --output="$RUNNER_TEMP/helpmath-production-public-browser"
       - name: Write evidence summary
         if: always()
         env:
+          BROWSER_OUTCOME: ${{ steps.browser.outcome }}
           CANONICAL_OUTCOME: ${{ steps.canonical.outcome }}
           IMMUTABLE_OUTCOME: ${{ steps.immutable.outcome }}
         shell: bash
@@ -193,6 +206,7 @@ jobs:
             `- Immutable URL: ${identity?.immutableDeploymentUrl ?? 'identity validation did not complete'}`,
             `- Immutable protection outcome: ${process.env.IMMUTABLE_OUTCOME}`,
             `- Canonical step outcome: ${process.env.CANONICAL_OUTCOME}`,
+            `- Public browser outcome: ${process.env.BROWSER_OUTCOME}`,
             `- Canonical failures: ${canonical ? canonical.failures.length : 'not completed'}`,
             `- Executive preview state: ${canonical?.executivePreviewState ?? 'not observed'}`,
             `- Executive preview expiry: ${canonical?.executivePreviewExpiresAt ?? 'none'}`,
@@ -205,6 +219,7 @@ jobs:
             completedAt: new Date().toISOString(),
             immutableProtectionOutcome: process.env.IMMUTABLE_OUTCOME,
             canonicalContractOutcome: process.env.CANONICAL_OUTCOME,
+            publicBrowserOutcome: process.env.BROWSER_OUTCOME,
             canonicalFailureCount: canonical?.failures.length,
             executivePreviewState: canonical?.executivePreviewState,
             executivePreviewExpiresAt: canonical?.executivePreviewExpiresAt,

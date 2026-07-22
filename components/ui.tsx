@@ -15,14 +15,20 @@ export function Container({children, className = ''}: {children: ReactNode; clas
 export function Section({
   children,
   className = '',
-  id
+  id,
+  ariaLabelledBy,
 }: {
   children: ReactNode;
   className?: string;
   id?: string;
+  ariaLabelledBy?: string;
 }) {
   return (
-    <section className={`section ${className}`.trim()} id={id}>
+    <section
+      aria-labelledby={ariaLabelledBy}
+      className={`section ${className}`.trim()}
+      id={id}
+    >
       {children}
     </section>
   );
@@ -83,7 +89,7 @@ export function Callout({
   label?: string;
 }) {
   return (
-    <aside className={`callout callout--${tone}`}>
+    <aside aria-label={title} className={`callout callout--${tone}`}>
       <div>
         {label ? <p className="callout__label">{label}</p> : null}
         <h2>{title}</h2>
