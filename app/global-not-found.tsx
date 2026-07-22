@@ -8,6 +8,7 @@ import {getSiteContent} from '@/content';
 import type {Locale} from '@/content/types';
 import {LocaleProvider} from '@/i18n/navigation';
 
+import {nunitoSans} from './fonts';
 import './globals.css';
 
 const INTERNAL_LOCALE_HEADER = 'x-helpmath-internal-locale';
@@ -36,7 +37,7 @@ export default async function GlobalNotFound() {
 
   return (
     <html lang={locale}>
-      <body>
+      <body className={nunitoSans.variable}>
         <LocaleProvider locale={locale}>
           <a className="skip-link" href="#main-content">
             {content.skipToContent}

@@ -9,6 +9,7 @@ import {
 } from '@/components/error-recovery';
 import type {Locale} from '@/content/types';
 
+import {nunitoSans} from './fonts';
 import './globals.css';
 
 type GlobalErrorProps = {
@@ -39,7 +40,7 @@ export default function GlobalError({unstable_retry}: GlobalErrorProps) {
       <head>
         <title>{copy.documentTitle}</title>
       </head>
-      <body className="global-error-body">
+      <body className={`${nunitoSans.variable} global-error-body`}>
         <a className="skip-link" href="#main-content">
           {copy.skipToContent}
         </a>

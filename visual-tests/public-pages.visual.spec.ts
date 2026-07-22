@@ -9,16 +9,27 @@ async function preparePage(
   const response = await page.goto(path, {waitUntil: 'networkidle'});
   expect(response?.status()).toBe(200);
 
-  const fonts = await page.evaluate(async () => {
+  const typography = await page.evaluate(async () => {
+    const fontVariable = getComputedStyle(document.body)
+      .getPropertyValue('--font-nunito')
+      .trim();
+    const primaryFallbackFamily = fontVariable.split(',')[0]?.trim();
+    if (!primaryFallbackFamily) throw new Error('Nunito font variable is unavailable.');
     const loaded = await Promise.all([
-      document.fonts.load('400 16px "Nunito Sans Variable"'),
-      document.fonts.load('700 32px "Nunito Sans Variable"'),
+      document.fonts.load(`400 16px ${primaryFallbackFamily}`),
+      document.fonts.load(`700 32px ${primaryFallbackFamily}`),
     ]);
     await document.fonts.ready;
     window.scrollTo(0, 0);
-    return loaded.map((faces) => faces.length);
+    return {
+      bodyFamily: getComputedStyle(document.body).fontFamily,
+      fontVariable,
+      loaded: loaded.map((faces) => faces.length),
+    };
   });
-  expect(fonts.every((count) => count > 0)).toBe(true);
+  expect(typography.bodyFamily).toContain('Avenir Next');
+  expect(typography.fontVariable).toContain('nunitoSans');
+  expect(typography.loaded.every((count) => count > 0)).toBe(true);
 }
 
 const screenshotOptions = {
