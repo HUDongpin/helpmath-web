@@ -8,7 +8,7 @@ locale and Spanish under `/es`.
 
 ```bash
 npm ci
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run lint
 npm run typecheck
 npm run check:generated
@@ -24,6 +24,11 @@ digest-pinned Playwright Linux container and a focused Desktop Safari/WebKit
 project. Visual baselines are container-specific; do not regenerate them from
 a normal host run. `npm run test:e2e:chromium` and `npm run test:e2e:webkit`
 are available for focused local browser diagnostics.
+
+Every external GitHub Action is pinned to a reviewed full commit SHA.
+Dependabot groups proposed GitHub Actions updates into a weekly pull request;
+review the new commit identity and keep the version comment when accepting an
+update.
 
 Two browser-native reconstruction prototypes are retained for private review.
 Original FLA/SWF evidence, Ruffle, migration catalogs, and the Flash workbench
