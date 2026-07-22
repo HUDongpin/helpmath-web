@@ -838,25 +838,21 @@ test('mobile navigation closes without obscuring keyboard focus', {
   await page.keyboard.press('Enter');
   await expect(menu).toHaveAttribute('open', '');
   const finalMenuLink = menu.getByRole('link', {name: 'Language: Español'});
+  const forwardFocusTarget = page.getByRole('link', {name: 'Review the research'});
   await finalMenuLink.focus();
   await page.keyboard.press('Tab');
 
   await expect(menu).not.toHaveAttribute('open', '');
   await expect(page.locator('.status-strip')).toBeVisible();
-  const activeElement = page.locator(':focus');
-  if (await activeElement.count()) await expect(activeElement).toBeVisible();
-  expect(
-    await page.evaluate(() => document.activeElement?.closest('.mobile-nav') === null),
-  ).toBe(true);
+  await expect(forwardFocusTarget).toBeFocused();
+  await expect(forwardFocusTarget).toBeVisible();
 
   await trigger.focus();
   await page.keyboard.press('Enter');
   await expect(menu).toHaveAttribute('open', '');
   await page.keyboard.press('Shift+Tab');
   await expect(menu).not.toHaveAttribute('open', '');
-  expect(
-    await page.evaluate(() => document.activeElement?.closest('.mobile-nav') === null),
-  ).toBe(true);
+  await expect(page.locator('.site-header .brand')).toBeFocused();
   expectNoRuntimeIssues(issues);
 });
 

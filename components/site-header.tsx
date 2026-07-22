@@ -70,7 +70,24 @@ export function SiteHeader({
   const [mobileMenuMaxHeight, setMobileMenuMaxHeight] = useState<number | null>(null);
   const mobileNavRef = useRef<HTMLDetailsElement>(null);
   const mobileNavSummaryRef = useRef<HTMLElement>(null);
+  const pendingMobileNavFocusRef = useRef<HTMLElement | null>(null);
   const menuLabel = isMobileMenuOpen ? navigation.closeMenuLabel : navigation.openMenuLabel;
+
+  useEffect(() => {
+    function handleDocumentEscape(event: globalThis.KeyboardEvent) {
+      const details = mobileNavRef.current;
+      if (event.key !== 'Escape' || !details?.open) return;
+
+      event.preventDefault();
+      details.open = false;
+      setIsMobileMenuOpen(false);
+      setMobileMenuMaxHeight(null);
+      window.requestAnimationFrame(() => mobileNavSummaryRef.current?.focus());
+    }
+
+    document.addEventListener('keydown', handleDocumentEscape, {capture: true});
+    return () => document.removeEventListener('keydown', handleDocumentEscape, {capture: true});
+  }, []);
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -108,8 +125,20 @@ export function SiteHeader({
 
   function handleMobileMenuToggle(event: SyntheticEvent<HTMLDetailsElement>) {
     const isOpen = event.currentTarget.open;
+    const pendingFocusTarget = pendingMobileNavFocusRef.current;
+    pendingMobileNavFocusRef.current = null;
     setIsMobileMenuOpen(isOpen);
-    if (!isOpen) setMobileMenuMaxHeight(null);
+    if (!isOpen) {
+      setMobileMenuMaxHeight(null);
+      const activeElement = document.activeElement;
+      if (
+        pendingFocusTarget?.isConnected &&
+        (activeElement === document.body ||
+          (activeElement instanceof Node && event.currentTarget.contains(activeElement)))
+      ) {
+        pendingFocusTarget.focus();
+      }
+    }
   }
 
   function closeMobileMenu() {
@@ -141,8 +170,10 @@ export function SiteHeader({
     });
     const orderedCandidates = direction === 'forward' ? candidates : candidates.reverse();
     const nextTarget = orderedCandidates.find((element) =>
-      Boolean(details.compareDocumentPosition(element) & position));
+      Boolean(details.compareDocumentPosition(element) & position)) ??
+      document.querySelector<HTMLElement>('.brand');
 
+    pendingMobileNavFocusRef.current = nextTarget;
     closeMobileMenu();
     nextTarget?.focus();
   }
@@ -168,12 +199,6 @@ export function SiteHeader({
       }
       return;
     }
-
-    if (event.key !== 'Escape') return;
-
-    event.preventDefault();
-    closeMobileMenu();
-    window.requestAnimationFrame(() => mobileNavSummaryRef.current?.focus());
   }
 
   function handleMobileMenuBlur(event: FocusEvent<HTMLDetailsElement>) {
