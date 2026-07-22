@@ -713,6 +713,8 @@ export const enContent = {
         resultTemplate: "{count} resource shown",
         resultsTemplate: "{count} resources shown",
         empty: "No resources match the selected search and category.",
+        noScriptTemplate:
+          "Search and category filters are unavailable without JavaScript. All {count} resources are listed below.",
       },
       items: [
         {

@@ -653,10 +653,13 @@ test('resource library filters eighteen sourced records in both languages', asyn
   );
 
   const englishSearch = library.getByRole('searchbox', {name: 'Search resources'});
+  await expect(englishSearch).toBeEnabled();
   await englishSearch.fill('WWC');
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
   await expect(library.locator('.resource-entry')).toHaveCount(3);
-  await library.getByRole('button', {name: /Research/}).click();
+  const englishResearchFilter = library.getByRole('button', {name: /Research/});
+  await expect(englishResearchFilter).toBeEnabled();
+  await englishResearchFilter.click();
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
   await englishSearch.fill('');
   await expect(library.getByRole('status')).toHaveText('12 resources shown');
@@ -667,13 +670,56 @@ test('resource library filters eighteen sourced records in both languages', asyn
   const spanishLibrary = page.locator('#resource-library');
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 18 recursos');
   const spanishSearch = spanishLibrary.getByRole('searchbox', {name: 'Buscar recursos'});
+  await expect(spanishSearch).toBeEnabled();
   await spanishSearch.fill('modernizacion');
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 3 recursos');
-  await spanishLibrary.getByRole('button', {name: /Modernización/}).click();
+  const spanishModernizationFilter = spanishLibrary.getByRole('button', {name: /Modernización/});
+  await expect(spanishModernizationFilter).toBeEnabled();
+  await spanishModernizationFilter.click();
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 2 recursos');
   await expect(spanishLibrary.locator('.resource-entry')).toHaveCount(2);
   await expect(spanishLibrary.getByRole('heading', {name: 'Notas de modernización y recuperación'})).toBeVisible();
   expectNoRuntimeIssues(issues);
+});
+
+test.describe('resource library without JavaScript', () => {
+  test.use({javaScriptEnabled: false});
+
+  test('hides inert filters and explains that every localized resource remains available', {
+    tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
+  }, async ({page}) => {
+    for (const locale of ['en', 'es'] as const) {
+      const path = locale === 'en' ? '/resources' : '/es/resources';
+      const resources = siteContent[locale].pages.resources;
+
+      await expectDocument(page, path, locale);
+      const library = page.locator('#resource-library');
+      await expect(library.locator('.resource-library__interactive')).toBeHidden();
+      await expect(library.locator('.resource-search input')).toBeDisabled();
+      const filterButtons = library.locator('.resource-filters button');
+      await expect(filterButtons).toHaveCount(4);
+      for (const button of await filterButtons.all()) {
+        await expect(button).toBeDisabled();
+      }
+      await expect(library.getByRole('searchbox')).toHaveCount(0);
+      await expect(library.getByRole('button')).toHaveCount(0);
+      const notice = library.locator('.resource-no-script');
+      await expect(notice).toBeVisible();
+      await expect(notice).toHaveText(
+        resources.filters.noScriptTemplate.replace(
+          '{count}',
+          String(resources.items.length),
+        ),
+      );
+      const entries = library.locator('.resource-entry');
+      await expect(entries).toHaveCount(resources.items.length);
+      await expect(entries.first()).toBeVisible();
+      await expect(entries.last()).toBeVisible();
+      const firstResourceLink = entries.first().getByRole('link');
+      await expect(firstResourceLink).toBeVisible();
+      await expect(firstResourceLink).toHaveAttribute('href', /\S/u);
+    }
+  });
 });
 
 test.describe('locale-independent resource search', () => {

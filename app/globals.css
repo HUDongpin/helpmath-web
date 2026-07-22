@@ -578,6 +578,12 @@ svg {
   opacity: 0.85;
 }
 
+.resource-search input:disabled,
+.resource-filters button:disabled {
+  cursor: progress;
+  opacity: 1;
+}
+
 .resource-filters {
   align-items: stretch;
   display: flex;
@@ -632,6 +638,15 @@ svg {
   font-size: 0.8rem;
   font-weight: 800;
   margin: 1.25rem 0 0;
+}
+
+.resource-no-script {
+  background: var(--blue-pale);
+  border-left: 4px solid var(--blue);
+  color: var(--ink-soft);
+  font-weight: 800;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
 }
 
 .resource-empty {
