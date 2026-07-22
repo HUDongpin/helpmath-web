@@ -220,6 +220,20 @@ export function ResearchPage({content}: {content: ResearchContent}) {
       <Section>
         <Container>
           <Eyebrow>{content.entriesLabel}</Eyebrow>
+          <nav aria-label={content.entriesLabel} className="evidence-index">
+            <ol>
+              {content.entries.map((entry) => (
+                <li key={entry.id}>
+                  <a href={`#${entry.id}`}>
+                    <span className={`status-badge status-badge--${entry.status}`}>
+                      {entry.statusLabel}
+                    </span>
+                    <span>{entry.title}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
           <div className="evidence-list">
             {content.entries.map((entry) => {
               const Icon = evidenceIcons[entry.status];

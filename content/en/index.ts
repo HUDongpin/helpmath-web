@@ -704,12 +704,15 @@ export const enContent = {
       },
       filters: {
         ariaLabel: "Filter resources by category",
+        searchLabel: "Search resources",
+        searchPlaceholder: "Search by title, source, topic, or status",
         all: "All resources",
         program: "Program",
         research: "Research",
         technical: "Modernization",
+        resultTemplate: "{count} resource shown",
         resultsTemplate: "{count} resources shown",
-        empty: "No resources match this category.",
+        empty: "No resources match the selected search and category.",
       },
       items: [
         {

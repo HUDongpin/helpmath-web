@@ -1,7 +1,7 @@
 'use client';
 
 import {Menu, Sparkles, X} from 'lucide-react';
-import {useState, type SyntheticEvent} from 'react';
+import {useEffect, useRef, useState, type SyntheticEvent} from 'react';
 
 import type {Locale, SharedContent} from '@/content/types';
 import {Link, stripLocalePrefix, usePathname} from '@/i18n/navigation';
@@ -50,14 +50,53 @@ export function SiteHeader({
   const {navigation} = content;
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileMenuMaxHeight, setMobileMenuMaxHeight] = useState<number | null>(null);
+  const mobileNavRef = useRef<HTMLDetailsElement>(null);
   const menuLabel = isMobileMenuOpen ? navigation.closeMenuLabel : navigation.openMenuLabel;
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const details = mobileNavRef.current;
+    const panel = details?.querySelector<HTMLElement>('#mobile-navigation-panel');
+    if (!details || !panel) return;
+
+    function updateAvailableHeight() {
+      const viewport = window.visualViewport;
+      const viewportBottom = (viewport?.offsetTop ?? 0) +
+        (viewport?.height ?? window.innerHeight);
+      const panelTop = panel!.getBoundingClientRect().top;
+      setMobileMenuMaxHeight(Math.max(48, Math.floor(viewportBottom - panelTop - 8)));
+    }
+
+    updateAvailableHeight();
+    const animationFrame = window.requestAnimationFrame(updateAvailableHeight);
+    const resizeObserver = new ResizeObserver(updateAvailableHeight);
+    resizeObserver.observe(details.closest('.site-header') ?? details);
+    window.addEventListener('resize', updateAvailableHeight);
+    window.addEventListener('scroll', updateAvailableHeight, {passive: true});
+    window.visualViewport?.addEventListener('resize', updateAvailableHeight);
+    window.visualViewport?.addEventListener('scroll', updateAvailableHeight);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateAvailableHeight);
+      window.removeEventListener('scroll', updateAvailableHeight);
+      window.visualViewport?.removeEventListener('resize', updateAvailableHeight);
+      window.visualViewport?.removeEventListener('scroll', updateAvailableHeight);
+    };
+  }, [isMobileMenuOpen]);
+
   function handleMobileMenuToggle(event: SyntheticEvent<HTMLDetailsElement>) {
-    setIsMobileMenuOpen(event.currentTarget.open);
+    const isOpen = event.currentTarget.open;
+    setIsMobileMenuOpen(isOpen);
+    if (!isOpen) setMobileMenuMaxHeight(null);
   }
 
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
+    setMobileMenuMaxHeight(null);
   }
 
   return (
@@ -106,6 +145,7 @@ export function SiteHeader({
           className="mobile-nav"
           onToggle={handleMobileMenuToggle}
           open={isMobileMenuOpen}
+          ref={mobileNavRef}
         >
           <summary
             aria-controls="mobile-navigation-panel"
@@ -119,7 +159,14 @@ export function SiteHeader({
             )}
             <span>{menuLabel}</span>
           </summary>
-          <div className="mobile-nav__panel" id="mobile-navigation-panel">
+          <nav
+            aria-label={navigation.ariaLabel}
+            className="mobile-nav__panel"
+            id="mobile-navigation-panel"
+            style={mobileMenuMaxHeight === null
+              ? undefined
+              : {maxHeight: `${mobileMenuMaxHeight}px`}}
+          >
             {navigation.links.map((link) => (
               <Link
                 aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
@@ -146,7 +193,7 @@ export function SiteHeader({
               onNavigate={closeMobileMenu}
               pathnameOverride={languageSwitcherPath}
             />
-          </div>
+          </nav>
         </details>
       </div>
     </header>

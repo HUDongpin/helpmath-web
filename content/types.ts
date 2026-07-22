@@ -249,10 +249,13 @@ export interface ResourcesContent {
   archiveNotice: CalloutContent;
   filters: {
     ariaLabel: string;
+    searchLabel: string;
+    searchPlaceholder: string;
     all: string;
     program: string;
     research: string;
     technical: string;
+    resultTemplate: string;
     resultsTemplate: string;
     empty: string;
   };

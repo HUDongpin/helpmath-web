@@ -11,6 +11,7 @@ module.exports = {
         'http://127.0.0.1:3216/',
         'http://127.0.0.1:3216/es',
         'http://127.0.0.1:3216/research',
+        'http://127.0.0.1:3216/resources',
         'http://127.0.0.1:3216/demos',
       ],
       numberOfRuns: 3,
@@ -36,7 +37,7 @@ module.exports = {
         'total-blocking-time': ['error', {maxNumericValue: 200}],
         'total-byte-weight': [
           'error',
-          {maxNumericValue: kilobytes(450)},
+          {maxNumericValue: kilobytes(320)},
         ],
       },
     },

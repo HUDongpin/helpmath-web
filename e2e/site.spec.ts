@@ -458,7 +458,13 @@ test('resource library filters eighteen sourced records in both languages', asyn
     'https://doi.org/10.1016/j.compedu.2011.11.003',
   );
 
+  const englishSearch = library.getByRole('searchbox', {name: 'Search resources'});
+  await englishSearch.fill('WWC');
+  await expect(library.getByRole('status')).toHaveText('3 resources shown');
+  await expect(library.locator('.resource-entry')).toHaveCount(3);
   await library.getByRole('button', {name: /Research/}).click();
+  await expect(library.getByRole('status')).toHaveText('3 resources shown');
+  await englishSearch.fill('');
   await expect(library.getByRole('status')).toHaveText('12 resources shown');
   await expect(library.locator('.resource-entry')).toHaveCount(12);
   await expect(library.getByRole('heading', {name: 'About HELP Math'})).toHaveCount(0);
@@ -466,11 +472,28 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expectDocument(page, '/es/resources', 'es');
   const spanishLibrary = page.locator('#resource-library');
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 18 recursos');
+  const spanishSearch = spanishLibrary.getByRole('searchbox', {name: 'Buscar recursos'});
+  await spanishSearch.fill('modernizacion');
+  await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 3 recursos');
   await spanishLibrary.getByRole('button', {name: /Modernización/}).click();
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 2 recursos');
   await expect(spanishLibrary.locator('.resource-entry')).toHaveCount(2);
   await expect(spanishLibrary.getByRole('heading', {name: 'Notas de modernización y recuperación'})).toBeVisible();
   expectNoRuntimeIssues(issues);
+});
+
+test.describe('locale-independent resource search', () => {
+  test.use({locale: 'tr-TR'});
+
+  test('matches English source acronyms under a Turkish browser locale', async ({page}) => {
+    await expectDocument(page, '/resources', 'en');
+    const library = page.locator('#resource-library');
+    await library.getByRole('searchbox', {name: 'Search resources'}).fill('ies grant');
+    await expect(library.getByRole('status')).toHaveText('1 resource shown');
+    await expect(
+      library.getByRole('heading', {name: 'Related IES Math Learning Companion grant'}),
+    ).toBeVisible();
+  });
 });
 
 test('page hero motif localizes its visible math phrase', async ({page}) => {
@@ -563,10 +586,16 @@ test('research register cites WWC and preserves both positive and limiting histo
   await expect(page.getByText(/42\.1% score increase/i)).toBeVisible();
   await expect(page.getByText(/did not find an overall between-group main effect/i)).toBeVisible();
   await expect(page.getByText(/should not be restated as an award/i)).toBeVisible();
+  const evidenceIndex = page.getByRole('navigation', {name: 'Evidence register'});
+  await expect(evidenceIndex).toBeVisible();
+  await expect(
+    evidenceIndex.getByRole('link', {name: /What Works Clearinghouse review of the Tran study/i}),
+  ).toHaveAttribute('href', '#wwc-tran-study');
 
   await expectDocument(page, '/es/research', 'es');
   await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
   await expect(page.getByText(/no encontró un efecto principal general/i)).toBeVisible();
+  await expect(page.getByRole('navigation', {name: 'Registro de evidencia'})).toBeVisible();
   expectNoRuntimeIssues(issues);
 });
 
@@ -626,6 +655,84 @@ test('native mobile WebKit handles touch navigation and language switching witho
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(1);
   expectNoRuntimeIssues(issues);
+});
+
+test('mobile navigation remains reachable in short reflow viewports', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+
+  for (const viewport of [
+    {width: 320, height: 256},
+    {width: 640, height: 400},
+  ] as const) {
+    await page.setViewportSize(viewport);
+    await expectDocument(page, `/?reflow=${viewport.width}x${viewport.height}`, 'en');
+    await page.evaluate(() => window.scrollTo(0, Math.min(1200, document.body.scrollHeight)));
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    const menu = page.locator('details.mobile-nav');
+    const trigger = menu.locator(':scope > summary');
+    await expect(trigger).toBeVisible();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(menu).toHaveAttribute('open', '');
+
+    const navigation = menu.getByRole('navigation', {name: 'Main navigation'});
+    await expect(navigation).toBeVisible();
+    const panelBounds = await navigation.boundingBox();
+    expect(panelBounds, `${viewport.width}×${viewport.height} menu has no bounds`).not.toBeNull();
+    expect(panelBounds!.y, `${viewport.width}×${viewport.height} menu starts above viewport`).toBeGreaterThanOrEqual(0);
+    expect(
+      panelBounds!.y + panelBounds!.height,
+      `${viewport.width}×${viewport.height} menu ends below viewport`,
+    ).toBeLessThanOrEqual(viewport.height + 1);
+    const language = navigation.getByRole('link', {name: 'Language: Español'});
+    await language.focus();
+    await expect(language).toBeFocused();
+    const bounds = await language.boundingBox();
+    expect(bounds, `${viewport.width}×${viewport.height} language link has no bounds`).not.toBeNull();
+    expect(bounds!.y, `${viewport.width}×${viewport.height} link starts above viewport`).toBeGreaterThanOrEqual(0);
+    expect(
+      bounds!.y + bounds!.height,
+      `${viewport.width}×${viewport.height} link ends below viewport`,
+    ).toBeLessThanOrEqual(viewport.height + 1);
+    expect(
+      await navigation.evaluate((element) => element.scrollTop),
+      `${viewport.width}×${viewport.height} menu did not scroll its own panel`,
+    ).toBeGreaterThan(0);
+  }
+
+  expectNoRuntimeIssues(issues);
+});
+
+test('resource filters keep a visible selected state in forced colors', async ({page}) => {
+  await page.emulateMedia({forcedColors: 'active'});
+  await expectDocument(page, '/resources', 'en');
+  expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(true);
+
+  const selected = page.getByRole('button', {name: /All resources/});
+  const unselected = page.getByRole('button', {name: /Program/});
+  const selectedStyle = await selected.evaluate((element) => ({
+    background: getComputedStyle(element).backgroundColor,
+    marker: getComputedStyle(element, '::before').content,
+    outlineStyle: getComputedStyle(element).outlineStyle,
+    outlineWidth: getComputedStyle(element).outlineWidth,
+  }));
+  const unselectedBackground = await unselected.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+
+  expect(selectedStyle.background).not.toBe(unselectedBackground);
+  expect(selectedStyle.marker).toContain('✓');
+  expect(selectedStyle.outlineStyle).toBe('none');
+
+  await selected.focus();
+  const focusedStyle = await selected.evaluate((element) => ({
+    outlineStyle: getComputedStyle(element).outlineStyle,
+    outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth),
+  }));
+  expect(focusedStyle.outlineStyle).not.toBe('none');
+  expect(focusedStyle.outlineWidth).toBeGreaterThanOrEqual(3);
 });
 
 test('account access page is a status page and never renders credential fields', async ({page}) => {
