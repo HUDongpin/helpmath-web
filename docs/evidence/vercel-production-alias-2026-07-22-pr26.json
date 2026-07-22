@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-22T04:15:50.000Z",
+  "source": {
+    "method": "Authenticated Vercel CLI inspect with JSON output, reduced to non-secret deployment identity fields",
+    "cliVersion": "56.4.1",
+    "scope": "peter-dongpin-hu-s-projects",
+    "rawOutputRetained": false,
+    "rawOutputRetentionReason": "The full response contains extensive internal build metadata that is unnecessary for alias identity."
+  },
+  "project": {
+    "name": "helpmath-web"
+  },
+  "deployment": {
+    "vercelDeploymentId": "dpl_57w8o5ZyHVW7WktXpTCrLkaVpvHg",
+    "githubDeploymentId": 5549581818,
+    "repositoryCommit": "cb90241589986e71df32fbc9b7ec65fa457fe1a1",
+    "target": "production",
+    "readyState": "READY",
+    "createdAt": "2026-07-22T03:58:24.427Z",
+    "immutableUrl": "https://helpmath-nwwt4ltjl-peter-dongpin-hu-s-projects.vercel.app"
+  },
+  "aliases": [
+    "https://www.helpmath.ai",
+    "https://helpmath.ai",
+    "https://helpmath-web.vercel.app",
+    "https://helpmath-web-peter-dongpin-hu-s-projects.vercel.app",
+    "https://helpmath-web-git-main-peter-dongpin-hu-s-projects.vercel.app"
+  ],
+  "corroboratingEvidence": {
+    "githubDeploymentStatus": "https://api.github.com/repos/HUDongpin/helpmath-web/deployments/5549581818/statuses",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29889819033",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29889844056",
+    "pullRequest": "https://github.com/HUDongpin/helpmath-web/pull/26"
+  },
+  "checks": {
+    "canonicalWwwAliasAssigned": true,
+    "canonicalApexAliasAssigned": true,
+    "deploymentReady": true,
+    "productionTarget": true,
+    "githubDeploymentMatchesCommit": true
+  },
+  "limitations": [
+    "This owner-authenticated operational observation is not a registrar or DNS-provider zone export.",
+    "It does not authorize a helpmath.ai or helpprogram.net DNS or hosting change.",
+    "It does not prove authenticated Executive Preview playback or public demo rights."
+  ]
+}
