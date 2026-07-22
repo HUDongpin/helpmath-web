@@ -53,6 +53,27 @@
     "githubDeploymentsCreated": 0,
     "canonicalProductionDeploymentAfterSkip": "dpl_2vtyCEztpryE2hrKZ8MYsuNBUH5H"
   },
+  "mainBranchEvidenceOnlyBuildBoundaryVerification": {
+    "observedAt": "2026-07-22T05:05:34.000Z",
+    "repositoryCommit": "e6c5625eb05b9f6ecf6f102243e123b37bcce9ce",
+    "pullRequest": "https://github.com/HUDongpin/helpmath-web/pull/28",
+    "changedPaths": [
+      "docs/LAUNCH_DECISIONS.md",
+      "docs/LEGACY_CUTOVER.md",
+      "docs/evidence/vercel-production-alias-2026-07-22-pr27.json",
+      "docs/releases/2026-07-22-pr27.md"
+    ],
+    "vercelDeploymentId": "dpl_5fCaGFqdJj2R3SzFsJVjzriDoyaN",
+    "vercelBuildShellId": "bld_pqrccawix",
+    "vercelTarget": "production",
+    "vercelReadyState": "CANCELED",
+    "createdAt": "2026-07-22T05:04:18.815Z",
+    "githubStatusContextId": 50871718792,
+    "githubStatusState": "success",
+    "githubStatusDescription": "Canceled by Ignored Build Step",
+    "githubDeploymentsCreated": 0,
+    "canonicalProductionDeploymentAfterSkip": "dpl_2vtyCEztpryE2hrKZ8MYsuNBUH5H"
+  },
   "corroboratingEvidence": {
     "githubDeploymentStatus": "https://api.github.com/repos/HUDongpin/helpmath-web/deployments/5549965132/statuses",
     "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29891910210",
@@ -69,12 +90,13 @@
     "buildRelevantChangeWasNotSkipped": true,
     "reproducibleInstallCommandApplied": true,
     "evidenceOnlyCommitSkippedPreviewBuild": true,
+    "evidenceOnlyCommitSkippedMainProductionBuild": true,
     "canonicalProductionUnchangedAfterSkip": true
   },
   "limitations": [
     "This owner-authenticated operational observation is not a registrar or DNS-provider zone export.",
     "It does not authorize a helpmath.ai or helpprogram.net DNS or hosting change.",
     "It does not prove authenticated Executive Preview playback or public demo rights.",
-    "The allowlisted commit proves the repository-owned Preview skip path; the same rule still requires observation after the evidence commit reaches main."
+    "The retained Preview and main observations prove this allowlisted release-evidence change was skipped; future commits still require their own status checks."
   ]
 }
