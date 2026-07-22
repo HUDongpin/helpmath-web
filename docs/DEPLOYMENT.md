@@ -98,9 +98,11 @@ expired configuration fails closed.
 
 For the current Production review, `config/executive-preview-window.json`
 also sets a repository-enforced maximum close of
-`2026-07-28T15:59:00.000Z`. A Production environment value may close access
+`2026-07-28T15:59:00.000Z`. A deployed environment value may close access
 earlier, but it cannot extend access beyond that timestamp without a reviewed
-code change. The scheduled `Executive preview lifecycle` workflow runs the
+code change. Missing, Preview, Production, and unknown `VERCEL_ENV` values are
+all ceiling-bound; only the exact `development` context may use a later local
+test fixture. The scheduled `Executive preview lifecycle` workflow runs the
 complete public smoke without credentials, accepts a safe early close, checks
 the exact expiry while the login entry is active, and requires the entry to be
 unavailable after the repository deadline.

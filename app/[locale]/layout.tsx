@@ -9,7 +9,6 @@ import {LocaleProvider} from '@/i18n/navigation';
 import {routing} from '@/i18n/routing';
 import {
   getSiteUrl,
-  localizedPath,
   SITE_DESCRIPTIONS,
   SITE_NAME,
 } from '@/lib/site';
@@ -58,16 +57,6 @@ export default async function LocaleLayout({
   if (!routing.locales.some((candidate) => candidate === locale)) notFound();
   const appLocale = locale as Locale;
   const content = getSiteContent(appLocale).shared;
-  const websiteUrl = new URL(localizedPath(appLocale), getSiteUrl()).toString();
-  const websiteData = JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    '@id': `${websiteUrl}#website`,
-    name: SITE_NAME,
-    url: websiteUrl,
-    description: SITE_DESCRIPTIONS[appLocale],
-    inLanguage: appLocale,
-  }).replaceAll('<', '\\u003c');
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -80,10 +69,6 @@ export default async function LocaleLayout({
           {children}
           <SiteFooter content={content} />
         </LocaleProvider>
-        <script
-          dangerouslySetInnerHTML={{__html: websiteData}}
-          type="application/ld+json"
-        />
       </body>
     </html>
   );

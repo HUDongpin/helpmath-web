@@ -9,7 +9,10 @@ export default defineConfig({
   forbidOnly: true,
   retries: 0,
   workers: 1,
-  reporter: [['line']],
+  reporter: [
+    ['line'],
+    ['junit', {outputFile: 'artifacts/playwright-visual-report/results.xml'}],
+  ],
   outputDir: 'artifacts/playwright-visual',
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
   expect: {

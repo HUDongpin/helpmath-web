@@ -18,8 +18,9 @@ transcript, screenshot, build log, or retained test artifact.
 
 The same absolute close and two-demo scope are enforced in
 `config/executive-preview-window.json`. Production fails closed if its Vercel
-expiry is later than that reviewed ceiling; an earlier manual close remains
-safe. A credential-free scheduled lifecycle check verifies the public/private
+expiry is later than that reviewed ceiling; missing or unknown deployment
+context is also ceiling-bound, and an earlier manual close remains safe. A
+credential-free scheduled lifecycle check verifies the public/private
 boundary every six hours and requires the entry to be unavailable after the
 close.
 

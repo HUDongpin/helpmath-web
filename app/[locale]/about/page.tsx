@@ -21,7 +21,7 @@ export default async function AboutRoute({
 }) {
   const {locale} = await params;
   const content = getSiteContent(locale).pages.about;
-  const websiteUrl = new URL(localizedPath(locale), getSiteUrl()).toString();
+  const websiteUrl = getSiteUrl().toString();
   const pageUrl = new URL(localizedPath(locale, '/about'), getSiteUrl()).toString();
   const structuredData = JSON.stringify({
     '@context': 'https://schema.org',
@@ -46,7 +46,6 @@ export default async function AboutRoute({
         '@type': 'Organization',
         name: 'Boulder Learning',
         url: 'https://www.boulderlearning.com/',
-        sameAs: 'https://www.boulderlearning.com/products',
       },
       {
         '@type': 'Organization',

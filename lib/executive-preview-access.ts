@@ -115,7 +115,7 @@ export function getExecutivePreviewConfig(
   const expiresAt = Date.parse(expiresAtValue);
   if (!Number.isFinite(expiresAt) || expiresAt <= now) return undefined;
   if (
-    env.VERCEL_ENV === 'production' &&
+    env.VERCEL_ENV !== 'development' &&
     (!Number.isFinite(EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING_MS) ||
       expiresAt > EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING_MS)
   ) return undefined;

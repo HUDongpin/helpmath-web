@@ -10,6 +10,7 @@ import {
 } from '../lib/executive-preview-access';
 
 const envKeys = [
+  'VERCEL_ENV',
   'EXECUTIVE_PREVIEW_ENABLED',
   'EXECUTIVE_PREVIEW_ACCESS_KEY',
   'EXECUTIVE_PREVIEW_SESSION_SECRET',
@@ -48,6 +49,7 @@ function sessionCookie(response: Response): string {
 }
 
 beforeEach(() => {
+  setEnv('VERCEL_ENV', 'development');
   setEnv('EXECUTIVE_PREVIEW_ENABLED', 'true');
   setEnv('EXECUTIVE_PREVIEW_ACCESS_KEY', accessKey);
   setEnv('EXECUTIVE_PREVIEW_SESSION_SECRET', sessionSecret);

@@ -40,14 +40,6 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
-      - name: Retain Playwright failure evidence
-        if: failure()
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/helpmath-site-playwright-results
-          if-no-files-found: ignore
-          retention-days: 14
 
   browser-quality:
     runs-on: ubuntu-latest
@@ -67,13 +59,15 @@ jobs:
       - run: npm run build
       - name: Enforce reviewed visual baselines
         run: npm run test:visual
-      - name: Retain visual comparison evidence
+      - name: Retain visual report and public-page failure diffs
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: visual-regression-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/playwright-visual
-          if-no-files-found: warn
+          path: |
+            artifacts/playwright-visual
+            artifacts/playwright-visual-report/results.xml
+          if-no-files-found: error
           retention-days: 30
 
   lighthouse:

@@ -28,6 +28,14 @@ describe('visual regression quality gate', () => {
     assert.match(workflow, /run: npm run test:visual/u);
     assert.doesNotMatch(workflow, /test:visual:update|--update-snapshots/u);
     assert.match(workflow, /name: visual-regression-\$\{\{ github\.run_id \}\}/u);
+    assert.match(workflow, /artifacts\/playwright-visual-report\/results\.xml/u);
+    assert.match(workflow, /if-no-files-found: error/u);
+
+    const visualConfig = await readFile(
+      path.join(repositoryRoot, 'playwright.visual.config.ts'),
+      'utf8',
+    );
+    assert.match(visualConfig, /\['junit', \{outputFile: 'artifacts\/playwright-visual-report\/results\.xml'\}\]/u);
   });
 
   it('retains exactly the four reviewed public-page PNG baselines', async () => {

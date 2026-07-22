@@ -103,13 +103,30 @@ describe('executive preview configuration', () => {
   it('keeps non-production local fixtures independent from the dated production window', () => {
     const localEnvironment = {
       ...VALID_ENV,
-      VERCEL_ENV: undefined,
+      VERCEL_ENV: 'development',
       EXECUTIVE_PREVIEW_EXPIRES_AT: '2099-01-01T00:00:00.000Z',
     };
     assert.equal(
       getExecutivePreviewConfig(localEnvironment, NOW)?.expiresAt,
       Date.parse('2099-01-01T00:00:00.000Z'),
     );
+  });
+
+  it('treats missing, preview, and unknown deployment contexts as ceiling-bound', () => {
+    for (const vercelEnvironment of [undefined, 'preview', 'unexpected']) {
+      assert.equal(
+        getExecutivePreviewConfig(
+          {
+            ...VALID_ENV,
+            VERCEL_ENV: vercelEnvironment,
+            EXECUTIVE_PREVIEW_EXPIRES_AT: '2099-01-01T00:00:00.000Z',
+          },
+          NOW,
+        ),
+        undefined,
+        String(vercelEnvironment),
+      );
+    }
   });
 });
 

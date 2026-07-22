@@ -257,10 +257,11 @@ test('English home exposes the primary navigation and the language-rich project 
     '/es',
   );
   const structuredData = JSON.parse(
-    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
-  ) as {'@type'?: string; description?: string; inLanguage?: string; url?: string};
+    (await page.locator('script[data-structured-data="website"]').textContent()) ?? '{}',
+  ) as {'@id'?: string; '@type'?: string; description?: string; inLanguage?: string[]; url?: string};
   expect(structuredData['@type']).toBe('WebSite');
-  expect(structuredData.inLanguage).toBe('en');
+  expect(structuredData['@id']).toBe('https://www.helpmath.ai/#website');
+  expect(structuredData.inLanguage).toEqual(['en', 'es']);
   expect(structuredData.url).toBe('https://www.helpmath.ai/');
   expect(structuredData.description).toContain('HELP Math 1.0 history and research');
 
@@ -285,12 +286,7 @@ test('English home exposes the primary navigation and the language-rich project 
 test('Spanish home localizes content and never duplicates the /es route prefix', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/es', 'es');
-  const structuredData = JSON.parse(
-    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
-  ) as {description?: string; inLanguage?: string; url?: string};
-  expect(structuredData.inLanguage).toBe('es');
-  expect(structuredData.url).toBe('https://www.helpmath.ai/es');
-  expect(structuredData.description).toContain('historia e investigación de HELP Math 1.0');
+  await expect(page.locator('script[data-structured-data="website"]')).toHaveCount(0);
 
   await expect(
     page.getByRole('heading', {
@@ -367,6 +363,7 @@ test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with c
     '@type'?: string;
     about?: Array<{name?: string}>;
     mentions?: Array<{name?: string}>;
+    isPartOf?: {'@id'?: string};
     publisher?: unknown;
   };
   expect(aboutData['@type']).toBe('AboutPage');
@@ -378,6 +375,7 @@ test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with c
     'Boulder Learning',
     'PedaNova',
   ]);
+  expect(aboutData.isPartOf?.['@id']).toBe('https://www.helpmath.ai/#website');
   expect(aboutData.publisher).toBeUndefined();
 
   await expect(
