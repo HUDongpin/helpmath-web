@@ -43,6 +43,7 @@ npm run check:generated
 npm test
 npm run build
 npm run test:e2e
+npm run test:visual
 npm audit --audit-level=high
 ```
 

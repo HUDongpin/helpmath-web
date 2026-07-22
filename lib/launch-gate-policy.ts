@@ -6,6 +6,7 @@ export const LAUNCH_GATE_SUBJECT_PATHS = [
   '.vercelignore',
   'app',
   'components',
+  'config/executive-preview-window.json',
   'content',
   'data',
   'demos',

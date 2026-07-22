@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "audience": "CEO and Chairman John Ramo",
+  "purpose": "Private review of the two JavaScript animation prototypes",
+  "demoIds": [
+    "conversion-1-2",
+    "conversion-1-4"
+  ],
+  "maximumExpiresAt": "2026-07-28T15:59:00.000Z"
+}

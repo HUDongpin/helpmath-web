@@ -60,8 +60,18 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
+  projects: [
+    {
+      name: 'chromium',
+      use: {...devices['Desktop Chrome']},
+    },
+    {
+      name: 'webkit-smoke',
+      grep: /@webkit-smoke/u,
+      use: {...devices['Desktop Safari']},
+    },
+  ],
   use: {
-    ...devices['Desktop Chrome'],
     baseURL,
     contextOptions: {
       reducedMotion: 'reduce',

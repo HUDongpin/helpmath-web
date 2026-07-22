@@ -7,17 +7,36 @@ import {getSiteContent} from '@/content';
 import type {Locale} from '@/content/types';
 import {LocaleProvider} from '@/i18n/navigation';
 import {routing} from '@/i18n/routing';
-import {getSiteUrl, SITE_DESCRIPTION, SITE_NAME} from '@/lib/site';
+import {
+  getSiteUrl,
+  localizedPath,
+  SITE_DESCRIPTIONS,
+  SITE_NAME,
+} from '@/lib/site';
 
 import '../globals.css';
 
-export const metadata: Metadata = {
-  metadataBase: getSiteUrl(),
-  title: {default: `${SITE_NAME} · Math language made visible`, template: `%s · ${SITE_NAME}`},
-  description: SITE_DESCRIPTION,
-  applicationName: SITE_NAME,
-  category: 'education'
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{locale: string}>;
+}): Promise<Metadata> {
+  const {locale} = await params;
+  if (!routing.locales.some((candidate) => candidate === locale)) notFound();
+  const appLocale = locale as Locale;
+  const content = getSiteContent(appLocale).shared;
+
+  return {
+    metadataBase: getSiteUrl(),
+    title: {
+      default: `${SITE_NAME} · ${content.siteTagline}`,
+      template: `%s · ${SITE_NAME}`,
+    },
+    description: SITE_DESCRIPTIONS[appLocale],
+    applicationName: SITE_NAME,
+    category: 'education',
+  };
+}
 
 export const viewport: Viewport = {
   colorScheme: 'light',
@@ -39,13 +58,15 @@ export default async function LocaleLayout({
   if (!routing.locales.some((candidate) => candidate === locale)) notFound();
   const appLocale = locale as Locale;
   const content = getSiteContent(appLocale).shared;
+  const websiteUrl = new URL(localizedPath(appLocale), getSiteUrl()).toString();
   const websiteData = JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${websiteUrl}#website`,
     name: SITE_NAME,
-    url: getSiteUrl().toString(),
-    description: SITE_DESCRIPTION,
-    inLanguage: ['en', 'es']
+    url: websiteUrl,
+    description: SITE_DESCRIPTIONS[appLocale],
+    inLanguage: appLocale,
   }).replaceAll('<', '\\u003c');
 
   return (

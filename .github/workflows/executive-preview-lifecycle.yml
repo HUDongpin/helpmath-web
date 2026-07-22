@@ -1,0 +1,48 @@
+name: Executive preview lifecycle
+
+on:
+  schedule:
+    - cron: "17 0,6,12,18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: executive-preview-lifecycle
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Verify public contract and approved preview lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_directory="$RUNNER_TEMP/helpmath-executive-preview-lifecycle"
+          mkdir -p "$evidence_directory"
+          node scripts/release-smoke.mjs > "$evidence_directory/canonical-contract.json"
+          node scripts/check-executive-preview-lifecycle.mjs \
+            "$evidence_directory/canonical-contract.json" \
+            > "$evidence_directory/lifecycle-observation.json"
+      - name: Retain non-secret lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: executive-preview-lifecycle-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/helpmath-executive-preview-lifecycle
+          if-no-files-found: error
+          retention-days: 30

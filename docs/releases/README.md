@@ -15,3 +15,10 @@ Every record follows [`RELEASE_EVIDENCE.md`](../RELEASE_EVIDENCE.md) and must
 state gaps and diagnostic conditions explicitly. A Vercel `READY` state or a
 successful page load does not substitute for commit identity, Quality results,
 or the deployment contract.
+
+Alias evidence uses `vercel-production-alias-YYYY-MM-DD.json` for the first
+legacy observation on a date and `vercel-production-alias-YYYY-MM-DD-prNN.json`
+for additional same-day releases. Never rename or overwrite an earlier
+observation merely to make the latest filename sort last; release-evidence
+validation orders the optional PR suffix numerically and binds it to the
+matching release record.

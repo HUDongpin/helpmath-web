@@ -55,7 +55,7 @@ export const esContent = {
       metadata: {
         title: "El lenguaje matemático, a la vista",
         description:
-          "Conoce el proyecto moderno HELP Math: apoyo matemático bilingüe, contexto de investigación, estado de modernización y ayuda para quienes regresan.",
+          "Conoce la historia y la investigación de HELP Math 1.0, la modernización propuesta de HELP Math 2.0 y la alianza confirmada entre Boulder Learning y PedaNova.",
       },
       hero: {
         eyebrow: "Bienvenidos de nuevo a HELP Math",
@@ -158,9 +158,9 @@ export const esContent = {
     },
     about: {
       metadata: {
-        title: "Acerca de HELP Math",
+        title: "HELP Math 1.0, 2.0 y sus socios",
         description:
-          "Conoce para qué se diseñó HELP Math, qué se está preservando y qué incluye y no incluye la modernización actual.",
+          "Explora HELP Math 1.0, la hoja de ruta propuesta por Boulder Learning para HELP Math 2.0 y la alianza estratégica confirmada entre Boulder Learning y PedaNova.",
       },
       hero: {
         eyebrow: "Acerca del proyecto",
@@ -211,9 +211,10 @@ export const esContent = {
             title: "Una intervención matemática en línea anterior a la pandemia",
             paragraphs: [
               "El sitio archivado describía HELP Math 1.0 como una intervención en línea basada en investigación y apoyada por el Departamento de Educación de Estados Unidos para estudiantes de inglés, alumnado con necesidades especiales y otras personas con dificultades para dominar las matemáticas.",
-              "Esta redacción ofrece contexto histórico; no afirma que el antiguo servicio basado en Flash ni sus cuentas estudiantiles sigan disponibles. La página de Investigación resume la evidencia y sus limitaciones importantes.",
+              "Esta redacción ofrece contexto histórico; no afirma que el antiguo servicio basado en Flash ni sus cuentas estudiantiles sigan disponibles. Un estudio aleatorizado de HELP Math 1.0 cumplió las normas de WWC sin reservas; ese dictamen corresponde al estudio revisado y no es una calificación general de ninguna versión de HELP Math.",
             ],
             actions: [
+              {label: "Revisar la evidencia de WWC y sus limitaciones", href: "/es/research#wwc-tran-study"},
               {label: "Explorar el currículo histórico", href: "/es/curriculum#help-math-1-catalog"},
               {label: "Ver los registros oficiales de reconocimiento", href: "/es/resources#codie-past-winners"},
             ],
@@ -540,9 +541,9 @@ export const esContent = {
     },
     research: {
       metadata: {
-        title: "Archivo de investigación y evidencia",
+        title: "Investigación de HELP Math 1.0 y evidencia de WWC",
         description:
-          "Consulta contexto histórico de investigación de HELP Math, registros archivados y las normas de evidencia que orientan las afirmaciones públicas actuales.",
+          "Consulta la evidencia fechada de HELP Math 1.0, incluido un estudio aleatorizado que WWC consideró conforme a sus normas sin reservas, además de sus limitaciones.",
       },
       hero: {
         eyebrow: "Investigación y evidencia",

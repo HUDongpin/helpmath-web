@@ -8,7 +8,8 @@ const repositoryRoot = process.cwd();
 const releaseDirectory = path.join(repositoryRoot, 'docs/releases');
 const evidenceDirectory = path.join(repositoryRoot, 'docs/evidence');
 const releaseNamePattern = /^(\d{4}-\d{2}-\d{2})-pr(\d+)\.md$/u;
-const aliasEvidenceNamePattern = /^vercel-production-alias-(\d{4}-\d{2}-\d{2})\.json$/u;
+const aliasEvidenceNamePattern =
+  /^vercel-production-alias-(\d{4}-\d{2}-\d{2})(?:-pr(\d+))?\.json$/u;
 
 type ReleaseRecord = {
   date: string;
@@ -60,7 +61,7 @@ function tableValue(record: string, field: string): string {
 function aliasReference(record: string): AliasReference {
   const assignment = tableValue(record, 'Canonical alias assignment');
   const match = assignment.match(
-    /`(docs\/evidence\/vercel-production-alias-\d{4}-\d{2}-\d{2}\.json)`, SHA-256 `([0-9a-f]{64})`/u,
+    /`(docs\/evidence\/vercel-production-alias-\d{4}-\d{2}-\d{2}(?:-pr\d+)?\.json)`, SHA-256 `([0-9a-f]{64})`/u,
   );
   assert.ok(match, 'Canonical alias assignment has no evidence path and SHA-256.');
   return {relativePath: match[1], sha256: match[2]};
@@ -188,7 +189,7 @@ describe('release evidence records', () => {
     assert.match(aliasAssignment, /`READY` Production deployment/iu);
     assert.match(aliasAssignment, /https:\/\/www\.helpmath\.ai/u);
     assert.match(aliasAssignment, /https:\/\/helpmath\.ai/u);
-    assert.match(aliasAssignment, /docs\/evidence\/vercel-production-alias-\d{4}-\d{2}-\d{2}\.json/u);
+    assert.match(aliasAssignment, /docs\/evidence\/vercel-production-alias-\d{4}-\d{2}-\d{2}(?:-pr\d+)?\.json/u);
     assert.match(aliasAssignment, /SHA-256 `[0-9a-f]{64}`/u);
 
     assert.match(tableValue(record, 'Contact mode'), /^Disabled;/u);
@@ -251,10 +252,15 @@ describe('release evidence records', () => {
 
     const evidenceFiles = (await readdir(evidenceDirectory))
       .filter((filename) => aliasEvidenceNamePattern.test(filename))
-      .sort();
+      .sort((left, right) => {
+        const leftMatch = requiredMatch(left, aliasEvidenceNamePattern, 'Alias evidence filename');
+        const rightMatch = requiredMatch(right, aliasEvidenceNamePattern, 'Alias evidence filename');
+        return leftMatch[1].localeCompare(rightMatch[1]) ||
+          Number(leftMatch[2] ?? 0) - Number(rightMatch[2] ?? 0);
+      });
     assert.deepEqual(
       [...new Set(references.map(({relativePath}) => path.basename(relativePath)))].sort(),
-      evidenceFiles,
+      [...evidenceFiles].sort(),
       'Every retained alias observation must be referenced by an immutable release record.',
     );
 
@@ -266,15 +272,23 @@ describe('release evidence records', () => {
       evidenceFiles.at(-1),
       'The newest release must reference the newest alias observation.',
     );
+    const latestAliasMatch = requiredMatch(
+      path.basename(latestReference.relativePath),
+      aliasEvidenceNamePattern,
+      'Alias evidence date',
+    );
     assert.equal(
-      requiredMatch(
-        path.basename(latestReference.relativePath),
-        aliasEvidenceNamePattern,
-        'Alias evidence date',
-      )[1],
+      latestAliasMatch[1],
       latest.date,
       'The newest release and alias observation must use the same record date.',
     );
+    if (latestAliasMatch[2]) {
+      assert.equal(
+        Number(latestAliasMatch[2]),
+        latest.pullRequest,
+        'A PR-suffixed alias observation must match its release record.',
+      );
+    }
 
     const evidence = JSON.parse(
       await readFile(path.join(repositoryRoot, latestReference.relativePath), 'utf8'),

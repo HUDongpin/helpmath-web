@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildDemoLifecycleSmokeModel,
   evaluateExecutivePreviewEntries,
+  evaluateExecutivePreviewLifecycle,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
   isStrictIsoUtcTimestamp,
@@ -249,6 +250,55 @@ test('evaluateExecutivePreviewEntries rejects inconsistent state, expiry, and ex
     {nowMs},
   );
   assert.match(differentExpiries.failures.join('\n'), /same single review expiry/);
+});
+
+test('evaluateExecutivePreviewLifecycle permits a safe early close and enforces the absolute boundary', () => {
+  const maximumExpiresAt = '2026-07-28T15:59:00.000Z';
+  const beforeClose = Date.parse('2026-07-28T15:58:59.000Z');
+  const atClose = Date.parse(maximumExpiresAt);
+
+  assert.deepEqual(
+    evaluateExecutivePreviewLifecycle(
+      {state: 'login', expiresAt: maximumExpiresAt},
+      {maximumExpiresAt, nowMs: beforeClose},
+    ).failures,
+    [],
+  );
+  assert.deepEqual(
+    evaluateExecutivePreviewLifecycle(
+      {state: 'unavailable', expiresAt: null},
+      {maximumExpiresAt, nowMs: beforeClose},
+    ).failures,
+    [],
+  );
+  assert.match(
+    evaluateExecutivePreviewLifecycle(
+      {state: 'login', expiresAt: '2026-07-29T00:00:00.000Z'},
+      {maximumExpiresAt, nowMs: beforeClose},
+    ).failures.join('\n'),
+    /expected 2026-07-28/u,
+  );
+  assert.deepEqual(
+    evaluateExecutivePreviewLifecycle(
+      {state: 'unavailable', expiresAt: null},
+      {maximumExpiresAt, nowMs: atClose},
+    ).failures,
+    [],
+  );
+  assert.match(
+    evaluateExecutivePreviewLifecycle(
+      {state: 'login', expiresAt: maximumExpiresAt},
+      {maximumExpiresAt, nowMs: atClose},
+    ).failures.join('\n'),
+    /expected unavailable after approved close/u,
+  );
+  assert.throws(
+    () => evaluateExecutivePreviewLifecycle(
+      {state: 'unavailable', expiresAt: null},
+      {maximumExpiresAt: 'not-a-date', nowMs: atClose},
+    ),
+    /canonical UTC timestamp/u,
+  );
 });
 
 test('inspectExecutivePreviewEntry fails classification for incomplete or mixed markup', () => {

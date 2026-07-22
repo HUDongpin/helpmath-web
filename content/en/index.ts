@@ -55,7 +55,7 @@ export const enContent = {
       metadata: {
         title: "Math language made visible",
         description:
-          "Meet the modern HELP Math project: bilingual math support, research context, modernization status, and help for returning educators and students.",
+          "Explore HELP Math 1.0 history and research, the proposed HELP Math 2.0 modernization, and the confirmed Boulder Learning–PedaNova strategic partnership.",
       },
       hero: {
         eyebrow: "Welcome back to HELP Math",
@@ -158,9 +158,9 @@ export const enContent = {
     },
     about: {
       metadata: {
-        title: "About HELP Math",
+        title: "HELP Math 1.0, 2.0 & Partners",
         description:
-          "Learn what HELP Math was designed to do, what is being preserved, and what the current modernization does and does not include.",
+          "Explore HELP Math 1.0, Boulder Learning’s proposed HELP Math 2.0 roadmap, and the confirmed Boulder Learning–PedaNova strategic partnership.",
       },
       hero: {
         eyebrow: "About the project",
@@ -211,9 +211,10 @@ export const enContent = {
             title: "A pre-pandemic online mathematics intervention",
             paragraphs: [
               "The archived HELP Math website described HELP Math 1.0 as a U.S. Department of Education-supported, research-based online intervention for English language learners, students with special needs, and other learners struggling with mathematics mastery.",
-              "That wording is historical context, not a claim that the former Flash-based service or its student accounts remain available today. The research record and important limitations are summarized on our Research page.",
+              "That wording is historical context, not a claim that the former Flash-based service or its student accounts remain available today. One randomized HELP Math 1.0 study met WWC standards without reservations; that judgment applies to the reviewed study, not as a blanket rating of either HELP Math version.",
             ],
             actions: [
+              {label: "Review the WWC evidence and limitations", href: "/research#wwc-tran-study"},
               {label: "Explore the historical curriculum", href: "/curriculum#help-math-1-catalog"},
               {label: "View official recognition records", href: "/resources#codie-past-winners"},
             ],
@@ -540,9 +541,9 @@ export const enContent = {
     },
     research: {
       metadata: {
-        title: "Research and Evidence Archive",
+        title: "HELP Math 1.0 Research & WWC Evidence",
         description:
-          "Review dated HELP Math research context, archival records, and the evidence standards guiding the project’s current public claims.",
+          "Review the dated HELP Math 1.0 evidence record, including one randomized study that WWC found met standards without reservations, plus its limitations.",
       },
       hero: {
         eyebrow: "Research and evidence",
