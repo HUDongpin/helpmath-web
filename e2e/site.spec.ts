@@ -611,12 +611,15 @@ test('mobile deep links leave the status strip behind and clear the sticky navig
 
         return {
           headerBottom: headerBounds.bottom,
+          headerHeight: headerBounds.height,
           headerPosition: getComputedStyle(header).position,
           headerTop: headerBounds.top,
           horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+          rootFontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
           scrollMarginTop: Number.parseFloat(getComputedStyle(target).scrollMarginTop),
           scrollY: window.scrollY,
           statusBottom: statusBounds.bottom,
+          statusHeight: statusBounds.height,
           statusPosition: getComputedStyle(statusStrip).position,
           targetTop: targetBounds.top,
           viewportHeight: window.innerHeight,
@@ -629,12 +632,22 @@ test('mobile deep links leave the status strip behind and clear the sticky navig
       expect(metrics.statusBottom, `${diagnostic} status strip remained sticky`).toBeLessThanOrEqual(1);
       expect(metrics.headerPosition, `${diagnostic} navigation must remain sticky`).toBe('sticky');
       expect(Math.abs(metrics.headerTop), `${diagnostic} navigation did not reach the viewport top`).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(
+          metrics.scrollMarginTop - (metrics.headerHeight + metrics.rootFontSize)
+        ),
+        `${diagnostic} anchor offset does not match the sticky navigation plus one rem`,
+      ).toBeLessThanOrEqual(2);
       expect(metrics.targetTop, `${diagnostic} target is hidden behind the navigation`).toBeGreaterThanOrEqual(metrics.headerBottom);
       expect(metrics.targetTop, `${diagnostic} target starts below the short viewport`).toBeLessThan(metrics.viewportHeight);
       expect(
-        Math.abs(metrics.targetTop - metrics.scrollMarginTop),
-        `${diagnostic} target does not honor its computed scroll margin`,
-      ).toBeLessThanOrEqual(2);
+        metrics.targetTop,
+        `${diagnostic} target starts above its computed scroll margin`,
+      ).toBeGreaterThanOrEqual(metrics.scrollMarginTop - 2);
+      expect(
+        metrics.targetTop,
+        `${diagnostic} target retained more than one in-flow status strip of space`,
+      ).toBeLessThanOrEqual(metrics.scrollMarginTop + metrics.statusHeight + 2);
       expect(metrics.horizontalOverflow, `${diagnostic} overflows horizontally`).toBeLessThanOrEqual(1);
     }
   }
