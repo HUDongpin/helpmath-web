@@ -3,7 +3,7 @@ import {describe, it} from 'node:test';
 import {createElement, type ComponentType, type ReactNode} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 
-import {SupportPage} from '../components/content-pages';
+import {ResearchPage, SupportPage} from '../components/content-pages';
 import {Callout, Section} from '../components/ui';
 import {getSiteContent} from '../content';
 import {LocaleProvider} from '../i18n/navigation';
@@ -64,6 +64,28 @@ describe('section and callout semantics', () => {
         ),
         locale,
       );
+    }
+  });
+
+  it('renders a localized evidence index for every research entry', () => {
+    for (const locale of ['en', 'es'] as const) {
+      const content = getSiteContent(locale).pages.research;
+      const html = renderToStaticMarkup(
+        createElement(
+          TestLocaleProvider,
+          {locale},
+          createElement(ResearchPage, {content}),
+        ),
+      );
+
+      assert.match(
+        html,
+        new RegExp(`<nav aria-label="${content.entriesLabel}" class="evidence-index">`, 'u'),
+        locale,
+      );
+      for (const entry of content.entries) {
+        assert.match(html, new RegExp(`href="#${entry.id}"`, 'u'), entry.id);
+      }
     }
   });
 });

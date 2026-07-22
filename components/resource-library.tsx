@@ -1,7 +1,7 @@
 'use client';
 
-import {useMemo, useState} from 'react';
-import {CheckCircle2, CircleAlert, SearchCheck} from 'lucide-react';
+import {useId, useMemo, useState} from 'react';
+import {CheckCircle2, CircleAlert, Search, SearchCheck} from 'lucide-react';
 
 import type {
   ResourceCategory,
@@ -22,6 +22,25 @@ type Selection = 'all' | ResourceCategory;
 
 const selections = ['all', 'program', 'research', 'technical'] as const;
 
+function normalizeSearchValue(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{Mark}/gu, '')
+    .toLowerCase()
+    .trim();
+}
+
+function resourceSearchText(item: ResourceEntry) {
+  return normalizeSearchValue([
+    item.title,
+    item.description,
+    item.format,
+    item.dateLabel,
+    item.statusLabel,
+    item.action.label,
+  ].join(' '));
+}
+
 export function ResourceLibrary({
   filters,
   items,
@@ -30,9 +49,18 @@ export function ResourceLibrary({
   items: ResourceEntry[];
 }) {
   const [selection, setSelection] = useState<Selection>('all');
+  const [query, setQuery] = useState('');
+  const searchId = useId();
+  const normalizedQuery = normalizeSearchValue(query);
+  const searchMatches = useMemo(
+    () => items.filter((item) => resourceSearchText(item).includes(normalizedQuery)),
+    [items, normalizedQuery],
+  );
   const visibleItems = useMemo(
-    () => items.filter((item) => selection === 'all' || item.category === selection),
-    [items, selection],
+    () => searchMatches.filter(
+      (item) => selection === 'all' || item.category === selection,
+    ),
+    [searchMatches, selection],
   );
   const labels: Record<Selection, string> = {
     all: filters.all,
@@ -40,14 +68,31 @@ export function ResourceLibrary({
     research: filters.research,
     technical: filters.technical,
   };
+  const resultsTemplate = visibleItems.length === 1
+    ? filters.resultTemplate
+    : filters.resultsTemplate;
 
   return (
     <div className="resource-library" id="resource-library">
+      <div className="resource-search">
+        <label htmlFor={searchId}>{filters.searchLabel}</label>
+        <div className="resource-search__field">
+          <Search aria-hidden="true" size={20} strokeWidth={2.2} />
+          <input
+            autoComplete="off"
+            id={searchId}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder={filters.searchPlaceholder}
+            type="search"
+            value={query}
+          />
+        </div>
+      </div>
       <div aria-label={filters.ariaLabel} className="resource-filters" role="group">
         {selections.map((value) => {
           const count = value === 'all'
-            ? items.length
-            : items.filter((item) => item.category === value).length;
+            ? searchMatches.length
+            : searchMatches.filter((item) => item.category === value).length;
 
           return (
             <button
@@ -63,7 +108,7 @@ export function ResourceLibrary({
         })}
       </div>
       <p aria-live="polite" className="resource-results" role="status">
-        {filters.resultsTemplate.replace('{count}', String(visibleItems.length))}
+        {resultsTemplate.replace('{count}', String(visibleItems.length))}
       </p>
       {visibleItems.length > 0 ? (
         <div className="resource-list">

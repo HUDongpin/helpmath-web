@@ -3,7 +3,33 @@ import {describe, it} from 'node:test';
 
 import {siteContent} from '../content';
 
+const identityKeys = new Set(['category', 'id', 'status']);
+
+function contentShape(value: unknown, key = ''): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => contentShape(item));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([entryKey, entryValue]) => [
+          entryKey,
+          contentShape(entryValue, entryKey),
+        ]),
+    );
+  }
+  return identityKeys.has(key) ? value : typeof value;
+}
+
 describe('public HELP Math resource catalog', () => {
+  it('keeps the complete English and Spanish content structures aligned', () => {
+    assert.deepEqual(
+      contentShape(siteContent.es),
+      contentShape(siteContent.en),
+    );
+  });
+
   it('keeps the English and Spanish libraries structurally aligned', () => {
     const english = siteContent.en.pages.resources.items;
     const spanish = siteContent.es.pages.resources.items;

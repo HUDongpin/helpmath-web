@@ -704,12 +704,15 @@ export const esContent = {
       },
       filters: {
         ariaLabel: "Filtrar recursos por categoría",
+        searchLabel: "Buscar recursos",
+        searchPlaceholder: "Buscar por título, fuente, tema o estado",
         all: "Todos los recursos",
         program: "Programa",
         research: "Investigación",
         technical: "Modernización",
+        resultTemplate: "Se muestra {count} recurso",
         resultsTemplate: "Se muestran {count} recursos",
-        empty: "No hay recursos en esta categoría.",
+        empty: "Ningún recurso coincide con la búsqueda y la categoría seleccionadas.",
       },
       items: [
         {
