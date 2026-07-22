@@ -2648,6 +2648,7 @@ svg {
 }
 
 @media print {
+  .status-strip,
   .site-header,
   .site-footer,
   .skip-link {

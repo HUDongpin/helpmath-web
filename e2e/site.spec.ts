@@ -537,6 +537,16 @@ test('support FAQ and callout landmarks have localized accessible names', {
   expectNoRuntimeIssues(issues);
 });
 
+test('print media removes site chrome after the status strip leaves the sticky header', async ({page}) => {
+  await expectDocument(page, '/research', 'en');
+  await page.emulateMedia({media: 'print'});
+
+  await expect(page.locator('.status-strip')).toBeHidden();
+  await expect(page.locator('.site-header')).toBeHidden();
+  await expect(page.locator('.site-footer')).toBeHidden();
+  await expect(page.locator('#main-content')).toBeVisible();
+});
+
 test('deep-link targets remain visible below the sticky site header', async ({page}) => {
   for (const [path, selector] of [
     ['/#strategic-partnership', '#strategic-partnership'],
