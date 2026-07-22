@@ -15,7 +15,7 @@ describe('static sitemap metadata', () => {
     }
   });
 
-  it('records the July 22 content update without redating unchanged pages', () => {
+  it('records the July 22 content updates without redating unchanged pages', () => {
     const dates = new Map(
       STATIC_SITEMAP_PAGES.map(({lastModified, path}) => [path, lastModified]),
     );

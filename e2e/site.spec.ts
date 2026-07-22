@@ -537,8 +537,19 @@ test('support FAQ and callout landmarks have localized accessible names', {
   expectNoRuntimeIssues(issues);
 });
 
+test('print media removes site chrome after the status strip leaves the sticky header', async ({page}) => {
+  await expectDocument(page, '/research', 'en');
+  await page.emulateMedia({media: 'print'});
+
+  await expect(page.locator('.status-strip')).toBeHidden();
+  await expect(page.locator('.site-header')).toBeHidden();
+  await expect(page.locator('.site-footer')).toBeHidden();
+  await expect(page.locator('#main-content')).toBeVisible();
+});
+
 test('deep-link targets remain visible below the sticky site header', async ({page}) => {
   for (const [path, selector] of [
+    ['/#strategic-partnership', '#strategic-partnership'],
     ['/approach#support-layers', '#support-layers'],
     ['/about#program-lineage', '#program-lineage'],
     ['/about#preservation', '#preservation'],
@@ -552,6 +563,7 @@ test('deep-link targets remain visible below the sticky site header', async ({pa
     ['/resources#technology-innovations-report', '#technology-innovations-report'],
     ['/resources#ell-curriculum-eric', '#ell-curriculum-eric'],
     ['/resources#about-help-math', '#about-help-math'],
+    ['/contact#main-content', '#main-content'],
   ] as const) {
     await page.goto(path, {waitUntil: 'networkidle'});
     const headerBottom = await page.locator('.site-header').evaluate(
@@ -564,6 +576,83 @@ test('deep-link targets remain visible below the sticky site header', async ({pa
       headerBottom,
     );
   }
+});
+
+test('mobile deep links leave the status strip behind and clear the sticky navigation', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+  const locales = [
+    {language: 'en', path: '/research'},
+    {language: 'es', path: '/es/research'},
+  ] as const;
+  const viewports = [
+    {name: 'minimum-phone', width: 320, height: 568},
+    {name: 'standard-phone', width: 390, height: 844},
+    {name: 'short-reflow', width: 320, height: 256},
+  ] as const;
+
+  for (const locale of locales) {
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      const path = `${locale.path}?viewport=${viewport.name}#wwc-tran-study`;
+      await expectDocument(page, path, locale.language);
+      await page.waitForFunction(() => document.fonts.status === 'loaded');
+
+      const metrics = await page.evaluate(() => {
+        const statusStrip = document.querySelector<HTMLElement>('.status-strip');
+        const header = document.querySelector<HTMLElement>('.site-header');
+        const target = document.querySelector<HTMLElement>('#wwc-tran-study');
+        if (!statusStrip || !header || !target) throw new Error('Missing deep-link chrome');
+
+        const statusBounds = statusStrip.getBoundingClientRect();
+        const headerBounds = header.getBoundingClientRect();
+        const targetBounds = target.getBoundingClientRect();
+
+        return {
+          headerBottom: headerBounds.bottom,
+          headerHeight: headerBounds.height,
+          headerPosition: getComputedStyle(header).position,
+          headerTop: headerBounds.top,
+          horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+          rootFontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+          scrollMarginTop: Number.parseFloat(getComputedStyle(target).scrollMarginTop),
+          scrollY: window.scrollY,
+          statusBottom: statusBounds.bottom,
+          statusHeight: statusBounds.height,
+          statusPosition: getComputedStyle(statusStrip).position,
+          targetTop: targetBounds.top,
+          viewportHeight: window.innerHeight,
+        };
+      });
+      const diagnostic = `${locale.language} ${viewport.width}x${viewport.height}`;
+
+      expect(metrics.scrollY, `${diagnostic} did not follow the deep link`).toBeGreaterThan(0);
+      expect(metrics.statusPosition, `${diagnostic} status strip must stay in document flow`).toBe('static');
+      expect(metrics.statusBottom, `${diagnostic} status strip remained sticky`).toBeLessThanOrEqual(1);
+      expect(metrics.headerPosition, `${diagnostic} navigation must remain sticky`).toBe('sticky');
+      expect(Math.abs(metrics.headerTop), `${diagnostic} navigation did not reach the viewport top`).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(
+          metrics.scrollMarginTop - (metrics.headerHeight + metrics.rootFontSize)
+        ),
+        `${diagnostic} anchor offset does not match the sticky navigation plus one rem`,
+      ).toBeLessThanOrEqual(2);
+      expect(metrics.targetTop, `${diagnostic} target is hidden behind the navigation`).toBeGreaterThanOrEqual(metrics.headerBottom);
+      expect(metrics.targetTop, `${diagnostic} target starts below the short viewport`).toBeLessThan(metrics.viewportHeight);
+      expect(
+        metrics.targetTop,
+        `${diagnostic} target starts above its computed scroll margin`,
+      ).toBeGreaterThanOrEqual(metrics.scrollMarginTop - 2);
+      expect(
+        metrics.targetTop,
+        `${diagnostic} target retained more than one in-flow status strip of space`,
+      ).toBeLessThanOrEqual(metrics.scrollMarginTop + metrics.statusHeight + 2);
+      expect(metrics.horizontalOverflow, `${diagnostic} overflows horizontally`).toBeLessThanOrEqual(1);
+    }
+  }
+
+  expectNoRuntimeIssues(issues);
 });
 
 test('every exact legacy fragment redirect lands on its existing target', async ({page}) => {
@@ -584,6 +673,13 @@ test('research register cites WWC and preserves both positive and limiting histo
   await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
   await expect(page.locator('a[href="https://eric.ed.gov/?id=EJ1023032"]')).toHaveCount(1);
   await expect(page.getByText(/42\.1% score increase/i)).toBeVisible();
+  await expect(
+    page.getByText(/official WWC record lists the author as “Tran, Z\.”/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/with funding from the Colorado Department of Education/i),
+  ).toBeVisible();
+  await expect(page.getByText(/not authorship or endorsement by that agency/i)).toBeVisible();
   await expect(page.getByText(/did not find an overall between-group main effect/i)).toBeVisible();
   await expect(page.getByText(/should not be restated as an award/i)).toBeVisible();
   const evidenceIndex = page.getByRole('navigation', {name: 'Evidence register'});
@@ -594,6 +690,13 @@ test('research register cites WWC and preserves both positive and limiting histo
 
   await expectDocument(page, '/es/research', 'es');
   await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
+  await expect(
+    page.getByText(/registro oficial de WWC enumera al autor como «Tran, Z\.»/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/con financiación del Departamento de Educación de Colorado/i),
+  ).toBeVisible();
+  await expect(page.getByText(/no autoría ni respaldo de esa agencia/i)).toBeVisible();
   await expect(page.getByText(/no encontró un efecto principal general/i)).toBeVisible();
   await expect(page.getByRole('navigation', {name: 'Registro de evidencia'})).toBeVisible();
   expectNoRuntimeIssues(issues);
@@ -615,6 +718,7 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await expect(menu).toHaveAttribute('open', '');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(trigger).toContainText('Close navigation');
+  await expect(page.locator('.status-strip')).toBeHidden();
 
   const approach = menu.getByRole('link', {name: 'Approach', exact: true});
   await expect(approach).toBeVisible();
@@ -676,6 +780,7 @@ test('mobile navigation remains reachable in short reflow viewports', {
     await trigger.focus();
     await page.keyboard.press('Enter');
     await expect(menu).toHaveAttribute('open', '');
+    await expect(page.locator('.status-strip')).toBeHidden();
 
     const navigation = menu.getByRole('navigation', {name: 'Main navigation'});
     await expect(navigation).toBeVisible();

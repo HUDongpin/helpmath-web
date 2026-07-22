@@ -603,10 +603,10 @@ export const esContent = {
           status: "verified",
           statusLabel: "Fuente oficial verificada",
           summary:
-            "What Works Clearinghouse, del Departamento de Educación de Estados Unidos, revisó un estudio aleatorizado de 146 estudiantes de inglés de sexto grado en adelante. WWC determinó que el estudio cumplía sus normas de evidencia sin reservas e informó un efecto positivo estadísticamente significativo en rendimiento matemático.",
+            "El What Works Clearinghouse (WWC) del Departamento de Educación de Estados Unidos revisó un estudio controlado aleatorizado de 146 estudiantes que aprendían inglés de 6.º a 10.º grado. El registro oficial de WWC enumera al autor como «Tran, Z.»; materiales archivados de HELP Math identifican al investigador como Zung Vu Tran, Ph.D. WWC determinó que el estudio cumplía sus normas de evidencia sin reservas e informó un efecto positivo estadísticamente significativo en el rendimiento matemático.",
           interpretation:
             "WWC informó un tamaño del efecto de 0,89 y un índice de mejora de +31. Esta es la afirmación verificada más sólida: un estudio bien implementado de HELP Math 1.0 cumplió las normas de WWC sin reservas. No debe presentarse como un premio ni como una calificación general del producto; WWC tampoco validó los porcentajes por grado.",
-          sourceLabel: "Fuente primaria: Departamento de Educación de Estados Unidos, Institute of Education Sciences, What Works Clearinghouse",
+          sourceLabel: "Fuente primaria de la revisión y la calificación: Departamento de Educación de Estados Unidos, Institute of Education Sciences, What Works Clearinghouse; ampliación histórica del nombre: página Awards archivada de HELP Math",
           sourceActions: [
             {label: "Abrir el registro del estudio en WWC", href: "https://ies.ed.gov/ncee/wwc/Study/72999"},
             {label: "Leer la revisión de WWC (PDF)", href: "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf"},
@@ -619,10 +619,10 @@ export const esContent = {
           status: "archived",
           statusLabel: "Resultados declarados por los autores",
           summary:
-            "La evaluación archivada informa un aumento del 42,1% para estudiantes de HELP Math frente al 4,6% del grupo de control. Informa aumentos de 75% frente a 13% en sexto grado y 71% frente a 3% en séptimo, cifras resumidas en materiales históricos como promedios de 73% frente a 8%.",
+            "Los materiales archivados del programa HELP Math describen la evaluación aleatorizada subyacente como realizada por el investigador independiente Zung Vu Tran, Ph.D., con financiación del Departamento de Educación de Colorado. El informe de evaluación redactado por el programa informa un aumento del 42,1% para estudiantes de HELP Math frente al 4,6% del grupo de control. Informa aumentos de 75% frente a 13% en sexto grado y 71% frente a 3% en séptimo, cifras resumidas en materiales históricos como promedios de 73% frente a 8%.",
           interpretation:
-            "Estos porcentajes proceden del informe de evaluación archivado y describen al alumnado retenido en la muestra analítica final. No son resultados de subgrupos validados adicionalmente por WWC ni deben generalizarse a HELP Math 2.0.",
-          sourceLabel: "Fuente histórica: HELP Math Evaluation White Paper (mayo de 2013)",
+            "Estos porcentajes proceden del informe de evaluación archivado y describen al alumnado retenido en la muestra analítica final. La descripción del investigador y de la financiación también es una atribución histórica del programa: describe financiación del Departamento de Educación de Colorado, no autoría ni respaldo de esa agencia, y no valida de manera independiente los porcentajes informados. No son resultados de subgrupos validados adicionalmente por WWC ni deben generalizarse a HELP Math 2.0.",
+          sourceLabel: "Fuentes históricas del programa: páginas Program Information y Awards archivadas de HELP Math; resultados informados: HELP Math Evaluation White Paper (mayo de 2013)",
           sourceActions: [
             {label: "Revisar el estado de publicación del archivo", href: "/es/resources#help-math-pilot-archive"},
           ],
