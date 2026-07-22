@@ -332,7 +332,10 @@ test('approved Avenir-first typography is used for body and display text', {
   expect(typography.loadedFallbackCount).toBeGreaterThan(0);
   expect(typography.loadedFamilies.some((family) => family.includes('nunitoSans'))).toBe(true);
   const nunitoPreload = typography.preloadedFonts.find(
-    (href) => href.includes('nunito_sans_latin_wght_normal') && href.endsWith('.woff2'),
+    (href) => {
+      const pathname = new URL(href).pathname;
+      return pathname.includes('nunito_sans_latin_wght_normal') && pathname.endsWith('.woff2');
+    },
   );
   expect(nunitoPreload).toBeDefined();
   const fontResponse = await page.request.get(nunitoPreload!);
