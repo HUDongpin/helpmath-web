@@ -173,11 +173,14 @@ both later approvals:
   and before the separate `production-release` envelope. It may not inherit a
   stale assertion from the earlier gate.
 
-Each `contact-production-verification` envelope independently requires true
-results for Production Turnstile, real inbox delivery, validated Reply-To,
-same-origin and honeypot controls, edge rate limiting, malformed, oversized,
-replayed, automated, and abusive submission handling, log redaction, and the
-recorded failure or rollback disposition.
+Each `contact-production-verification` envelope independently requires a
+separate true result for Production Turnstile, real inbox delivery, validated
+Reply-To, same-origin enforcement, honeypot handling, edge rate limiting,
+malformed-body rejection, oversized-body rejection, invalid Turnstile
+rejection, replayed Turnstile rejection, automated-submission handling,
+abusive-submission handling, log redaction, and the recorded failure or
+rollback disposition. Aggregate check names are rejected so one passing
+sub-result cannot mask a missing or failed control.
 
 A material deployment or contact-service configuration change invalidates the
 earlier operational result and requires another real Production validation. A

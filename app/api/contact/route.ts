@@ -13,6 +13,7 @@ export const DEVELOPMENT_TURNSTILE_TOKEN = 'development-bypass';
 
 type ErrorCode =
   | 'CONTACT_DISABLED'
+  | 'CONTACT_FORBIDDEN'
   | 'BAD_REQUEST'
   | 'UNSUPPORTED_MEDIA_TYPE'
   | 'PAYLOAD_TOO_LARGE'
@@ -60,6 +61,74 @@ function errorResponse(
 function clientIp(request: Request) {
   const forwarded = request.headers.get('x-forwarded-for');
   return forwarded?.split(',')[0]?.trim() || undefined;
+}
+
+function parseOrigin(value: string | null) {
+  const candidate = value?.trim();
+  if (!candidate || candidate.toLowerCase() === 'null') return undefined;
+
+  try {
+    const parsed = new URL(candidate);
+    if (
+      parsed.origin === 'null' ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return undefined;
+    }
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function forwardedOrigin(request: Request) {
+  const host = request.headers.get('x-forwarded-host')?.split(',', 1)[0]?.trim();
+  const protocol = request.headers.get('x-forwarded-proto')?.split(',', 1)[0]
+    ?.trim()
+    .toLowerCase();
+  if (!host || (protocol !== 'http' && protocol !== 'https')) return undefined;
+
+  try {
+    const parsed = new URL(`${protocol}://${host}`);
+    if (
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash ||
+      parsed.host.toLowerCase() !== host.toLowerCase()
+    ) {
+      return undefined;
+    }
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function isSameOriginMutation(request: Request) {
+  const fetchSite = request.headers.get('sec-fetch-site');
+  if (fetchSite !== null && fetchSite.trim().toLowerCase() !== 'same-origin') {
+    return false;
+  }
+
+  const suppliedOrigin = parseOrigin(request.headers.get('origin'));
+  if (!suppliedOrigin) return false;
+
+  let requestOrigin: string;
+  try {
+    const requestUrl = new URL(request.url);
+    if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') return false;
+    requestOrigin = requestUrl.origin;
+  } catch {
+    return false;
+  }
+
+  return suppliedOrigin === requestOrigin || suppliedOrigin === forwardedOrigin(request);
 }
 
 interface TurnstileResult {
@@ -214,6 +283,10 @@ export async function handleContactRequest(
 ) {
   if (!isContactIntakeEnabled(process.env.NEXT_PUBLIC_CONTACT_ENABLED, repositoryGateApproved)) {
     return errorResponse(503, 'CONTACT_DISABLED', 'Contact intake is not enabled.');
+  }
+
+  if (!isSameOriginMutation(request)) {
+    return errorResponse(403, 'CONTACT_FORBIDDEN', 'The request origin is not allowed.');
   }
 
   let body: unknown;

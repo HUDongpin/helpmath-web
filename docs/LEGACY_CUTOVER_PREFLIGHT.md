@@ -174,7 +174,7 @@ remains an owner attestation, not an independent login to the source system.
 | `dnsZoneBefore` | 24 hours | `authenticatedExport`, `completeZoneCaptured`, `rollbackValuesCaptured` |
 | `dnsZoneProposed` | 24 hours | `approvedWebsiteRecordsOnly`, `mailRecordsUnchanged`, `ownershipRecordsUnchanged`, `noApexCnameConflict` |
 | `mailContinuity` | 24 hours | `inboundDeliveryPassed`, `outboundDeliveryPassed`, `mxRecordsUnchanged`, `mailTxtRecordsUnchanged` |
-| `contactDelivery` | 24 hours | `repositoryGateApproved`, `productionEnvironmentEnabled`, `verifiedSubmissionDelivered`, `retentionAndInboxOwnersConfirmed` |
+| `contactDelivery` | 24 hours | `repositoryGateApproved`, `productionEnvironmentEnabled`, `retentionAndInboxOwnersConfirmed`, plus every granular `contact-production-verification` check listed below |
 | `searchConsoleControl` | 7 days | `legacyPropertyControlled`, `newPropertyControlled`, `changeOfAddressOwnerNamed` |
 | `offDeviceArchiveRestore` | 30 days | `encryptedOffDeviceCustody`, `independentRestorePassed`, `restoredBytesHashVerified` |
 | `rightsAccessibilityDisposition` | 30 days | `allGovernedSourcesClassified`, `republicationDecisionsRecorded`, `accessibilityActionsRecorded` |
@@ -185,6 +185,16 @@ remains an owner attestation, not an independent login to the source system.
 | `legacyHostConfigTest` | 24 hours | `targetHostVersionRecorded`, `stagedArtifactHashMatched`, `stagedConfigTestPassed` |
 | `preCutoverDnsObservation` | 15 minutes | `authoritativeResolversAgree`, `publicResolversAgree`, `websiteRecordsMatchBeforeZone`, `mailAndOwnershipRecordsMatchBeforeZone` |
 | `preCutoverHttpTlsObservation` | 15 minutes | `allFourLegacyOriginsReachable`, `currentRedirectStateMatchesBaseline`, `targetCanonicalRoutesPassed`, `tlsIdentityAndExpiryPassed` |
+
+`contactDelivery` deliberately reuses the exact Production verification
+contract instead of accepting an aggregate delivery assertion. Its additional
+required checks are `turnstileProductionPassed`, `endToEndDeliveryPassed`,
+`replyToPassed`, `sameOriginPassed`, `honeypotPassed`,
+`edgeRateLimitPassed`, `malformedBodyRejected`, `oversizedBodyRejected`,
+`invalidTurnstileRejected`, `replayedTurnstileRejected`,
+`automatedSubmissionHandled`, `abusiveSubmissionHandled`,
+`logRedactionPassed`, and `failureRollbackDispositionRecorded`. Missing,
+combined, renamed, unknown, or false checks fail closed.
 
 ## Decision and exit behavior
 
