@@ -1810,6 +1810,7 @@ svg {
   gap: 0.4rem;
   line-height: inherit;
   padding: 0;
+  text-align: left;
 }
 
 .mobile-nav__trigger:disabled {
