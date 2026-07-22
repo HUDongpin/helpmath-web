@@ -283,6 +283,30 @@ test('English home exposes the primary navigation and the language-rich project 
   expectNoRuntimeIssues(issues);
 });
 
+test('approved Avenir-first typography is used for body and display text', {
+  tag: ['@cross-browser-smoke', '@production-public-smoke'],
+}, async ({page}) => {
+  await expectDocument(page, '/about', 'en');
+  const typography = await page.evaluate(async () => {
+    await document.fonts.ready;
+    const bodyFamily = getComputedStyle(document.body).fontFamily;
+    const heading = document.querySelector('h1');
+    if (!heading) throw new Error('About page has no h1.');
+
+    return {
+      bodyFamily,
+      displayFamily: getComputedStyle(heading).fontFamily,
+      loadedFamilies: [...document.fonts].map((face) => face.family),
+    };
+  });
+
+  expect(typography.bodyFamily).toContain('Avenir Next');
+  expect(typography.bodyFamily).toContain('Nunito Sans Variable');
+  expect(typography.displayFamily).toBe(typography.bodyFamily);
+  expect(typography.loadedFamilies).toContain('Nunito Sans Variable');
+  expect(typography.loadedFamilies).not.toContain('Fredoka Variable');
+});
+
 test('Spanish home localizes content and never duplicates the /es route prefix', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/es', 'es');

@@ -40,7 +40,6 @@
     "test:lighthouse": "lhci autorun"
   },
   "dependencies": {
-    "@fontsource-variable/fredoka": "^5.3.0",
     "@fontsource-variable/nunito-sans": "^5.3.0",
     "@marsidev/react-turnstile": "^1.5.3",
     "lucide-react": "^1.25.0",

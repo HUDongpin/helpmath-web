@@ -10,6 +10,7 @@ const snapshotDirectory = path.join(
   'visual-tests/public-pages.visual.spec.ts-snapshots',
 );
 const expectedSnapshots = [
+  'about-hero-desktop.png',
   'home-desktop.png',
   'home-mobile.png',
   'partnership-en-desktop.png',
@@ -42,7 +43,7 @@ describe('visual regression quality gate', () => {
     assert.match(visualConfig, /\['junit', \{outputFile: 'artifacts\/playwright-visual-report\/results\.xml'\}\]/u);
   });
 
-  it('retains exactly the seven reviewed public-page PNG baselines', async () => {
+  it('retains exactly the eight reviewed public-page PNG baselines', async () => {
     const filenames = (await readdir(snapshotDirectory)).sort();
     assert.deepEqual(filenames, [...expectedSnapshots].sort());
 
