@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 
 import {CurriculumPage} from '@/components/content-pages';
+import {MainContent} from '@/components/main-content';
 import {getSiteContent} from '@/content';
 import {createPageMetadata} from '@/lib/metadata';
 
@@ -11,5 +12,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function CurriculumRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <main id="main-content"><CurriculumPage content={getSiteContent(locale).pages.curriculum} /></main>;
+  return <MainContent><CurriculumPage content={getSiteContent(locale).pages.curriculum} /></MainContent>;
 }

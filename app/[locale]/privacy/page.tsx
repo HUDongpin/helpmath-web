@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 
 import {LegalPage} from '@/components/content-pages';
+import {MainContent} from '@/components/main-content';
 import {getSiteContent} from '@/content';
 import {isDraftLegalPage} from '@/lib/legal-publishing';
 import {createPageMetadata} from '@/lib/metadata';
@@ -14,5 +15,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function PrivacyRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <main id="main-content"><LegalPage content={getSiteContent(locale).pages.privacy} /></main>;
+  return <MainContent><LegalPage content={getSiteContent(locale).pages.privacy} /></MainContent>;
 }

@@ -226,7 +226,21 @@ async function expectDocument(page: Page, path: string, language: 'en' | 'es') {
   const response = await page.goto(path, {waitUntil: 'networkidle'});
   expect(response?.status()).toBe(200);
   await expect(page.locator('html')).toHaveAttribute('lang', language);
-  await expect(page.locator('main#main-content')).toBeVisible();
+  await expect(page.getByRole('main')).toHaveCount(1);
+  const main = page.locator('main#main-content');
+  await expect(main).toBeVisible();
+  await expect(main).toHaveAttribute('tabindex', '-1');
+
+  const shared = siteContent[language].shared;
+  const status = page.getByRole('complementary', {
+    name: shared.statusLabel,
+    exact: true,
+  });
+  await expect(status).toHaveCount(1);
+  await expect(status).toHaveClass(/\bstatus-strip\b/u);
+  await expect(page.locator('#site-status-label')).toHaveCount(1);
+  await expect(status.locator('#site-status-label')).toHaveText(shared.statusLabel);
+  await expect(status).toContainText(shared.statusMessage);
 }
 
 test('English home exposes the primary navigation and the language-rich project promise', {
@@ -644,6 +658,51 @@ test('support FAQ and callout landmarks have localized accessible names', {
     await expect(
       page.getByRole('complementary', {name: supportPage.calloutName}),
     ).toBeVisible();
+  }
+
+  expectNoRuntimeIssues(issues);
+});
+
+test('status landmark and skip link provide localized keyboard navigation', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
+}, async ({browserName, page}) => {
+  const issues = monitorRuntimeIssues(page);
+  const keyboardFocusKey = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
+
+  for (const {language, path} of [
+    {language: 'en', path: '/'},
+    {language: 'es', path: '/es'},
+  ] as const) {
+    const shared = siteContent[language].shared;
+    await expectDocument(page, path, language);
+
+    const status = page.getByRole('complementary', {name: shared.statusLabel});
+    await expect(status).toBeVisible();
+
+    const skipLink = page.getByRole('link', {name: shared.skipToContent});
+    await page.keyboard.press(keyboardFocusKey);
+    await expect(skipLink).toBeFocused();
+    await expect(skipLink).toHaveCSS('top', '0px');
+    await page.keyboard.press('Enter');
+
+    const main = page.locator('main#main-content');
+    await expect(page).toHaveURL(new RegExp(`${path === '/' ? '/' : '/es'}#main-content$`, 'u'));
+    await expect(main).toBeFocused();
+    const [headerBottom, mainTop] = await Promise.all([
+      page.locator('.site-header').evaluate((element) => element.getBoundingClientRect().bottom),
+      main.evaluate((element) => element.getBoundingClientRect().top),
+    ]);
+    expect(mainTop, `${language} main content must clear the sticky header`).toBeGreaterThanOrEqual(
+      headerBottom - 1,
+    );
+
+    await page.keyboard.press(keyboardFocusKey);
+    expect(
+      await main.evaluate((element) =>
+        element.contains(document.activeElement) && document.activeElement !== element
+      ),
+      `${language} should continue tabbing inside the skipped-to main content`,
+    ).toBe(true);
   }
 
   expectNoRuntimeIssues(issues);

@@ -225,7 +225,8 @@ export function SiteHeader({
 
   return (
     <>
-      <div
+      <aside
+        aria-labelledby="site-status-label"
         className={`status-strip${isMobileMenuOpen ? ' status-strip--menu-open' : ''}`}
       >
         <div className="container status-strip__inner">
@@ -233,10 +234,11 @@ export function SiteHeader({
             <Sparkles size={14} />
           </span>
           <span>
-            <strong>{content.statusLabel}</strong> {content.statusMessage}
+            <strong id="site-status-label">{content.statusLabel}</strong>{' '}
+            {content.statusMessage}
           </span>
         </div>
-      </div>
+      </aside>
       <header className="site-header">
         <div className="container site-header__inner">
           <Brand homeLabel={navigation.homeLabel} />
