@@ -106,8 +106,9 @@ const browserExperiencePaths = [
 ] as const;
 
 const browserExperienceViewports = [
-  {name: 'desktop', width: 1280, height: 800},
-  {name: '390px', width: 390, height: 844},
+  {name: 'desktop', width: 1280, height: 800, runAxe: true},
+  {name: 'tablet', width: 768, height: 1024, runAxe: false},
+  {name: '320px', width: 320, height: 740, runAxe: true},
 ] as const;
 
 const legacyDeepLinkCases = [
@@ -191,25 +192,29 @@ function expectNoRuntimeIssues(issues: RuntimeIssue[]) {
   expect(issues, `Unexpected browser errors:\n${JSON.stringify(issues, null, 2)}`).toEqual([]);
 }
 
-async function expectNoBlockingAxeViolations(
+async function expectNoAxeViolations(
   page: Page,
   path: string,
   viewport: string,
 ) {
   const results = await new AxeBuilder({page})
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .withTags([
+      'wcag2a',
+      'wcag2aa',
+      'wcag21a',
+      'wcag21aa',
+      'wcag22a',
+      'wcag22aa',
+    ])
     .analyze();
-  const blocking = results.violations.filter(
-    (violation) => violation.impact === 'serious' || violation.impact === 'critical',
-  );
 
   expect(
-    blocking,
+    results.violations,
     [
-      `${path} at ${viewport} has serious or critical accessibility violations:`,
-      ...blocking.map(
+      `${path} at ${viewport} has accessibility violations:`,
+      ...results.violations.map(
         (violation) =>
-          `${violation.id} (${violation.impact}): ${violation.help}\n${violation.nodes
+          `${violation.id} (${violation.impact ?? 'unknown impact'}): ${violation.help}\n${violation.nodes
             .map((node) => `  ${node.target.join(' ')}: ${node.failureSummary ?? ''}`)
             .join('\n')}`,
       ),
@@ -909,14 +914,11 @@ test('executive preview grants a short-lived private session for both JavaScript
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(1);
-  const authenticatedAccessibility = await new AxeBuilder({page})
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze();
-  expect(
-    authenticatedAccessibility.violations.filter(
-      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
-    ),
-  ).toEqual([]);
+  await expectNoAxeViolations(
+    page,
+    '/es/demos/conversion-1-4 (authenticated)',
+    '390px',
+  );
 
   await page.goto('/es/demos/conversion-1-2', {waitUntil: 'networkidle'});
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
@@ -1121,13 +1123,13 @@ test('every sitemap page has one heading, canonical metadata, and the expected l
 
 test.describe('complete public browser experience matrix', () => {
   for (const path of browserExperiencePaths) {
-    test(`${path} passes desktop and 390px browser checks`, async ({page}) => {
+    test(`${path} passes desktop, tablet, and 320px browser checks`, async ({page}) => {
       test.setTimeout(60_000);
       const issues = monitorRuntimeIssues(page);
       const language = path === '/es' || path.startsWith('/es/') ? 'es' : 'en';
 
       for (const viewport of browserExperienceViewports) {
-        await page.setViewportSize(viewport);
+        await page.setViewportSize({width: viewport.width, height: viewport.height});
         await expectDocument(page, path, language);
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth - window.innerWidth,
@@ -1136,7 +1138,11 @@ test.describe('complete public browser experience matrix', () => {
           overflow,
           `${path} overflows horizontally at ${viewport.name}`,
         ).toBeLessThanOrEqual(1);
-        await expectNoBlockingAxeViolations(page, path, viewport.name);
+        // Axe runs at both width extremes. The tablet pass remains a layout and
+        // runtime check so the added breakpoint does not expand scan count.
+        if (viewport.runAxe) {
+          await expectNoAxeViolations(page, path, viewport.name);
+        }
       }
 
       expectNoRuntimeIssues(issues);

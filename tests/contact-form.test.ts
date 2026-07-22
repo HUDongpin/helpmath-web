@@ -45,6 +45,8 @@ test('the enabled contact form links its consent control to the localized privac
     assert.match(html, new RegExp(`href="${privacyPath}"`), locale);
     assert.match(html, new RegExp(linkLabel), locale);
     assert.match(html, /id="contact-privacy-consent"/, locale);
+    assert.match(html, /<form\b[^>]*action="\/api\/contact"/u, locale);
+    assert.match(html, /<form\b[^>]*method="post"/u, locale);
   }
 });
 

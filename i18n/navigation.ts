@@ -54,9 +54,17 @@ type LocalizedLinkProps = Omit<ComponentProps<typeof NextLink>, 'href' | 'locale
   locale?: AppLocale;
 };
 
-export function Link({href, locale, ...props}: LocalizedLinkProps) {
+export function Link({href, locale, prefetch = false, ...props}: LocalizedLinkProps) {
   const activeLocale = useContext(LocaleContext);
-  return createElement(NextLink, {href: localizeHref(href, locale ?? activeLocale), ...props});
+
+  // The information architecture exposes many repeated header, footer, and
+  // card links at once. Fetch on navigation by default so an initial page view
+  // does not eagerly request every linked RSC payload; callers can opt in.
+  return createElement(NextLink, {
+    href: localizeHref(href, locale ?? activeLocale),
+    prefetch,
+    ...props,
+  });
 }
 
 export function usePathname(): string {

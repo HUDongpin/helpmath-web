@@ -5,6 +5,7 @@ node_modules/
 playwright-report/
 test-results/
 .playwright-cli/
+.lighthouseci/
 coverage/
 artifacts/
 *.tsbuildinfo
