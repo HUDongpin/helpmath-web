@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-22T04:51:40.000Z",
+  "source": {
+    "method": "Authenticated Vercel CLI inspect with JSON output and filtered build-log inspection, reduced to non-secret deployment identity fields",
+    "cliVersion": "56.4.1",
+    "scope": "peter-dongpin-hu-s-projects",
+    "rawOutputRetained": false,
+    "rawOutputRetentionReason": "The full response contains extensive internal build metadata that is unnecessary for alias identity."
+  },
+  "project": {
+    "name": "helpmath-web"
+  },
+  "deployment": {
+    "vercelDeploymentId": "dpl_2vtyCEztpryE2hrKZ8MYsuNBUH5H",
+    "vercelBuildId": "bld_ihm3dhkn9",
+    "githubDeploymentId": 5549965132,
+    "githubDeploymentStatusId": 15779257566,
+    "repositoryCommit": "72f1a00cb3e5bbd49496735a4c9eac4d58c5e77b",
+    "target": "production",
+    "readyState": "READY",
+    "createdAt": "2026-07-22T04:45:39.816Z",
+    "immutableUrl": "https://helpmath-3u18yhzow-peter-dongpin-hu-s-projects.vercel.app"
+  },
+  "aliases": [
+    "https://www.helpmath.ai",
+    "https://helpmath.ai",
+    "https://helpmath-web.vercel.app",
+    "https://helpmath-web-peter-dongpin-hu-s-projects.vercel.app",
+    "https://helpmath-web-git-main-peter-dongpin-hu-s-projects.vercel.app"
+  ],
+  "buildBoundary": {
+    "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
+    "ignoreDecision": "build-relevant-change",
+    "installCommand": "npm ci",
+    "buildExecuted": true
+  },
+  "evidenceOnlyBuildBoundaryVerification": {
+    "observedAt": "2026-07-22T04:57:09.000Z",
+    "repositoryCommit": "f3675ffb9c320e5015bc7efc406c9c08f0f5bd77",
+    "changedPaths": [
+      "docs/LAUNCH_DECISIONS.md",
+      "docs/LEGACY_CUTOVER.md",
+      "docs/evidence/vercel-production-alias-2026-07-22-pr27.json",
+      "docs/releases/2026-07-22-pr27.md"
+    ],
+    "vercelDeploymentId": "dpl_Ch4hwkLjebe8xc6vg2yuArXtit1H",
+    "vercelTarget": "preview",
+    "vercelReadyState": "CANCELED",
+    "githubStatusContextId": 50871470035,
+    "githubStatusState": "success",
+    "githubStatusDescription": "Canceled by Ignored Build Step",
+    "githubDeploymentsCreated": 0,
+    "canonicalProductionDeploymentAfterSkip": "dpl_2vtyCEztpryE2hrKZ8MYsuNBUH5H"
+  },
+  "corroboratingEvidence": {
+    "githubDeploymentStatus": "https://api.github.com/repos/HUDongpin/helpmath-web/deployments/5549965132/statuses",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29891910210",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29891948166",
+    "pullRequest": "https://github.com/HUDongpin/helpmath-web/pull/27"
+  },
+  "checks": {
+    "canonicalWwwAliasAssigned": true,
+    "canonicalApexAliasAssigned": true,
+    "deploymentReady": true,
+    "buildReady": true,
+    "productionTarget": true,
+    "githubDeploymentMatchesCommit": true,
+    "buildRelevantChangeWasNotSkipped": true,
+    "reproducibleInstallCommandApplied": true,
+    "evidenceOnlyCommitSkippedPreviewBuild": true,
+    "canonicalProductionUnchangedAfterSkip": true
+  },
+  "limitations": [
+    "This owner-authenticated operational observation is not a registrar or DNS-provider zone export.",
+    "It does not authorize a helpmath.ai or helpprogram.net DNS or hosting change.",
+    "It does not prove authenticated Executive Preview playback or public demo rights.",
+    "The allowlisted commit proves the repository-owned Preview skip path; the same rule still requires observation after the evidence commit reaches main."
+  ]
+}
