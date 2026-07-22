@@ -650,6 +650,13 @@ test('research register cites WWC and preserves both positive and limiting histo
   await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
   await expect(page.locator('a[href="https://eric.ed.gov/?id=EJ1023032"]')).toHaveCount(1);
   await expect(page.getByText(/42\.1% score increase/i)).toBeVisible();
+  await expect(
+    page.getByText(/official WWC record lists the author as “Tran, Z\.”/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/with funding from the Colorado Department of Education/i),
+  ).toBeVisible();
+  await expect(page.getByText(/not authorship or endorsement by that agency/i)).toBeVisible();
   await expect(page.getByText(/did not find an overall between-group main effect/i)).toBeVisible();
   await expect(page.getByText(/should not be restated as an award/i)).toBeVisible();
   const evidenceIndex = page.getByRole('navigation', {name: 'Evidence register'});
@@ -660,6 +667,13 @@ test('research register cites WWC and preserves both positive and limiting histo
 
   await expectDocument(page, '/es/research', 'es');
   await expect(page.locator('a[href="https://ies.ed.gov/ncee/wwc/Study/72999"]')).toHaveCount(1);
+  await expect(
+    page.getByText(/registro oficial de WWC enumera al autor como «Tran, Z\.»/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/con financiación del Departamento de Educación de Colorado/i),
+  ).toBeVisible();
+  await expect(page.getByText(/no autoría ni respaldo de esa agencia/i)).toBeVisible();
   await expect(page.getByText(/no encontró un efecto principal general/i)).toBeVisible();
   await expect(page.getByRole('navigation', {name: 'Registro de evidencia'})).toBeVisible();
   expectNoRuntimeIssues(issues);

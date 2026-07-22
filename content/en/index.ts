@@ -603,10 +603,10 @@ export const enContent = {
           status: "verified",
           statusLabel: "Official source verified",
           summary:
-            "The U.S. Department of Education’s What Works Clearinghouse reviewed a randomized controlled study of 146 English language learners in Grade 6 and higher. WWC found that the study met evidence standards without reservations and reported a statistically significant positive effect on mathematics achievement.",
+            "The U.S. Department of Education’s What Works Clearinghouse reviewed a randomized controlled study of 146 English language learners in Grades 6–10. The official WWC record lists the author as “Tran, Z.”; archived HELP Math materials identify the researcher as Zung Vu Tran, Ph.D. WWC found that the study met evidence standards without reservations and reported a statistically significant positive effect on mathematics achievement.",
           interpretation:
             "WWC reported an effect size of 0.89 and an improvement index of +31. This is the strongest verified statement: one well-implemented HELP Math 1.0 study met WWC standards without reservations. It should not be restated as an award or a blanket product rating, and WWC did not validate the study’s grade-subgroup percentages.",
-          sourceLabel: "Primary source: U.S. Department of Education, Institute of Education Sciences, What Works Clearinghouse",
+          sourceLabel: "Primary source for the review and rating: U.S. Department of Education, Institute of Education Sciences, What Works Clearinghouse; historical name expansion: archived HELP Math Awards page",
           sourceActions: [
             {label: "Open the WWC study record", href: "https://ies.ed.gov/ncee/wwc/Study/72999"},
             {label: "Read the WWC review (PDF)", href: "https://ies.ed.gov/ncee/wwc/Docs/SingleStudyReviews/wwc_help_102312.pdf"},
@@ -619,10 +619,10 @@ export const enContent = {
           status: "archived",
           statusLabel: "Author-reported outcomes",
           summary:
-            "The archived evaluation reports a 42.1% score increase for HELP Math students versus 4.6% for the control group. It reports Grade 6 gains of 75% versus 13% and Grade 7 gains of 71% versus 3%—figures summarized in legacy materials as averages of 73% versus 8%.",
+            "Archived HELP Math program materials describe the underlying randomized evaluation as conducted by independent researcher Zung Vu Tran, Ph.D., with funding from the Colorado Department of Education. The program-authored evaluation white paper reports a 42.1% score increase for HELP Math students versus 4.6% for the control group. It reports Grade 6 gains of 75% versus 13% and Grade 7 gains of 71% versus 3%—figures summarized in legacy materials as averages of 73% versus 8%.",
           interpretation:
-            "These percentages come from the program’s archived evaluation white paper and describe students retained in its final analytic sample. They are not additional WWC-validated subgroup findings and should not be generalized to HELP Math 2.0.",
-          sourceLabel: "Historical source: HELP Math Evaluation White Paper (May 2013)",
+            "These percentages come from the program’s archived evaluation white paper and describe students retained in its final analytic sample. The researcher-and-funding description is likewise an attributed historical program statement: it describes Colorado Department of Education funding, not authorship or endorsement by that agency, and it does not independently validate the reported percentages. The percentages are not additional WWC-validated subgroup findings and should not be generalized to HELP Math 2.0.",
+          sourceLabel: "Historical program sources: archived HELP Math Program Information and Awards pages; reported outcomes: HELP Math Evaluation White Paper (May 2013)",
           sourceActions: [
             {label: "Review the archive publication status", href: "/resources#help-math-pilot-archive"},
           ],

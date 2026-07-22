@@ -16,7 +16,7 @@ export const STATIC_SITEMAP_PAGES: readonly StaticSitemapPage[] = [
   {path: '/approach', lastModified: '2026-07-21T00:00:00.000Z'},
   {path: '/curriculum', lastModified: '2026-07-21T00:00:00.000Z'},
   {path: '/research', lastModified: '2026-07-22T00:00:00.000Z'},
-  {path: '/resources', lastModified: '2026-07-21T00:00:00.000Z'},
+  {path: '/resources', lastModified: '2026-07-22T00:00:00.000Z'},
   {path: '/support', lastModified: '2026-07-22T00:00:00.000Z'},
   {path: '/login', lastModified: '2026-07-21T00:00:00.000Z'},
   {path: '/contact', lastModified: '2026-07-21T00:00:00.000Z'},
