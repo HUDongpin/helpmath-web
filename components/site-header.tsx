@@ -113,7 +113,27 @@ export function SiteHeader({
   }
 
   function handleMobileMenuKeyDown(event: KeyboardEvent<HTMLDetailsElement>) {
-    if (event.key !== 'Escape' || !event.currentTarget.open) return;
+    if (!event.currentTarget.open) return;
+
+    if (event.key === 'Tab') {
+      const panel = event.currentTarget.querySelector<HTMLElement>('#mobile-navigation-panel');
+      const focusableSelector = [
+        'a[href]',
+        'button:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])',
+      ].join(', ');
+      const panelControls = Array.from(
+        panel?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
+      );
+      const boundaryControl = event.shiftKey
+        ? mobileNavSummaryRef.current
+        : panelControls.at(-1) ?? mobileNavSummaryRef.current;
+
+      if (event.target === boundaryControl) closeMobileMenuAfterActivation();
+      return;
+    }
+
+    if (event.key !== 'Escape') return;
 
     event.preventDefault();
     closeMobileMenu();

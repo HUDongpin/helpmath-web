@@ -79,11 +79,6 @@ svg {
   color: var(--ink);
 }
 
-:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
-}
-
 .skip-link {
   background: var(--ink);
   border-radius: 0 0 8px 8px;
@@ -2738,7 +2733,18 @@ svg {
   }
 }
 
+:focus-visible {
+  box-shadow: 0 0 0 3px var(--white);
+  outline: 3px solid var(--ink);
+  outline-offset: 4px;
+}
+
 @media (forced-colors: active) {
+  :focus-visible {
+    box-shadow: none;
+    outline-color: CanvasText;
+  }
+
   .resource-filters button[aria-pressed='true'] {
     background: Highlight;
     border-color: Highlight;

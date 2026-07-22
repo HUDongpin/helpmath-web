@@ -390,24 +390,49 @@ test('keyboard focus remains visible across the branded surface palette', async 
 
     const rootStyle = getComputedStyle(document.documentElement);
     const elementStyle = getComputedStyle(element);
-    const outline = resolveColor(elementStyle.outlineColor);
-    const surfaces = ['--paper', '--white', '--blue-pale', '--yellow-pale', '--mint-pale'];
+    const ringColors = [resolveColor(elementStyle.outlineColor)];
+    const shadowColor = elementStyle.boxShadow.match(/rgba?\([^)]+\)/u)?.[0];
+    if (shadowColor) ringColors.push(resolveColor(shadowColor));
+    const surfaces = [
+      '--paper',
+      '--white',
+      '--blue-pale',
+      '--yellow-pale',
+      '--mint-pale',
+      '--ink',
+    ];
 
     return {
+      boxShadow: elementStyle.boxShadow,
       outlineStyle: elementStyle.outlineStyle,
       outlineWidth: Number.parseFloat(elementStyle.outlineWidth),
       ratios: surfaces.map((token) => ({
         token,
-        ratio: contrast(outline, resolveColor(rootStyle.getPropertyValue(token))),
+        ratio: Math.max(
+          ...ringColors.map((ring) =>
+            contrast(ring, resolveColor(rootStyle.getPropertyValue(token))),
+          ),
+        ),
       })),
     };
   });
 
+  expect(focusIndicator.boxShadow).not.toBe('none');
   expect(focusIndicator.outlineStyle).toBe('solid');
   expect(focusIndicator.outlineWidth).toBeGreaterThanOrEqual(3);
   for (const {ratio, token} of focusIndicator.ratios) {
     expect(ratio, `${token} focus contrast`).toBeGreaterThanOrEqual(3);
   }
+
+  const footerLink = page.locator('.site-footer a').first();
+  await footerLink.focus();
+  await expect(footerLink).toBeFocused();
+  const footerFocus = await footerLink.evaluate((element) => ({
+    boxShadow: getComputedStyle(element).boxShadow,
+    outlineStyle: getComputedStyle(element).outlineStyle,
+  }));
+  expect(footerFocus.boxShadow).not.toBe('none');
+  expect(footerFocus.outlineStyle).toBe('solid');
 });
 
 test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', {
@@ -815,6 +840,12 @@ test('mobile navigation closes without obscuring keyboard focus', {
   expect(
     await page.evaluate(() => document.activeElement?.closest('.mobile-nav') === null),
   ).toBe(true);
+
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveAttribute('open', '');
+  await page.keyboard.press('Shift+Tab');
+  await expect(menu).not.toHaveAttribute('open', '');
   expectNoRuntimeIssues(issues);
 });
 
