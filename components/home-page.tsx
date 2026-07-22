@@ -72,7 +72,7 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
         </Container>
       </Section>
 
-      <Section>
+      <Section className="deferred-section deferred-section--home-audiences">
         <Container>
           <SectionHeading
             align="center"
@@ -96,7 +96,7 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
         </Container>
       </Section>
 
-      <Section className="surface-blue">
+      <Section className="deferred-section deferred-section--home-approach surface-blue">
         <Container>
           <div className="split-heading">
             <SectionHeading
@@ -110,7 +110,7 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
         </Container>
       </Section>
 
-      <Section>
+      <Section className="deferred-section deferred-section--home-demos">
         <Container>
           <SectionHeading
             eyebrow={content.demos.eyebrow}
@@ -151,7 +151,7 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
         </Container>
       </Section>
 
-      <Section className="home-closing">
+      <Section className="deferred-section deferred-section--home-closing home-closing">
         <Container>
           <Callout {...content.closing} tone="paper" />
         </Container>

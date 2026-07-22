@@ -44,7 +44,7 @@ export function DemosPage({content}: {content: DemosContent}) {
           </Container>
         </Section>
       ) : null}
-      <Section className="surface-blue">
+      <Section className="deferred-section deferred-section--demos-quality surface-blue">
         <Container>
           <TextSection content={content.quality} />
           <Callout {...content.accessibility} tone="paper" />

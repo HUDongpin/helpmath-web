@@ -107,6 +107,99 @@ svg {
   padding-block: clamp(2.5rem, 5vw, 4rem);
 }
 
+/*
+ * Keep the first view fully rendered while deferring only large, below-fold
+ * regions. The intrinsic sizes are calibrated across English, Spanish,
+ * Avenir Next, and the bundled Nunito fallback. Resource cards before the
+ * deepest published anchor use their own aggregate calibration so fragment
+ * navigation keeps the target below the sticky header.
+ */
+@supports (content-visibility: auto) {
+  .deferred-section,
+  .resource-list > .resource-entry:nth-child(n + 4) {
+    content-visibility: auto;
+  }
+
+  .deferred-section {
+    contain-intrinsic-size: auto var(--deferred-block-size);
+  }
+
+  .deferred-section--home-audiences {
+    --deferred-block-size: clamp(560.9px, calc(618.5px - 4.5vw), 586.1px);
+  }
+
+  .deferred-section--home-approach {
+    --deferred-block-size: clamp(572.4px, calc(557.3px + 2.1vw), 584.2px);
+  }
+
+  .deferred-section--home-demos {
+    --deferred-block-size: clamp(225.6px, calc(49.7px + 24.4vw), 362px);
+  }
+
+  .deferred-section--home-closing {
+    --deferred-block-size: clamp(224.6px, calc(289.9px - 5.1vw), 253.1px);
+  }
+
+  .deferred-section--demos-quality {
+    --deferred-block-size: clamp(666.2px, calc(800.6px - 10.5vw), 724.9px);
+  }
+
+  html[lang="es"] .deferred-section--home-audiences {
+    --deferred-block-size: clamp(597.9px, calc(740px - 11.1vw), 660px);
+  }
+
+  html[lang="es"] .deferred-section--home-approach {
+    --deferred-block-size: clamp(580.5px, calc(530px + 7vw), 619.6px);
+  }
+
+  html[lang="es"] .deferred-section--home-demos {
+    --deferred-block-size: clamp(243.9px, calc(103.3px + 19.5vw), 353px);
+  }
+
+  html[lang="es"] .deferred-section--home-closing {
+    --deferred-block-size: 234.3px;
+  }
+
+  html[lang="es"] .deferred-section--demos-quality {
+    --deferred-block-size: clamp(724.8px, calc(923.2px - 15.5vw), 811.4px);
+  }
+
+  .resource-list > .resource-entry:nth-child(n + 4) {
+    contain-intrinsic-size: auto clamp(145.4px, calc(464.1px - 24.9vw), 284.6px);
+  }
+
+  /*
+   * A direct fragment visit needs final geometry before its single corrected
+   * scroll. The parser bootstrap adds this class only for that visit; regular
+   * resource browsing still benefits from deferred rendering.
+   */
+  html.resource-fragment-navigation .resource-list > .resource-entry,
+  html:has(.resource-entry:target) .resource-list > .resource-entry {
+    content-visibility: visible;
+  }
+
+  .resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14) {
+    contain-intrinsic-size: auto clamp(
+      160.7px,
+      max(calc(487.9px - 26.5vw), calc(428.5px - 20.92vw)),
+      297px
+    );
+  }
+
+  html[lang="es"] .resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14) {
+    contain-intrinsic-size: auto clamp(
+      168.5px,
+      max(calc(491px - 26.2vw), calc(429.4px - 20.38vw)),
+      302.1px
+    );
+  }
+
+  #technology-innovations-report {
+    contain-intrinsic-size: auto clamp(173.7px, calc(332.4px - 12.4vw), 243px);
+  }
+
+}
+
 .surface-blue {
   background: var(--blue-pale);
   border-block: 1px solid #cbdff3;
@@ -2597,6 +2690,64 @@ svg {
     padding-block: 3.7rem;
   }
 
+  @supports (content-visibility: auto) {
+    .deferred-section--home-audiences {
+      --deferred-block-size: calc(1186.7px - 56.7vw);
+    }
+
+    .deferred-section--home-approach {
+      --deferred-block-size: calc(1027.3px - 9.7vw);
+    }
+
+    .deferred-section--home-demos {
+      --deferred-block-size: calc(549.2px - 45.7vw);
+    }
+
+    .deferred-section--home-closing {
+      --deferred-block-size: calc(409px - 19.8vw);
+    }
+
+    .deferred-section--demos-quality {
+      --deferred-block-size: calc(1133.7px - 50.5vw);
+    }
+
+    html[lang="es"] .deferred-section--home-audiences {
+      --deferred-block-size: calc(1050.4px - 32vw);
+    }
+
+    html[lang="es"] .deferred-section--home-approach {
+      --deferred-block-size: calc(1122.8px - 25.1vw);
+    }
+
+    html[lang="es"] .deferred-section--home-demos {
+      --deferred-block-size: calc(502.7px - 34.4vw);
+    }
+
+    html[lang="es"] .deferred-section--home-closing {
+      --deferred-block-size: calc(397.1px - 21.2vw);
+    }
+
+    html[lang="es"] .deferred-section--demos-quality {
+      --deferred-block-size: calc(1282px - 67.1vw);
+    }
+
+    .resource-list > .resource-entry:nth-child(n + 4) {
+      contain-intrinsic-size: auto calc(510.8px - 38.7vw);
+    }
+
+    .resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14) {
+      contain-intrinsic-size: auto calc(499.1px - 36.5vw);
+    }
+
+    html[lang="es"] .resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14) {
+      contain-intrinsic-size: auto calc(522.7px - 38vw);
+    }
+
+    #technology-innovations-report {
+      contain-intrinsic-size: auto calc(492px - 33.4vw);
+    }
+  }
+
   .callout {
     align-items: flex-start;
     flex-direction: column;
@@ -2731,6 +2882,24 @@ svg {
 }
 
 @media (max-width: 520px) {
+  @supports (content-visibility: auto) {
+    .resource-list > .resource-entry:nth-child(n + 4) {
+      contain-intrinsic-size: auto calc(673.5px - 63.2vw);
+    }
+
+    .resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14) {
+      contain-intrinsic-size: auto calc(689.4px - 66.5vw);
+    }
+
+    html[lang="es"] .resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14) {
+      contain-intrinsic-size: auto calc(706.8px - 66.7vw);
+    }
+
+    #technology-innovations-report {
+      contain-intrinsic-size: auto calc(637.8px - 54.5vw);
+    }
+  }
+
   .lesson-flow {
     gap: 1rem;
     grid-template-columns: 1fr;
@@ -2754,6 +2923,94 @@ svg {
 
   .resource-entry .action {
     grid-column: 1;
+  }
+}
+
+@media (max-width: 475px) {
+  @supports (content-visibility: auto) {
+    .deferred-section--home-audiences {
+      --deferred-block-size: calc(1209.3px - 58.7vw);
+    }
+
+    .deferred-section--home-approach {
+      --deferred-block-size: calc(1744.5px - 155.6vw);
+    }
+
+    .deferred-section--home-demos {
+      --deferred-block-size: calc(525.6px - 39.3vw);
+    }
+
+    .deferred-section--home-closing {
+      --deferred-block-size: calc(595.7px - 56.2vw);
+    }
+
+    .deferred-section--demos-quality {
+      --deferred-block-size: calc(1778.5px - 181.8vw);
+    }
+
+    html[lang="es"] .deferred-section--home-audiences {
+      --deferred-block-size: calc(1981.9px - 232.1vw);
+    }
+
+    html[lang="es"] .deferred-section--home-approach {
+      --deferred-block-size: calc(1823.4px - 166.4vw);
+    }
+
+    html[lang="es"] .deferred-section--home-demos {
+      --deferred-block-size: calc(877.6px - 113.6vw);
+    }
+
+    html[lang="es"] .deferred-section--home-closing {
+      --deferred-block-size: calc(532.4px - 47.4vw);
+    }
+
+    html[lang="es"] .deferred-section--demos-quality {
+      --deferred-block-size: calc(1987.7px - 215.8vw);
+    }
+  }
+}
+
+@media (max-width: 382px) {
+  @supports (content-visibility: auto) {
+    .deferred-section--home-audiences {
+      --deferred-block-size: calc(1869px - 228.3vw);
+    }
+
+    .deferred-section--home-approach {
+      --deferred-block-size: calc(2022.5px - 228vw);
+    }
+
+    .deferred-section--home-demos {
+      --deferred-block-size: calc(917.7px - 135.3vw);
+    }
+
+    .deferred-section--home-closing {
+      --deferred-block-size: calc(803.3px - 111.2vw);
+    }
+
+    .deferred-section--demos-quality {
+      --deferred-block-size: calc(2711.8px - 429.5vw);
+    }
+
+    html[lang="es"] .deferred-section--home-audiences {
+      --deferred-block-size: calc(2033px - 239.3vw);
+    }
+
+    html[lang="es"] .deferred-section--home-approach {
+      --deferred-block-size: calc(1947.6px - 209.9vw);
+    }
+
+    html[lang="es"] .deferred-section--home-demos {
+      --deferred-block-size: calc(833.7px - 103.1vw);
+    }
+
+    html[lang="es"] .deferred-section--home-closing {
+      --deferred-block-size: calc(801.4px - 114.2vw);
+    }
+
+    html[lang="es"] .deferred-section--demos-quality {
+      --deferred-block-size: calc(2183.2px - 249.6vw);
+    }
   }
 }
 
@@ -2867,6 +3124,11 @@ svg {
 }
 
 @media print {
+  .deferred-section,
+  .resource-list > .resource-entry:nth-child(n + 4) {
+    content-visibility: visible;
+  }
+
   .status-strip,
   .site-header,
   .site-footer,
