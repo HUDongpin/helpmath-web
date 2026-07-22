@@ -230,7 +230,7 @@ async function expectDocument(page: Page, path: string, language: 'en' | 'es') {
 }
 
 test('English home exposes the primary navigation and the language-rich project promise', {
-  tag: '@webkit-smoke',
+  tag: ['@cross-browser-smoke', '@production-public-smoke'],
 }, async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/', 'en');
@@ -318,7 +318,9 @@ test('Spanish home localizes content and never duplicates the /es route prefix',
   expectNoRuntimeIssues(issues);
 });
 
-test('language switching preserves the current path, query, and hash', async ({page}) => {
+test('language switching preserves the current path, query, and hash', {
+  tag: '@production-public-smoke',
+}, async ({page}) => {
   await expectDocument(page, '/contact?topic=research#main-content', 'en');
   const spanish = page.getByRole('link', {name: 'Language: Español'}).first();
   await expect(spanish).toHaveAttribute(
@@ -353,7 +355,9 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
 });
 
-test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', async ({page}) => {
+test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', {
+  tag: '@production-public-smoke',
+}, async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/about', 'en');
 
@@ -477,6 +481,39 @@ test('page hero motif localizes its visible math phrase', async ({page}) => {
   await expect(page.locator('.motif-card--words')).toHaveText('ocho grupos de cuatro');
 });
 
+test('support FAQ and callout landmarks have localized accessible names', {
+  tag: '@production-public-smoke',
+}, async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+
+  for (const supportPage of [
+    {
+      path: '/support',
+      language: 'en',
+      faqName: 'Frequently asked questions',
+      calloutName: 'Still need help?',
+    },
+    {
+      path: '/es/support',
+      language: 'es',
+      faqName: 'Preguntas frecuentes',
+      calloutName: '¿Todavía necesitas ayuda?',
+    },
+  ] as const) {
+    await expectDocument(page, supportPage.path, supportPage.language);
+    const faq = page.getByRole('region', {name: supportPage.faqName});
+    await expect(faq).toBeVisible();
+    await expect(
+      faq.getByRole('heading', {level: 2, name: supportPage.faqName}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('complementary', {name: supportPage.calloutName}),
+    ).toBeVisible();
+  }
+
+  expectNoRuntimeIssues(issues);
+});
+
 test('deep-link targets remain visible below the sticky site header', async ({page}) => {
   for (const [path, selector] of [
     ['/approach#support-layers', '#support-layers'],
@@ -534,7 +571,7 @@ test('research register cites WWC and preserves both positive and limiting histo
 });
 
 test('mobile navigation opens at a phone viewport and reaches a primary route', {
-  tag: '@webkit-smoke',
+  tag: ['@cross-browser-smoke', '@production-public-smoke'],
 }, async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await page.setViewportSize({width: 390, height: 844});
@@ -556,6 +593,38 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await approach.click();
   await expect(page).toHaveURL(/\/approach$/);
   await expect(page.getByRole('heading', {level: 1})).toContainText('Make the mathematics');
+  expectNoRuntimeIssues(issues);
+});
+
+test('native mobile WebKit handles touch navigation and language switching without overflow', {
+  tag: ['@mobile-webkit-smoke', '@mobile-webkit-only'],
+}, async ({page}, testInfo) => {
+  expect(testInfo.project.name).toBe('mobile-webkit-smoke');
+  const issues = monitorRuntimeIssues(page);
+  await expectDocument(page, '/', 'en');
+
+  expect(testInfo.project.use.hasTouch).toBe(true);
+  expect(testInfo.project.use.isMobile).toBe(true);
+  expect(await page.evaluate(() => navigator.userAgent)).toMatch(/iPhone|Mobile/iu);
+  await expect(page.locator('.desktop-nav')).toBeHidden();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+  ).toBeLessThanOrEqual(1);
+
+  const menu = page.locator('details.mobile-nav');
+  const trigger = menu.locator(':scope > summary');
+  await trigger.tap();
+  await expect(menu).toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+  const spanish = menu.getByRole('link', {name: 'Language: Español'});
+  await expect(spanish).toHaveAttribute('href', '/es');
+  await spanish.tap();
+  await expect(page).toHaveURL(/\/es$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+  ).toBeLessThanOrEqual(1);
   expectNoRuntimeIssues(issues);
 });
 
@@ -772,7 +841,7 @@ test('lifecycle-public demos load an interactive runtime and advance determinist
 });
 
 test('executive preview grants a short-lived private session for both JavaScript demos', {
-  tag: '@webkit-smoke',
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
 }, async ({page}) => {
   test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
   test.skip(
@@ -1178,14 +1247,17 @@ test.describe('complete public browser experience matrix', () => {
 });
 
 test('Spanish Terms hero copy stays inside narrow mobile viewports', {
-  tag: '@webkit-smoke',
+  tag: '@cross-browser-smoke',
 }, async ({page}) => {
-  for (const viewport of [
+  const viewports = [
     {width: 320, height: 740},
     {width: 390, height: 844},
-  ] as const) {
+  ] as const;
+  await page.setViewportSize(viewports[0]);
+  await expectDocument(page, '/es/terms', 'es');
+
+  for (const viewport of viewports) {
     await page.setViewportSize(viewport);
-    await expectDocument(page, '/es/terms', 'es');
     await page.evaluate(() => document.fonts.ready);
 
     const copyBounds = await page.locator('.page-hero__copy').evaluate((element) => {

@@ -297,10 +297,10 @@ export function SupportPage({content}: {content: SupportContent}) {
           <FeatureGrid cards={content.currentStatus.items} columns={3} />
         </Container>
       </Section>
-      <Section className="surface-yellow">
+      <Section ariaLabelledBy="support-faq-heading" className="surface-yellow">
         <Container className="faq-layout">
           <div>
-            <Eyebrow>{content.faqLabel}</Eyebrow>
+            <h2 className="eyebrow" id="support-faq-heading">{content.faqLabel}</h2>
             <LifeBuoy aria-hidden="true" className="faq-layout__icon" size={72} strokeWidth={1.5} />
           </div>
           <div className="faq-list">

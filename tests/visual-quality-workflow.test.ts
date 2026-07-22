@@ -12,6 +12,9 @@ const snapshotDirectory = path.join(
 const expectedSnapshots = [
   'home-desktop.png',
   'home-mobile.png',
+  'partnership-en-desktop.png',
+  'partnership-es-mobile.png',
+  'program-lineage-en-desktop.png',
   'research-hero-desktop.png',
   'spanish-terms-hero-320.png',
 ] as const;
@@ -25,6 +28,7 @@ describe('visual regression quality gate', () => {
       workflow,
       /mcr\.microsoft\.com\/playwright:v1\.61\.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48/u,
     );
+    assert.match(workflow, /options: --user 1001/u);
     assert.match(workflow, /run: npm run test:visual/u);
     assert.doesNotMatch(workflow, /test:visual:update|--update-snapshots/u);
     assert.match(workflow, /name: visual-regression-\$\{\{ github\.run_id \}\}/u);
@@ -38,7 +42,7 @@ describe('visual regression quality gate', () => {
     assert.match(visualConfig, /\['junit', \{outputFile: 'artifacts\/playwright-visual-report\/results\.xml'\}\]/u);
   });
 
-  it('retains exactly the four reviewed public-page PNG baselines', async () => {
+  it('retains exactly the seven reviewed public-page PNG baselines', async () => {
     const filenames = (await readdir(snapshotDirectory)).sort();
     assert.deepEqual(filenames, [...expectedSnapshots].sort());
 
@@ -51,5 +55,15 @@ describe('visual regression quality gate', () => {
       );
       assert.ok(bytes.length > 10_000, `${filename} is implausibly small`);
     }
+  });
+
+  it('neutralizes sticky page chrome before capturing long section locators', async () => {
+    const visualSpec = await readFile(
+      path.join(repositoryRoot, 'visual-tests/public-pages.visual.spec.ts'),
+      'utf8',
+    );
+
+    assert.match(visualSpec, /\.status-strip,[\s\S]*?\.site-header[\s\S]*?position: static !important/u);
+    assert.match(visualSpec, /\.skip-link[\s\S]*?display: none !important/u);
   });
 });
