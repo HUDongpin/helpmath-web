@@ -1797,18 +1797,24 @@ svg {
   position: relative;
 }
 
-.mobile-nav summary {
+.mobile-nav__trigger {
   align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
   cursor: pointer;
   display: flex;
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 800;
   gap: 0.4rem;
-  list-style: none;
+  line-height: inherit;
+  padding: 0;
 }
 
-.mobile-nav summary::-webkit-details-marker {
-  display: none;
+.mobile-nav__trigger:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .mobile-nav__panel {

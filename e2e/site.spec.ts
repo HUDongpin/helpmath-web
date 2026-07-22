@@ -798,12 +798,12 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   await expectDocument(page, '/', 'en');
 
   await expect(page.locator('.desktop-nav')).toBeHidden();
-  const menu = page.locator('details.mobile-nav');
-  const trigger = menu.locator(':scope > summary');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
   await expect(trigger).toBeVisible();
+  await expect(trigger).toBeEnabled();
   await expect(trigger).toContainText('Open navigation');
   await trigger.click();
-  await expect(menu).toHaveAttribute('open', '');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(trigger).toContainText('Close navigation');
   await expect(page.locator('.status-strip')).toBeHidden();
@@ -824,34 +824,44 @@ test('mobile navigation closes without obscuring keyboard focus', {
   await page.setViewportSize({width: 320, height: 568});
   await expectDocument(page, '/', 'en');
 
-  const menu = page.locator('details.mobile-nav');
-  const trigger = menu.locator(':scope > summary');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await expect(trigger).toBeEnabled();
   await trigger.focus();
   await page.keyboard.press('Enter');
-  await expect(menu).toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
   await page.keyboard.press('Escape');
-  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(trigger).toBeFocused();
   await expect(page.locator('.status-strip')).toBeVisible();
 
   await page.keyboard.press('Enter');
-  await expect(menu).toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   const finalMenuLink = menu.getByRole('link', {name: 'Language: Español'});
   const forwardFocusTarget = page.getByRole('link', {name: 'Review the research'});
   await finalMenuLink.focus();
   await page.keyboard.press('Tab');
 
-  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.status-strip')).toBeVisible();
   await expect(forwardFocusTarget).toBeFocused();
   await expect(forwardFocusTarget).toBeVisible();
 
   await trigger.focus();
   await page.keyboard.press('Enter');
-  await expect(menu).toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await finalMenuLink.focus();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Tab');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(forwardFocusTarget).toBeFocused();
+
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('Shift+Tab');
-  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.site-header .brand')).toBeFocused();
   expectNoRuntimeIssues(issues);
 });
@@ -871,10 +881,10 @@ test('native mobile WebKit handles touch navigation and language switching witho
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(1);
 
-  const menu = page.locator('details.mobile-nav');
-  const trigger = menu.locator(':scope > summary');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await expect(trigger).toBeEnabled();
   await trigger.tap();
-  await expect(menu).toHaveAttribute('open', '');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
   const spanish = menu.getByRole('link', {name: 'Language: Español'});
@@ -901,12 +911,13 @@ test('mobile navigation remains reachable in short reflow viewports', {
     await expectDocument(page, `/?reflow=${viewport.width}x${viewport.height}`, 'en');
     await page.evaluate(() => window.scrollTo(0, Math.min(1200, document.body.scrollHeight)));
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-    const menu = page.locator('details.mobile-nav');
-    const trigger = menu.locator(':scope > summary');
+    const menu = page.locator('.mobile-nav');
+    const trigger = menu.locator(':scope > .mobile-nav__trigger');
     await expect(trigger).toBeVisible();
+    await expect(trigger).toBeEnabled();
     await trigger.focus();
     await page.keyboard.press('Enter');
-    await expect(menu).toHaveAttribute('open', '');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('.status-strip')).toBeHidden();
 
     const navigation = menu.getByRole('navigation', {name: 'Main navigation'});
@@ -1417,9 +1428,8 @@ test('unknown routes return a non-indexable branded 404 response', async ({page}
     await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
     await expect(page.getByRole('link', {name: 'Return home'})).toHaveAttribute('href', '/');
     const languageLinks = page.locator('a.language-switcher');
-    await expect(languageLinks).toHaveCount(2);
-    await expect(languageLinks.nth(0)).toHaveAttribute('href', '/es');
-    await expect(languageLinks.nth(1)).toHaveAttribute('href', '/es');
+    await expect(languageLinks).toHaveCount(1);
+    await expect(languageLinks).toHaveAttribute('href', '/es');
     await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
     await expect(page).toHaveTitle('Page not found · HELP Math');
   }
@@ -1434,9 +1444,8 @@ test('Spanish unknown routes keep localized navigation and a non-indexable 404',
   await expect(page.getByRole('heading', {level: 1, name: 'Página no encontrada'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'Volver al inicio'})).toHaveAttribute('href', '/es');
   const languageLinks = page.locator('a.language-switcher');
-  await expect(languageLinks).toHaveCount(2);
-  await expect(languageLinks.nth(0)).toHaveAttribute('href', '/');
-  await expect(languageLinks.nth(1)).toHaveAttribute('href', '/');
+  await expect(languageLinks).toHaveCount(1);
+  await expect(languageLinks).toHaveAttribute('href', '/');
   await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
   await expect(page).toHaveTitle('Página no encontrada · HELP Math');
 });
