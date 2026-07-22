@@ -302,6 +302,13 @@ test('approved Avenir-first typography is used for body and display text', {
 }, async ({page}) => {
   await expectDocument(page, '/about', 'en');
   const typography = await page.evaluate(async () => {
+    const fontVariable = getComputedStyle(document.body)
+      .getPropertyValue('--font-nunito')
+      .trim();
+    const primaryFallbackFamily = fontVariable.split(',')[0]?.trim();
+    const loadedFallback = primaryFallbackFamily
+      ? await document.fonts.load(`400 16px ${primaryFallbackFamily}`)
+      : [];
     await document.fonts.ready;
     const bodyFamily = getComputedStyle(document.body).fontFamily;
     const heading = document.querySelector('h1');
@@ -310,14 +317,28 @@ test('approved Avenir-first typography is used for body and display text', {
     return {
       bodyFamily,
       displayFamily: getComputedStyle(heading).fontFamily,
+      fontVariable,
+      loadedFallbackCount: loadedFallback.length,
       loadedFamilies: [...document.fonts].map((face) => face.family),
+      preloadedFonts: [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')]
+        .map((link) => link.href),
     };
   });
 
   expect(typography.bodyFamily).toContain('Avenir Next');
-  expect(typography.bodyFamily).toContain('Nunito Sans Variable');
+  expect(typography.bodyFamily).toContain('nunitoSans');
   expect(typography.displayFamily).toBe(typography.bodyFamily);
-  expect(typography.loadedFamilies).toContain('Nunito Sans Variable');
+  expect(typography.fontVariable).toContain('nunitoSans');
+  expect(typography.loadedFallbackCount).toBeGreaterThan(0);
+  expect(typography.loadedFamilies.some((family) => family.includes('nunitoSans'))).toBe(true);
+  const nunitoPreload = typography.preloadedFonts.find(
+    (href) => href.includes('nunito_sans_latin_wght_normal') && href.endsWith('.woff2'),
+  );
+  expect(nunitoPreload).toBeDefined();
+  const fontResponse = await page.request.get(nunitoPreload!);
+  expect(fontResponse.status()).toBe(200);
+  expect(fontResponse.headers()['content-type']).toMatch(/^font\/woff2(?:;|$)/u);
+  expect(fontResponse.headers()['cache-control']).toContain('immutable');
   expect(typography.loadedFamilies).not.toContain('Fredoka Variable');
 });
 

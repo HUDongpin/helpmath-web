@@ -13,6 +13,7 @@ import {
   SITE_NAME,
 } from '@/lib/site';
 
+import {nunitoSans} from '../fonts';
 import '../globals.css';
 
 export async function generateMetadata({
@@ -60,7 +61,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body>
+      <body className={nunitoSans.variable}>
         <LocaleProvider locale={appLocale}>
           <a className="skip-link" href="#main-content">
             {content.skipToContent}
