@@ -39,6 +39,7 @@ type AliasEvidence = {
   };
   aliases: string[];
   corroboratingEvidence: {
+    executivePreviewLifecycleRun?: string;
     productionQualityRun?: string;
     productionSmokeRun?: string;
   };
@@ -120,6 +121,9 @@ describe('release evidence records', () => {
       /Automated production-smoke run\s+\[\d+\]\(https:\/\/github\.com\/HUDongpin\/helpmath-web\/actions\/runs\/(\d+)\)/u,
       'Production smoke run',
     )[1];
+    const executivePreviewLifecycleRun = record.match(
+      /Automated executive-preview lifecycle run\s+\[\d+\]\(https:\/\/github\.com\/HUDongpin\/helpmath-web\/actions\/runs\/(\d+)\)/u,
+    )?.[1];
     const aliasEvidence = aliasReference(record).relativePath;
 
     const launchBaseline = tableValue(
@@ -146,6 +150,12 @@ describe('release evidence records', () => {
       ]) {
         assert.ok(baseline.includes(expected), `${label} baseline is missing ${expected}`);
       }
+    }
+    if (executivePreviewLifecycleRun) {
+      assert.ok(
+        launchBaseline.includes(executivePreviewLifecycleRun),
+        `launch-decision baseline is missing ${executivePreviewLifecycleRun}`,
+      );
     }
   });
 
@@ -209,6 +219,29 @@ describe('release evidence records', () => {
       ),
       'No valid zero-failure smoke JSON was retained.',
     );
+    const lifecycleBlocks = [...record.matchAll(/```json\n([\s\S]*?)\n```/gu)].map(
+      (match) =>
+        JSON.parse(match[1]) as {
+          expiresAt?: string;
+          failures?: unknown[];
+          maximumExpiresAt?: string;
+          phase?: string;
+          state?: string;
+        },
+    );
+    if (/Automated executive-preview lifecycle run/iu.test(record)) {
+      assert.ok(
+        lifecycleBlocks.some(
+          (lifecycle) =>
+            lifecycle.phase === 'review-window' &&
+            lifecycle.state === 'login' &&
+            lifecycle.expiresAt === lifecycle.maximumExpiresAt &&
+            Array.isArray(lifecycle.failures) &&
+            lifecycle.failures.length === 0,
+        ),
+        'No valid zero-failure Executive Preview lifecycle JSON was retained.',
+      );
+    }
     assert.match(record, /^## Exceptions and follow-up gates$/mu);
     assert.match(record, /^## Alias-assignment evidence$/mu);
     assert.match(record, /semantic smoke behind the protected PR #\d+ Preview was not retained/iu);
@@ -322,6 +355,9 @@ describe('release evidence records', () => {
       /Automated production-smoke run\s+\[\d+\]\((https:\/\/github\.com\/HUDongpin\/helpmath-web\/actions\/runs\/\d+)\)/u,
       'Production smoke URL',
     )[1];
+    const executivePreviewLifecycleRunUrl = latestRecord.contents.match(
+      /Automated executive-preview lifecycle run\s+\[\d+\]\((https:\/\/github\.com\/HUDongpin\/helpmath-web\/actions\/runs\/\d+)\)/u,
+    )?.[1];
 
     assert.equal(evidence.schemaVersion, 1);
     assert.match(evidence.recordedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
@@ -337,6 +373,12 @@ describe('release evidence records', () => {
     assert.match(evidence.deployment.createdAt, /^\d{4}-\d{2}-\d{2}T/u);
     assert.equal(evidence.corroboratingEvidence.productionQualityRun, qualityRunUrl);
     assert.equal(evidence.corroboratingEvidence.productionSmokeRun, smokeRunUrl);
+    if (executivePreviewLifecycleRunUrl) {
+      assert.equal(
+        evidence.corroboratingEvidence.executivePreviewLifecycleRun,
+        executivePreviewLifecycleRunUrl,
+      );
+    }
     assert.ok(evidence.aliases.includes('https://www.helpmath.ai'));
     assert.ok(evidence.aliases.includes('https://helpmath.ai'));
     assert.ok(Object.values(evidence.checks).length > 0);
