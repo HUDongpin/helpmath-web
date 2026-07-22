@@ -192,6 +192,19 @@ logs.
 - Canonical URL: `https://www.helpmath.ai`
 - Production branch: `main`
 
+The repository-level `vercel.json` pins the install command to `npm ci` and
+runs `scripts/vercel-ignore-build.mjs` as Vercel's Ignored Build Step. The
+script exits successfully, and therefore skips a deployment, only when every
+audited change is an addition or modification under `docs/releases/`, a direct
+`docs/evidence/vercel-production-alias-*.json` file, or one of the exact
+`docs/LAUNCH_DECISIONS.md` and `docs/LEGACY_CUTOVER.md` baseline files. It uses
+`VERCEL_GIT_PREVIOUS_SHA` when Vercel supplies a resolvable ancestor so that a
+multi-commit push is reviewed as one range; the local fallback is `HEAD^`.
+Source, configuration, workflow, launch-gate, and all other paths require a
+build. Deletions, renames, empty or malformed differences, an unavailable or
+non-ancestor baseline, and any Git command error also fail open by returning a
+nonzero status, which tells Vercel to continue the build.
+
 Preview deployments should use Vercel Authentication. At the 2026-07-21 audit,
 automatic custom production-domain assignment was enabled. Record whether to
 keep that behavior in `LAUNCH_DECISIONS.md`. If manual promotion is selected,
