@@ -66,6 +66,51 @@ function isCurrentHref(pathname: string, href: string): boolean {
   );
 }
 
+function MobileNavigationLinks({
+  languageSwitcherPath,
+  locale,
+  navigation,
+  onNavigate,
+  pathname,
+}: {
+  languageSwitcherPath?: string;
+  locale: Locale;
+  navigation: SharedContent['navigation'];
+  onNavigate?: () => void;
+  pathname: string;
+}) {
+  return (
+    <>
+      {navigation.links.map((link) => (
+        <Link
+          aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
+          href={link.href}
+          key={link.href}
+          onClick={onNavigate}
+        >
+          {link.label}
+        </Link>
+      ))}
+      <Link
+        aria-current={
+          isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
+        }
+        href={navigation.supportAction.href}
+        onClick={onNavigate}
+      >
+        {navigation.supportAction.label}
+      </Link>
+      <LanguageSwitcher
+        label={navigation.languageLabel}
+        locale={locale}
+        names={navigation.languageNames}
+        onNavigate={onNavigate}
+        pathnameOverride={languageSwitcherPath}
+      />
+    </>
+  );
+}
+
 export function SiteHeader({
   content,
   languageSwitcherPath,
@@ -281,7 +326,7 @@ export function SiteHeader({
               aria-expanded={isMobileMenuOpen}
               aria-label={menuLabel}
               className="mobile-nav__trigger"
-              disabled={!isMobileMenuReady}
+              hidden={!isMobileMenuReady}
               onClick={() => {
                 if (isMobileMenuOpen) closeMobileMenu();
                 else setIsMobileMenuOpen(true);
@@ -305,37 +350,31 @@ export function SiteHeader({
                   ? undefined
                   : {maxHeight: `${mobileMenuMaxHeight}px`}}
               >
-                {navigation.links.map((link) => (
-                  <Link
-                    aria-current={isCurrentHref(pathname, link.href) ? 'page' : undefined}
-                    href={link.href}
-                    key={link.href}
-                    onClick={closeMobileMenuAfterActivation}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                <Link
-                  aria-current={
-                    isCurrentHref(pathname, navigation.supportAction.href) ? 'page' : undefined
-                  }
-                  href={navigation.supportAction.href}
-                  onClick={closeMobileMenuAfterActivation}
-                >
-                  {navigation.supportAction.label}
-                </Link>
-                <LanguageSwitcher
-                  label={navigation.languageLabel}
+                <MobileNavigationLinks
+                  languageSwitcherPath={languageSwitcherPath}
                   locale={locale}
-                  names={navigation.languageNames}
+                  navigation={navigation}
                   onNavigate={closeMobileMenuAfterActivation}
-                  pathnameOverride={languageSwitcherPath}
+                  pathname={pathname}
                 />
               </nav>
             ) : null}
           </div>
         </div>
       </header>
+      <noscript>
+        <nav
+          aria-label={navigation.ariaLabel}
+          className="container mobile-nav__fallback"
+        >
+          <MobileNavigationLinks
+            languageSwitcherPath={languageSwitcherPath}
+            locale={locale}
+            navigation={navigation}
+            pathname={pathname}
+          />
+        </nav>
+      </noscript>
     </>
   );
 }
