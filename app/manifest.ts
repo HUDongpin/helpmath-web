@@ -1,11 +1,12 @@
 import type {MetadataRoute} from 'next';
 
+import {SITE_DESCRIPTION} from '@/lib/site';
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'HELP Math',
     short_name: 'HELP Math',
-    description:
-      'Interactive, language-rich mathematics learning for multilingual students and educators.',
+    description: SITE_DESCRIPTION,
     start_url: '/',
     display: 'standalone',
     background_color: '#fffdf7',

@@ -38,8 +38,37 @@ jobs:
       - run: npm run test:coverage
       - run: npm audit --audit-level=high
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
+
+  browser-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Enforce reviewed visual baselines
+        run: npm run test:visual
+      - name: Retain visual report and public-page failure diffs
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: visual-regression-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/playwright-visual
+            artifacts/playwright-visual-report/results.xml
+          if-no-files-found: error
+          retention-days: 30
 
   lighthouse:
     runs-on: ubuntu-latest

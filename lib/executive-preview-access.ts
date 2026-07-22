@@ -1,10 +1,17 @@
 import {reviewDemoRoutes} from '../demos/catalog';
+import executivePreviewWindow from '../config/executive-preview-window.json';
 
 export const EXECUTIVE_PREVIEW_COOKIE_NAME = 'helpmath_executive_preview';
 
 export const EXECUTIVE_PREVIEW_SESSION_TTL_SECONDS = 12 * 60 * 60;
 export const EXECUTIVE_PREVIEW_SESSION_TTL_MS =
   EXECUTIVE_PREVIEW_SESSION_TTL_SECONDS * 1_000;
+export const EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING =
+  executivePreviewWindow.maximumExpiresAt;
+
+const EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING_MS = Date.parse(
+  EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING,
+);
 
 const SESSION_VERSION = 'v1';
 const MIN_ACCESS_KEY_LENGTH = 32;
@@ -107,6 +114,11 @@ export function getExecutivePreviewConfig(
 
   const expiresAt = Date.parse(expiresAtValue);
   if (!Number.isFinite(expiresAt) || expiresAt <= now) return undefined;
+  if (
+    env.VERCEL_ENV !== 'development' &&
+    (!Number.isFinite(EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING_MS) ||
+      expiresAt > EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING_MS)
+  ) return undefined;
 
   return {accessKey, sessionSecret, expiresAt};
 }

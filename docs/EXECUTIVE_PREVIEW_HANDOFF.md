@@ -16,6 +16,14 @@ transcript, screenshot, build log, or retained test artifact.
   Time)
 - Maximum session: 12 hours, never beyond the absolute close
 
+The same absolute close and two-demo scope are enforced in
+`config/executive-preview-window.json`. Production fails closed if its Vercel
+expiry is later than that reviewed ceiling; missing or unknown deployment
+context is also ceiling-bound, and an earlier manual close remains safe. A
+credential-free scheduled lifecycle check verifies the public/private
+boundary every six hours and requires the entry to be unavailable after the
+close.
+
 This review is not publication-rights approval, strict Flash fidelity
 acceptance, product acceptance, classroom-use approval, or permission to
 record, forward, download, republish, or present the prototypes as finished
@@ -70,7 +78,7 @@ The following facts still require the meeting owner to record in
 
      PLAYWRIGHT_BASE_URL="https://www.helpmath.ai" \
      PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
-       npx playwright test --output="$PW_OUTPUT" --grep \
+       npx playwright test --project=chromium --output="$PW_OUTPUT" --grep \
        'executive preview grants a short-lived private session'
    )
    ```

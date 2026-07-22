@@ -96,6 +96,17 @@ write their values in release evidence, or reuse a signing secret as the
 human-entered access passphrase. Missing, short, malformed, disabled, or
 expired configuration fails closed.
 
+For the current Production review, `config/executive-preview-window.json`
+also sets a repository-enforced maximum close of
+`2026-07-28T15:59:00.000Z`. A deployed environment value may close access
+earlier, but it cannot extend access beyond that timestamp without a reviewed
+code change. Missing, Preview, Production, and unknown `VERCEL_ENV` values are
+all ceiling-bound; only the exact `development` context may use a later local
+test fixture. The scheduled `Executive preview lifecycle` workflow runs the
+complete public smoke without credentials, accepts a safe early close, checks
+the exact expiry while the login entry is active, and requires the entry to be
+unavailable after the repository deadline.
+
 Vercel injects `VERCEL_URL`, `VERCEL_BRANCH_URL`, and
 `VERCEL_PROJECT_PRODUCTION_URL`; do not copy them into custom variables. The
 server accepts those hostnames, but Cloudflare Hostname Management must also
@@ -132,7 +143,8 @@ Entry, demo, runtime, and asset responses retain private/no-store and
 `noindex`, `nofollow`, `noarchive` boundaries.
 
 Sessions last at most 12 hours and never outlive the absolute
-`EXECUTIVE_PREVIEW_EXPIRES_AT` value. Setting
+`EXECUTIVE_PREVIEW_EXPIRES_AT` value or the reviewed Production ceiling in
+`config/executive-preview-window.json`, whichever closes first. Setting
 `EXECUTIVE_PREVIEW_ENABLED` to anything other than the exact value `true`, or
 omitting, weakening, malforming, reusing the same value for access and signing,
 or expiring any required server-only value closes access. Access and signing

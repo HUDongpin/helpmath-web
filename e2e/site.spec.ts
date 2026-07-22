@@ -229,9 +229,9 @@ async function expectDocument(page: Page, path: string, language: 'en' | 'es') {
   await expect(page.locator('main#main-content')).toBeVisible();
 }
 
-test('English home exposes the primary navigation and the language-rich project promise', async ({
-  page,
-}) => {
+test('English home exposes the primary navigation and the language-rich project promise', {
+  tag: '@webkit-smoke',
+}, async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/', 'en');
 
@@ -257,10 +257,13 @@ test('English home exposes the primary navigation and the language-rich project 
     '/es',
   );
   const structuredData = JSON.parse(
-    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
-  ) as {'@type'?: string; inLanguage?: string[]};
+    (await page.locator('script[data-structured-data="website"]').textContent()) ?? '{}',
+  ) as {'@id'?: string; '@type'?: string; description?: string; inLanguage?: string[]; url?: string};
   expect(structuredData['@type']).toBe('WebSite');
+  expect(structuredData['@id']).toBe('https://www.helpmath.ai/#website');
   expect(structuredData.inLanguage).toEqual(['en', 'es']);
+  expect(structuredData.url).toBe('https://www.helpmath.ai/');
+  expect(structuredData.description).toContain('HELP Math 1.0 history and research');
 
   const partnership = page.locator('#strategic-partnership');
   await expect(
@@ -283,6 +286,7 @@ test('English home exposes the primary navigation and the language-rich project 
 test('Spanish home localizes content and never duplicates the /es route prefix', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/es', 'es');
+  await expect(page.locator('script[data-structured-data="website"]')).toHaveCount(0);
 
   await expect(
     page.getByRole('heading', {
@@ -352,6 +356,27 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
 test('program lineage links HELP Math 1.0, Boulder Learning, and PedaNova with clear source boundaries', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/about', 'en');
+
+  const aboutData = JSON.parse(
+    (await page.locator('script[data-structured-data="about-page"]').textContent()) ?? '{}',
+  ) as {
+    '@type'?: string;
+    about?: Array<{name?: string}>;
+    mentions?: Array<{name?: string}>;
+    isPartOf?: {'@id'?: string};
+    publisher?: unknown;
+  };
+  expect(aboutData['@type']).toBe('AboutPage');
+  expect(aboutData.about?.map(({name}) => name)).toEqual([
+    'HELP Math 1.0',
+    'Proposed HELP Math 2.0 modernization',
+  ]);
+  expect(aboutData.mentions?.map(({name}) => name)).toEqual([
+    'Boulder Learning',
+    'PedaNova',
+  ]);
+  expect(aboutData.isPartOf?.['@id']).toBe('https://www.helpmath.ai/#website');
+  expect(aboutData.publisher).toBeUndefined();
 
   await expect(
     page.getByRole('heading', {level: 2, name: 'From HELP Math 1.0 to a proposed next generation'}),
@@ -508,7 +533,9 @@ test('research register cites WWC and preserves both positive and limiting histo
   expectNoRuntimeIssues(issues);
 });
 
-test('mobile navigation opens at a phone viewport and reaches a primary route', async ({page}) => {
+test('mobile navigation opens at a phone viewport and reaches a primary route', {
+  tag: '@webkit-smoke',
+}, async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await page.setViewportSize({width: 390, height: 844});
   await expectDocument(page, '/', 'en');
@@ -744,9 +771,9 @@ test('lifecycle-public demos load an interactive runtime and advance determinist
   expectNoRuntimeIssues(issues);
 });
 
-test('executive preview grants a short-lived private session for both JavaScript demos', async ({
-  page,
-}) => {
+test('executive preview grants a short-lived private session for both JavaScript demos', {
+  tag: '@webkit-smoke',
+}, async ({page}) => {
   test.skip(!executivePreviewAccessKey, 'No executive preview access key was supplied.');
   test.skip(
     !hasCanonicalExecutiveReviewSet,
@@ -1150,7 +1177,9 @@ test.describe('complete public browser experience matrix', () => {
   }
 });
 
-test('Spanish Terms hero copy stays inside narrow mobile viewports', async ({page}) => {
+test('Spanish Terms hero copy stays inside narrow mobile viewports', {
+  tag: '@webkit-smoke',
+}, async ({page}) => {
   for (const viewport of [
     {width: 320, height: 740},
     {width: 390, height: 844},

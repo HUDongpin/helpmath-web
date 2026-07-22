@@ -160,6 +160,44 @@ export function evaluateExecutivePreviewEntries(
   return {state, expiresAt, failures};
 }
 
+export function evaluateExecutivePreviewLifecycle(
+  {state, expiresAt},
+  {maximumExpiresAt, nowMs = Date.now()},
+) {
+  if (!isStrictIsoUtcTimestamp(maximumExpiresAt)) {
+    throw new TypeError('maximumExpiresAt must be a canonical UTC timestamp');
+  }
+  if (!Number.isFinite(nowMs)) throw new TypeError('nowMs must be finite');
+
+  const failures = [];
+  const maximumExpiresAtMs = Date.parse(maximumExpiresAt);
+  const beforeApprovedClose = nowMs < maximumExpiresAtMs;
+
+  if (beforeApprovedClose) {
+    if (state === 'login' && expiresAt !== maximumExpiresAt) {
+      failures.push(
+        `active executive preview expiry is ${expiresAt ?? 'missing'}, expected ${maximumExpiresAt}`,
+      );
+    } else if (state !== 'login' && state !== 'unavailable') {
+      failures.push(`executive preview state is ${state}, expected login or unavailable`);
+    }
+  } else if (state !== 'unavailable') {
+    failures.push(`executive preview state is ${state}, expected unavailable after approved close`);
+  }
+
+  if (state === 'unavailable' && expiresAt !== null) {
+    failures.push('unavailable executive preview must not expose an expiry');
+  }
+
+  return {
+    phase: beforeApprovedClose ? 'review-window' : 'post-expiry',
+    state,
+    expiresAt,
+    maximumExpiresAt,
+    failures,
+  };
+}
+
 export function retryDelayMs(attempt, baseDelayMs, maxDelayMs) {
   if (!Number.isInteger(attempt) || attempt < 1) {
     throw new TypeError('attempt must be a positive integer');

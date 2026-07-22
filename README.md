@@ -19,6 +19,12 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
+The Quality workflow also runs four visual-regression checks in a
+digest-pinned Playwright Linux container and a focused Desktop Safari/WebKit
+project. Visual baselines are container-specific; do not regenerate them from
+a normal host run. `npm run test:e2e:chromium` and `npm run test:e2e:webkit`
+are available for focused local browser diagnostics.
+
 Two browser-native reconstruction prototypes are retained for private review.
 Original FLA/SWF evidence, Ruffle, migration catalogs, and the Flash workbench
 are not part of this repository or its deployment artifact. Reviewed runtime

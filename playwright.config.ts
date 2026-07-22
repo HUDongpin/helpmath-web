@@ -28,6 +28,7 @@ if (
 }
 
 if (!configuredBaseURL) {
+  process.env.VERCEL_ENV ??= 'development';
   process.env.EXECUTIVE_PREVIEW_ENABLED ??= 'true';
   process.env.EXECUTIVE_PREVIEW_ACCESS_KEY ??= 'HM-Local-Executive-Preview-Key-2026-X9';
   process.env.EXECUTIVE_PREVIEW_SESSION_SECRET ??= 'HM-Local-Session-Secret-2026-V7qL4mN8R2xZ';
@@ -60,18 +61,28 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
+  projects: [
+    {
+      name: 'chromium',
+      use: {...devices['Desktop Chrome']},
+    },
+    {
+      name: 'webkit-smoke',
+      grep: /@webkit-smoke/u,
+      use: {...devices['Desktop Safari']},
+    },
+  ],
   use: {
-    ...devices['Desktop Chrome'],
     baseURL,
     contextOptions: {
       reducedMotion: 'reduce',
     },
     locale: 'en-US',
-    screenshot: 'only-on-failure',
+    screenshot: process.env.CI ? 'off' : 'only-on-failure',
     storageState: vercelAuthStatePath,
     // Remote runs may carry either a Vercel bypass cookie or the executive
     // preview session cookie. Never retain a trace artifact containing either.
-    trace: configuredBaseURL ? 'off' : 'retain-on-failure',
+    trace: process.env.CI || configuredBaseURL ? 'off' : 'retain-on-failure',
   },
   webServer: configuredBaseURL
     ? undefined

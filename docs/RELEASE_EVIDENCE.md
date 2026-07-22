@@ -46,6 +46,12 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
+The `browser-quality` CI job separately runs `npm run test:visual` inside the
+digest-pinned Playwright Linux container declared in `quality.yml`. Treat that
+container output as the visual authority: host operating systems render fonts
+differently, so do not update or approve baselines from a normal macOS or
+Windows run.
+
 `check:generated`, `npm test`, and `npm run build` each fail closed on an
 invalid launch-gate manifest. Retain only its SHA-256 and statuses; the
 manifest must contain no credentials, contracts, or personal data.

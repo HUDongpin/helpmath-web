@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 
 import {reviewDemoRoutes} from '../demos/catalog';
+import executivePreviewWindow from '../config/executive-preview-window.json';
 import {
   EXECUTIVE_PREVIEW_COOKIE_NAME,
+  EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING,
   EXECUTIVE_PREVIEW_SESSION_TTL_MS,
   EXECUTIVE_PREVIEW_SESSION_TTL_SECONDS,
   buildExecutivePreviewDemoPaths,
@@ -21,6 +23,7 @@ import {
 
 const NOW = Date.parse('2026-07-21T12:00:00.000Z');
 const VALID_ENV = {
+  VERCEL_ENV: 'production',
   EXECUTIVE_PREVIEW_ENABLED: 'true',
   EXECUTIVE_PREVIEW_ACCESS_KEY: 'HM-Access-Key-2026-Ab7Qp9Lm4Tx8Vr2N',
   EXECUTIVE_PREVIEW_SESSION_SECRET: 'HM-Session-Secret-2026-Rt8Vn4Qp7Lx2Az9K',
@@ -41,6 +44,11 @@ describe('executive preview configuration', () => {
     assert.equal(EXECUTIVE_PREVIEW_COOKIE_NAME, 'helpmath_executive_preview');
     assert.equal(EXECUTIVE_PREVIEW_SESSION_TTL_SECONDS, 43_200);
     assert.equal(EXECUTIVE_PREVIEW_SESSION_TTL_MS, 43_200_000);
+    assert.equal(
+      EXECUTIVE_PREVIEW_PRODUCTION_EXPIRY_CEILING,
+      '2026-07-28T15:59:00.000Z',
+    );
+    assert.deepEqual(executivePreviewWindow.demoIds, reviewDemoRoutes.map((route) => route.slice(7)));
   });
 
   it('loads a complete, enabled, unexpired configuration', () => {
@@ -66,12 +74,59 @@ describe('executive preview configuration', () => {
       {...VALID_ENV, EXECUTIVE_PREVIEW_EXPIRES_AT: 'not-a-date'},
       {...VALID_ENV, EXECUTIVE_PREVIEW_EXPIRES_AT: '2026-07-22T12:00:00'},
       {...VALID_ENV, EXECUTIVE_PREVIEW_EXPIRES_AT: new Date(NOW).toISOString()},
+      {...VALID_ENV, EXECUTIVE_PREVIEW_EXPIRES_AT: '2026-07-28T15:59:00.001Z'},
     ];
 
     for (const env of invalidEnvironments) {
       assert.equal(getExecutivePreviewConfig(env, NOW), undefined);
     }
     assert.equal(getExecutivePreviewConfig(VALID_ENV, Number.NaN), undefined);
+  });
+
+  it('allows an earlier production close and rejects an environment-only extension', () => {
+    assert.deepEqual(
+      getExecutivePreviewConfig(
+        {...VALID_ENV, EXECUTIVE_PREVIEW_EXPIRES_AT: '2026-07-21T12:00:01.000Z'},
+        NOW,
+      ),
+      validConfig({expiresAt: NOW + 1_000}),
+    );
+    assert.equal(
+      getExecutivePreviewConfig(
+        {...VALID_ENV, EXECUTIVE_PREVIEW_EXPIRES_AT: '2099-01-01T00:00:00.000Z'},
+        NOW,
+      ),
+      undefined,
+    );
+  });
+
+  it('keeps non-production local fixtures independent from the dated production window', () => {
+    const localEnvironment = {
+      ...VALID_ENV,
+      VERCEL_ENV: 'development',
+      EXECUTIVE_PREVIEW_EXPIRES_AT: '2099-01-01T00:00:00.000Z',
+    };
+    assert.equal(
+      getExecutivePreviewConfig(localEnvironment, NOW)?.expiresAt,
+      Date.parse('2099-01-01T00:00:00.000Z'),
+    );
+  });
+
+  it('treats missing, preview, and unknown deployment contexts as ceiling-bound', () => {
+    for (const vercelEnvironment of [undefined, 'preview', 'unexpected']) {
+      assert.equal(
+        getExecutivePreviewConfig(
+          {
+            ...VALID_ENV,
+            VERCEL_ENV: vercelEnvironment,
+            EXECUTIVE_PREVIEW_EXPIRES_AT: '2099-01-01T00:00:00.000Z',
+          },
+          NOW,
+        ),
+        undefined,
+        String(vercelEnvironment),
+      );
+    }
   });
 });
 
