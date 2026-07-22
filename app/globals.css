@@ -1751,7 +1751,8 @@ svg {
 }
 
 .desktop-nav a:hover::after,
-.desktop-nav a:focus-visible::after {
+.desktop-nav a:focus-visible::after,
+.desktop-nav a[aria-current='page']::after {
   transform: scaleX(1);
 }
 
@@ -1789,10 +1790,20 @@ svg {
   border-color: var(--blue-dark);
 }
 
+.header-support[aria-current='page'] {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.22em;
+}
+
 .mobile-nav {
   display: none;
   margin-left: auto;
   position: relative;
+}
+
+.mobile-nav__fallback {
+  display: none;
 }
 
 .mobile-nav__trigger {
@@ -1809,11 +1820,6 @@ svg {
   line-height: inherit;
   padding: 0;
   text-align: left;
-}
-
-.mobile-nav__trigger:disabled {
-  cursor: wait;
-  opacity: 0.72;
 }
 
 .mobile-nav__panel {
@@ -1833,7 +1839,8 @@ svg {
   z-index: 110;
 }
 
-.mobile-nav__panel > a {
+.mobile-nav__panel > a,
+.mobile-nav__fallback > a {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -1843,8 +1850,16 @@ svg {
   text-decoration: none;
 }
 
-.mobile-nav__panel > a:last-child {
+.mobile-nav__panel > a:last-child,
+.mobile-nav__fallback > a:last-child {
   border-bottom: 0;
+}
+
+.mobile-nav__panel > a[aria-current='page'],
+.mobile-nav__fallback > a[aria-current='page'] {
+  background: var(--blue-pale);
+  border-inline-start: 4px solid var(--blue);
+  padding-inline-start: calc(0.6rem - 4px);
 }
 
 .action {
@@ -2481,6 +2496,16 @@ svg {
     display: block;
   }
 
+  .mobile-nav__fallback {
+    background: var(--white);
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 0.2rem;
+    max-height: calc(100dvh - var(--site-nav-height));
+    overflow-y: auto;
+    padding-block: 0.8rem;
+  }
+
   .status-strip--menu-open {
     display: none;
   }
@@ -2749,6 +2774,14 @@ svg {
   :focus-visible {
     box-shadow: none !important;
     outline-color: CanvasText;
+  }
+
+  .desktop-nav a[aria-current='page'] {
+    border-bottom: 3px solid CanvasText;
+  }
+
+  .desktop-nav a[aria-current='page']::after {
+    display: none;
   }
 
   .resource-filters button[aria-pressed='true'] {

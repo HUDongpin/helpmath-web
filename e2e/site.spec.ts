@@ -372,17 +372,61 @@ test('language switching preserves the current path, query, and hash', {
   await expect(english).toHaveAttribute('href', '/contact?topic=research#main-content');
 });
 
-test('primary navigation marks the current section', async ({page}) => {
+test('primary navigation marks the current section visibly and semantically', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
+}, async ({page}) => {
+  await page.setViewportSize({width: 1280, height: 800});
   await expectDocument(page, '/research', 'en');
   const navigation = page.getByRole('navigation', {name: 'Main navigation'});
-  await expect(navigation.getByRole('link', {name: 'Research', exact: true})).toHaveAttribute(
+  const currentDesktopLink = navigation.getByRole('link', {name: 'Research', exact: true});
+  const otherDesktopLink = navigation.getByRole('link', {name: 'About', exact: true});
+  await expect(currentDesktopLink).toHaveAttribute(
     'aria-current',
     'page',
   );
-  await expect(navigation.getByRole('link', {name: 'About', exact: true})).not.toHaveAttribute(
+  await expect(otherDesktopLink).not.toHaveAttribute(
     'aria-current',
     'page',
   );
+  const desktopIndicators = await Promise.all([
+    currentDesktopLink,
+    otherDesktopLink,
+  ].map((link) => link.evaluate((element) => getComputedStyle(element, '::after').transform)));
+  expect(desktopIndicators[0]).not.toBe(desktopIndicators[1]);
+
+  await page.setViewportSize({width: 390, height: 844});
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await trigger.click();
+  const mobileNavigation = menu.getByRole('navigation', {name: 'Main navigation'});
+  const currentMobileLink = mobileNavigation.getByRole('link', {
+    name: 'Research',
+    exact: true,
+  });
+  const otherMobileLink = mobileNavigation.getByRole('link', {name: 'About', exact: true});
+  await expect(currentMobileLink).toHaveAttribute('aria-current', 'page');
+  const mobileIndicators = await Promise.all([
+    currentMobileLink,
+    otherMobileLink,
+  ].map((link) => link.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderInlineStartWidth: Number.parseFloat(style.borderInlineStartWidth),
+    };
+  })));
+  expect(mobileIndicators[0].borderInlineStartWidth).toBeGreaterThanOrEqual(4);
+  expect(mobileIndicators[1].borderInlineStartWidth).toBe(0);
+  expect(mobileIndicators[0].backgroundColor).not.toBe(mobileIndicators[1].backgroundColor);
+
+  await page.setViewportSize({width: 1280, height: 800});
+  await expectDocument(page, '/support', 'en');
+  const support = page.locator('.header-support');
+  await expect(support).toBeVisible();
+  await expect(support).toHaveAttribute('aria-current', 'page');
+  expect(
+    await support.evaluate((element) => getComputedStyle(element).textDecorationLine),
+  ).toContain('underline');
 });
 
 test('home metadata keeps the HELP Math name in both language titles', async ({page}) => {
@@ -900,6 +944,95 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   expectNoRuntimeIssues(issues);
 });
 
+test.describe('mobile navigation without JavaScript', () => {
+  test.use({javaScriptEnabled: false});
+
+  test('keeps every localized primary route reachable', {
+    tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
+  }, async ({page}) => {
+    await page.setViewportSize({width: 390, height: 844});
+
+    for (const locale of ['en', 'es'] as const) {
+      const rootPath = locale === 'en' ? '/' : '/es';
+      const shared = siteContent[locale].shared;
+      const approach = shared.navigation.links.find(({href}) => href.endsWith('/approach'));
+      if (!approach) throw new Error(`${locale} navigation has no Approach route.`);
+      const approachPath = approach.href;
+
+      await expectDocument(page, rootPath, locale);
+      await expect(page.locator('.desktop-nav')).toBeHidden();
+      await expect(page.locator('.mobile-nav__trigger')).toBeHidden();
+
+      const navigation = page.locator('nav.mobile-nav__fallback');
+      await expect(navigation).toBeVisible();
+      await expect(navigation).toHaveAccessibleName(shared.navigation.ariaLabel);
+      await expect(navigation.getByRole('link')).toHaveCount(
+        shared.navigation.links.length + 2,
+      );
+      for (const link of shared.navigation.links) {
+        await expect(
+          navigation.getByRole('link', {name: link.label, exact: true}),
+        ).toHaveAttribute('href', link.href);
+      }
+      await expect(
+        navigation.getByRole('link', {name: shared.navigation.supportAction.label, exact: true}),
+      ).toHaveAttribute(
+        'href',
+        shared.navigation.supportAction.href,
+      );
+      await expect(
+        navigation.getByRole('link', {
+          name: `${shared.navigation.languageLabel}: ${shared.navigation.languageNames[locale === 'en' ? 'es' : 'en']}`,
+        }),
+      ).toHaveAttribute('href', locale === 'en' ? '/es' : '/');
+
+      const approachLink = navigation.getByRole('link', {name: approach.label, exact: true});
+      await expect(approachLink).toHaveAttribute('href', approachPath);
+      await approachLink.click();
+      await expect(page).toHaveURL(new RegExp(`${approachPath}$`, 'u'));
+      await expect(page.getByRole('heading', {level: 1})).toBeVisible();
+    }
+  });
+
+  test('does not obscure the main content in short reflow viewports', {
+    tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
+  }, async ({page}) => {
+    for (const viewport of [
+      {width: 320, height: 256},
+      {width: 640, height: 400},
+    ] as const) {
+      await page.setViewportSize(viewport);
+      await expectDocument(page, `/?no-js-reflow=${viewport.width}x${viewport.height}`, 'en');
+
+      const navigation = page.locator('nav.mobile-nav__fallback');
+      const language = navigation.getByRole('link', {name: 'Language: Español'});
+      await expect(navigation).toBeVisible();
+      await language.focus();
+      await expect(language).toBeFocused();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+        `${viewport.width}×${viewport.height} fallback causes horizontal overflow`,
+      ).toBeLessThanOrEqual(1);
+
+      const main = page.locator('main#main-content');
+      await main.scrollIntoViewIfNeeded();
+      const visibleMainHeight = await main.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        const headerBottom = document.querySelector('.site-header')
+          ?.getBoundingClientRect().bottom ?? 0;
+        return Math.max(
+          0,
+          Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, headerBottom, 0),
+        );
+      });
+      expect(
+        visibleMainHeight,
+        `${viewport.width}×${viewport.height} sticky header or fallback obscures main`,
+      ).toBeGreaterThanOrEqual(48);
+    }
+  });
+});
+
 test('mobile navigation closes without obscuring keyboard focus', {
   tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
 }, async ({page}) => {
@@ -1059,6 +1192,25 @@ test('resource filters keep a visible selected state in forced colors', async ({
   }));
   expect(focusedStyle.outlineStyle).not.toBe('none');
   expect(focusedStyle.outlineWidth).toBeGreaterThanOrEqual(3);
+});
+
+test('current desktop navigation remains visible in forced colors', async ({page}) => {
+  await page.emulateMedia({forcedColors: 'active'});
+  await expectDocument(page, '/research', 'en');
+
+  const current = page
+    .getByRole('navigation', {name: 'Main navigation'})
+    .getByRole('link', {name: 'Research', exact: true});
+  await expect(current).toHaveAttribute('aria-current', 'page');
+  const indicator = await current.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      borderBottomStyle: style.borderBottomStyle,
+      borderBottomWidth: Number.parseFloat(style.borderBottomWidth),
+    };
+  });
+  expect(indicator.borderBottomStyle).toBe('solid');
+  expect(indicator.borderBottomWidth).toBeGreaterThanOrEqual(3);
 });
 
 test('account access page is a status page and never renders credential fields', async ({page}) => {
