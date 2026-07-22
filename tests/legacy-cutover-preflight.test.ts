@@ -198,6 +198,28 @@ function goInput(plan: LegacyCutoverPlan) {
 }
 
 describe('legacy-domain cutover plan', () => {
+  it('pins the complete contact-delivery evidence contract independently of fixtures', () => {
+    assert.deepEqual(LEGACY_CUTOVER_EVIDENCE_CHECKS.contactDelivery, [
+      'repositoryGateApproved',
+      'productionEnvironmentEnabled',
+      'retentionAndInboxOwnersConfirmed',
+      'turnstileProductionPassed',
+      'endToEndDeliveryPassed',
+      'replyToPassed',
+      'sameOriginPassed',
+      'honeypotPassed',
+      'edgeRateLimitPassed',
+      'malformedBodyRejected',
+      'oversizedBodyRejected',
+      'invalidTurnstileRejected',
+      'replayedTurnstileRejected',
+      'automatedSubmissionHandled',
+      'abusiveSubmissionHandled',
+      'logRedactionPassed',
+      'failureRollbackDispositionRecorded',
+    ]);
+  });
+
   it('accepts only a complete, time-bounded, machine-approved pre-change plan', () => {
     assert.deepEqual(validateLegacyCutoverPlan(validPlan(), {nowMs}), []);
   });
@@ -277,6 +299,46 @@ describe('legacy-domain external evidence', () => {
       ),
       true,
     );
+  });
+
+  it('rejects the old aggregate contact receipt and every missing granular security result', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'helpmath-cutover-evidence-'));
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const artifactPath = plan.evidence.contactDelivery.reference;
+    const underlyingPath = path.join(directory, 'contactDelivery.underlying.json');
+    const underlyingBytes = await readFile(underlyingPath);
+    const artifact = evidenceArtifact(plan, 'contactDelivery', {
+      reference: underlyingPath,
+      sha256: createHash('sha256').update(underlyingBytes).digest('hex'),
+      bytes: underlyingBytes.length,
+    });
+    artifact.checks = {
+      repositoryGateApproved: true,
+      productionEnvironmentEnabled: true,
+      verifiedSubmissionDelivered: true,
+      retentionAndInboxOwnersConfirmed: true,
+    };
+    const artifactBytes = Buffer.from(canonicalJson(artifact));
+    await writeFile(artifactPath, artifactBytes, {mode: 0o600});
+    plan.evidence.contactDelivery.sha256 = createHash('sha256').update(artifactBytes).digest('hex');
+
+    const oldContract = await verifyLegacyCutoverEvidence(plan, {nowMs});
+    const oldErrors = oldContract.entries
+      .find((entry) => entry.key === 'contactDelivery')
+      ?.errors.join('\n') ?? '';
+    assert.equal(oldContract.ok, false);
+    assert.match(oldErrors, /unknown field verifiedSubmissionDelivered/u);
+    for (const required of [
+      'replyToPassed',
+      'sameOriginPassed',
+      'edgeRateLimitPassed',
+      'replayedTurnstileRejected',
+      'abusiveSubmissionHandled',
+      'logRedactionPassed',
+    ]) {
+      assert.match(oldErrors, new RegExp(`checks\\.${required} must be true`, 'u'));
+    }
   });
 
   it('fails closed on artifact tampering, underlying-evidence tampering, and credentials', async () => {

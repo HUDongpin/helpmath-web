@@ -54,6 +54,23 @@ export const LAUNCH_GATE_BLOCKER_REFS = {
   productionLaunch: ['docs/LAUNCH_DECISIONS.md'],
 } as const satisfies Record<LaunchGateId, readonly string[]>;
 
+export const CONTACT_PRODUCTION_VERIFICATION_CHECKS = [
+  'turnstileProductionPassed',
+  'endToEndDeliveryPassed',
+  'replyToPassed',
+  'sameOriginPassed',
+  'honeypotPassed',
+  'edgeRateLimitPassed',
+  'malformedBodyRejected',
+  'oversizedBodyRejected',
+  'invalidTurnstileRejected',
+  'replayedTurnstileRejected',
+  'automatedSubmissionHandled',
+  'abusiveSubmissionHandled',
+  'logRedactionPassed',
+  'failureRollbackDispositionRecorded',
+] as const;
+
 export const LAUNCH_GATE_EVIDENCE_CHECKS = {
   'legal-review': [
     'operatingEntityConfirmed',
@@ -72,16 +89,7 @@ export const LAUNCH_GATE_EVIDENCE_CHECKS = {
     'retentionAndInboxOwnersConfirmed',
     'postActivationTestPlanApproved',
   ],
-  'contact-production-verification': [
-    'turnstileProductionPassed',
-    'endToEndDeliveryPassed',
-    'replyToPassed',
-    'sameOriginAndHoneypotPassed',
-    'edgeRateLimitPassed',
-    'malformedOversizedReplayAndAbusePassed',
-    'logRedactionPassed',
-    'failureRollbackDispositionRecorded',
-  ],
+  'contact-production-verification': CONTACT_PRODUCTION_VERIFICATION_CHECKS,
   'demo-rights': [
     'originalMaterialsLicensed',
     'javascriptAdaptationLicensed',

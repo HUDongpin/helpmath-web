@@ -2,6 +2,7 @@ import {createHash, randomUUID} from 'node:crypto';
 import {constants} from 'node:fs';
 import {link, lstat, open, realpath, unlink} from 'node:fs/promises';
 import path from 'node:path';
+import {CONTACT_PRODUCTION_VERIFICATION_CHECKS} from './launch-gate-policy';
 
 export const LEGACY_CUTOVER_EVIDENCE_CHECKS = {
   dnsZoneBefore: [
@@ -24,8 +25,8 @@ export const LEGACY_CUTOVER_EVIDENCE_CHECKS = {
   contactDelivery: [
     'repositoryGateApproved',
     'productionEnvironmentEnabled',
-    'verifiedSubmissionDelivered',
     'retentionAndInboxOwnersConfirmed',
+    ...CONTACT_PRODUCTION_VERIFICATION_CHECKS,
   ],
   searchConsoleControl: [
     'legacyPropertyControlled',

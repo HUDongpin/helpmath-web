@@ -77,9 +77,11 @@ Production host:
 - Send a real end-to-end message and confirm it reaches the monitored inbox,
   preserves the validated Reply-To address, and creates no sensitive repository
   artifact.
-- Confirm same-origin enforcement, the honeypot, edge rate limiting, malformed
-  and oversized-body rejection, log redaction, and the designed handling of
-  invalid, replayed, automated, and abusive submissions.
+- Record separate results for same-origin enforcement, honeypot handling, edge
+  rate limiting, malformed-body rejection, oversized-body rejection, invalid
+  Turnstile rejection, replayed Turnstile rejection, automated-submission
+  handling, abusive-submission handling, log redaction, and the approved
+  failure or rollback disposition.
 
 Service receipts, message samples, and security-test details must remain in the
 restricted evidence system. The resulting record must bind the approved commit,

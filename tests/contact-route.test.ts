@@ -47,10 +47,24 @@ function validRequest(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function request(body: unknown, headers: Record<string, string> = {}) {
-  return new Request('https://www.helpmath.ai/api/contact', {
+function request(
+  body: unknown,
+  headers: Record<string, string | null> = {},
+  url = 'https://www.helpmath.ai/api/contact',
+) {
+  const requestHeaders = new Headers({
+    'content-type': 'application/json',
+    origin: 'https://www.helpmath.ai',
+    'sec-fetch-site': 'same-origin',
+  });
+  for (const [name, value] of Object.entries(headers)) {
+    if (value === null) requestHeaders.delete(name);
+    else requestHeaders.set(name, value);
+  }
+
+  return new Request(url, {
     method: 'POST',
-    headers: {'content-type': 'application/json', ...headers},
+    headers: requestHeaders,
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 }
@@ -94,17 +108,120 @@ describe('POST /api/contact', () => {
     assert.doesNotMatch(email.text, /verified-token|turnstile/i);
   });
 
+  it('rejects header-injection addresses before they can become Reply-To', () => {
+    for (const email of [
+      'ada@example.org\r\nBcc: attacker@example.org',
+      'ada@example.org\nReply-To: attacker@example.org',
+    ]) {
+      const parsed = contactRequestSchema.safeParse(validRequest({email}));
+      assert.equal(parsed.success, false, email);
+    }
+  });
+
   it('fails closed before parsing when contact intake is not explicitly enabled', async () => {
     setEnv('NEXT_PUBLIC_CONTACT_ENABLED', 'false');
     globalThis.fetch = async () => {
       throw new Error('Turnstile must not be called while contact is disabled');
     };
 
-    const response = await POST(request(validRequest()));
+    const response = await POST(
+      request(validRequest(), {origin: null, 'sec-fetch-site': null}),
+    );
     const body = await response.json();
     assert.equal(response.status, 503);
     assertNoStore(response);
     assert.equal(body.error.code, 'CONTACT_DISABLED');
+  });
+
+  it('allows a valid Origin with or without the optional fetch metadata header', async () => {
+    setEnv('NODE_ENV', 'production');
+    delete process.env.TURNSTILE_SECRET_KEY;
+
+    const validHeaders: Array<Record<string, string | null>> = [
+      {},
+      {'sec-fetch-site': null},
+    ];
+    for (const headers of validHeaders) {
+      const response = await POST(request(validRequest(), headers));
+      assert.equal(response.status, 503);
+      assertNoStore(response);
+      assert.equal((await response.json()).error.code, 'TURNSTILE_NOT_CONFIGURED');
+    }
+  });
+
+  it('fails closed on missing, null, malformed, or path-bearing Origin values', async () => {
+    globalThis.fetch = async () => {
+      throw new Error('Turnstile must not be called for a forbidden origin');
+    };
+
+    for (const origin of [
+      null,
+      'null',
+      'not an origin',
+      'https://www.helpmath.ai/forged-path',
+      'https://attacker.example',
+    ]) {
+      const response = await POST(request('{not json', {origin}));
+      const body = await response.json();
+      assert.equal(response.status, 403, String(origin));
+      assertNoStore(response);
+      assert.equal(body.error.code, 'CONTACT_FORBIDDEN');
+    }
+  });
+
+  it('rejects same-site and cross-site fetch contexts before body parsing', async () => {
+    globalThis.fetch = async () => {
+      throw new Error('Turnstile must not be called for a forbidden fetch context');
+    };
+
+    for (const fetchSite of ['same-site', 'cross-site', 'none', '']) {
+      const response = await POST(
+        request('{not json', {'sec-fetch-site': fetchSite}),
+      );
+      assert.equal(response.status, 403, fetchSite);
+      assertNoStore(response);
+      assert.equal((await response.json()).error.code, 'CONTACT_FORBIDDEN');
+    }
+
+    const forged = await POST(
+      request('{not json', {
+        origin: 'https://attacker.example',
+        'sec-fetch-site': 'same-origin',
+      }),
+    );
+    assert.equal(forged.status, 403);
+    assert.equal((await forged.json()).error.code, 'CONTACT_FORBIDDEN');
+  });
+
+  it('accepts a validated Vercel forwarded origin without trusting malformed proxy headers', async () => {
+    const forwarded = request(
+      validRequest(),
+      {
+        'x-forwarded-host': 'www.helpmath.ai',
+        'x-forwarded-proto': 'https',
+      },
+      'https://helpmath-web-internal.vercel.app/api/contact',
+    );
+    setEnv('NODE_ENV', 'production');
+    delete process.env.TURNSTILE_SECRET_KEY;
+    const forwardedResponse = await POST(forwarded);
+    assert.equal(forwardedResponse.status, 503);
+    assert.equal((await forwardedResponse.json()).error.code, 'TURNSTILE_NOT_CONFIGURED');
+
+    for (const headers of [
+      {'x-forwarded-host': 'attacker.example@www.helpmath.ai', 'x-forwarded-proto': 'https'},
+      {'x-forwarded-host': 'www.helpmath.ai/path', 'x-forwarded-proto': 'https'},
+      {'x-forwarded-host': 'www.helpmath.ai', 'x-forwarded-proto': 'javascript'},
+    ]) {
+      const hostile = request(
+        validRequest(),
+        headers,
+        'https://helpmath-web-internal.vercel.app/api/contact',
+      );
+      const response = await POST(hostile);
+      assert.equal(response.status, 403);
+      assert.equal((await response.json()).error.code, 'CONTACT_FORBIDDEN');
+    }
   });
 
   it('returns the same structured error envelope for malformed JSON', async () => {
