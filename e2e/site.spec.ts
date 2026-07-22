@@ -355,11 +355,18 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
 });
 
-test('keyboard focus remains visible across the branded surface palette', async ({page}) => {
+test('keyboard focus remains visible across the branded surface palette @cross-browser-smoke', async ({page}) => {
   await expectDocument(page, '/research', 'en');
   const target = page.getByRole('link', {name: 'Check source-request status'});
-  await target.focus();
+
+  async function focusWithKeyboardModality(locator: typeof target) {
+    await page.keyboard.press('Tab');
+    await locator.focus();
+  }
+
+  await focusWithKeyboardModality(target);
   await expect(target).toBeFocused();
+  expect(await target.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
 
   const focusIndicator = await target.evaluate((element) => {
     function resolveColor(value: string): [number, number, number] {
@@ -425,8 +432,9 @@ test('keyboard focus remains visible across the branded surface palette', async 
   }
 
   const footerLink = page.locator('.site-footer a').first();
-  await footerLink.focus();
+  await focusWithKeyboardModality(footerLink);
   await expect(footerLink).toBeFocused();
+  expect(await footerLink.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
   const footerFocus = await footerLink.evaluate((element) => ({
     boxShadow: getComputedStyle(element).boxShadow,
     outlineStyle: getComputedStyle(element).outlineStyle,
@@ -846,6 +854,9 @@ test('mobile navigation closes without obscuring keyboard focus', {
   await expect(menu).toHaveAttribute('open', '');
   await page.keyboard.press('Shift+Tab');
   await expect(menu).not.toHaveAttribute('open', '');
+  expect(
+    await page.evaluate(() => document.activeElement?.closest('.mobile-nav') === null),
+  ).toBe(true);
   expectNoRuntimeIssues(issues);
 });
 

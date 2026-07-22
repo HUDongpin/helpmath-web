@@ -2734,14 +2734,15 @@ svg {
 }
 
 :focus-visible {
-  box-shadow: 0 0 0 3px var(--white);
+  box-shadow: 0 0 0 3px var(--white) !important;
   outline: 3px solid var(--ink);
   outline-offset: 4px;
+  transition: none !important;
 }
 
 @media (forced-colors: active) {
   :focus-visible {
-    box-shadow: none;
+    box-shadow: none !important;
     outline-color: CanvasText;
   }
 

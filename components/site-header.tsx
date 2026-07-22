@@ -15,6 +15,16 @@ import {Link, stripLocalePrefix, usePathname} from '@/i18n/navigation';
 
 import {LanguageSwitcher} from './language-switcher';
 
+const keyboardFocusableSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'summary',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
 export function Brand({homeLabel}: {homeLabel: string}) {
   return (
     <Link className="brand" href="/" prefetch={false} title={homeLabel}>
@@ -112,24 +122,50 @@ export function SiteHeader({
     window.requestAnimationFrame(closeMobileMenu);
   }
 
+  function closeMobileMenuAndMoveFocus(
+    details: HTMLDetailsElement,
+    direction: 'backward' | 'forward',
+  ) {
+    const position = direction === 'forward'
+      ? Node.DOCUMENT_POSITION_FOLLOWING
+      : Node.DOCUMENT_POSITION_PRECEDING;
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>(keyboardFocusableSelector),
+    ).filter((element) => {
+      if (details.contains(element) || element.matches(':disabled')) return false;
+
+      const style = window.getComputedStyle(element);
+      return element.getClientRects().length > 0 &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden';
+    });
+    const orderedCandidates = direction === 'forward' ? candidates : candidates.reverse();
+    const nextTarget = orderedCandidates.find((element) =>
+      Boolean(details.compareDocumentPosition(element) & position));
+
+    closeMobileMenu();
+    nextTarget?.focus();
+  }
+
   function handleMobileMenuKeyDown(event: KeyboardEvent<HTMLDetailsElement>) {
     if (!event.currentTarget.open) return;
 
     if (event.key === 'Tab') {
       const panel = event.currentTarget.querySelector<HTMLElement>('#mobile-navigation-panel');
-      const focusableSelector = [
-        'a[href]',
-        'button:not([disabled])',
-        '[tabindex]:not([tabindex="-1"])',
-      ].join(', ');
       const panelControls = Array.from(
-        panel?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
+        panel?.querySelectorAll<HTMLElement>(keyboardFocusableSelector) ?? [],
       );
       const boundaryControl = event.shiftKey
         ? mobileNavSummaryRef.current
         : panelControls.at(-1) ?? mobileNavSummaryRef.current;
 
-      if (event.target === boundaryControl) closeMobileMenuAfterActivation();
+      if (event.target === boundaryControl) {
+        event.preventDefault();
+        closeMobileMenuAndMoveFocus(
+          event.currentTarget,
+          event.shiftKey ? 'backward' : 'forward',
+        );
+      }
       return;
     }
 
