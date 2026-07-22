@@ -28,6 +28,7 @@ describe('visual regression quality gate', () => {
       workflow,
       /mcr\.microsoft\.com\/playwright:v1\.61\.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48/u,
     );
+    assert.match(workflow, /options: --user 1001/u);
     assert.match(workflow, /run: npm run test:visual/u);
     assert.doesNotMatch(workflow, /test:visual:update|--update-snapshots/u);
     assert.match(workflow, /name: visual-regression-\$\{\{ github\.run_id \}\}/u);

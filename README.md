@@ -20,10 +20,11 @@ npm audit --audit-level=high
 ```
 
 The Quality workflow also runs seven visual-regression checks in a
-digest-pinned Playwright Linux container. The same job runs the full Chromium
-contract plus focused Desktop Safari/WebKit, native iPhone WebKit touch, and
-Firefox projects. Visual baselines are container-specific; do not regenerate
-them from a normal host run. `npm run test:e2e:chromium`,
+digest-pinned Playwright Linux container as the image's non-root test user. The
+same job runs the full Chromium contract plus focused Desktop Safari/WebKit,
+native iPhone WebKit touch, and Firefox projects. Visual baselines are
+container-specific; do not regenerate them from a normal host run.
+`npm run test:e2e:chromium`,
 `npm run test:e2e:webkit`, `npm run test:e2e:mobile-webkit`, and
 `npm run test:e2e:firefox` are available for focused local diagnostics.
 
