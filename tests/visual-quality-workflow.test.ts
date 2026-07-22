@@ -56,4 +56,14 @@ describe('visual regression quality gate', () => {
       assert.ok(bytes.length > 10_000, `${filename} is implausibly small`);
     }
   });
+
+  it('neutralizes sticky page chrome before capturing long section locators', async () => {
+    const visualSpec = await readFile(
+      path.join(repositoryRoot, 'visual-tests/public-pages.visual.spec.ts'),
+      'utf8',
+    );
+
+    assert.match(visualSpec, /\.status-strip,[\s\S]*?\.site-header[\s\S]*?position: static !important/u);
+    assert.match(visualSpec, /\.skip-link[\s\S]*?display: none !important/u);
+  });
 });

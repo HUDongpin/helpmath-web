@@ -32,6 +32,18 @@ async function expectSectionScreenshot(
   selector: string,
   name: string,
 ) {
+  await page.addStyleTag({
+    content: `
+      .status-strip,
+      .site-header {
+        position: static !important;
+      }
+
+      .skip-link {
+        display: none !important;
+      }
+    `,
+  });
   const section = page.locator(selector);
   await section.scrollIntoViewIfNeeded();
   await expect(section).toBeVisible();

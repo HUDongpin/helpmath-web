@@ -22,14 +22,13 @@ describe('static sitemap metadata', () => {
     const july22 = '2026-07-22T00:00:00.000Z';
     const july21 = '2026-07-21T00:00:00.000Z';
 
-    for (const path of ['/', '/about', '/research'] as const) {
+    for (const path of ['/', '/about', '/research', '/support'] as const) {
       assert.equal(dates.get(path), july22, path);
     }
     for (const path of [
       '/approach',
       '/curriculum',
       '/resources',
-      '/support',
       '/login',
       '/contact',
       '/privacy',
