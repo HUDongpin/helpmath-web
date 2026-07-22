@@ -19,7 +19,7 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-The Quality workflow also runs seven visual-regression checks in a
+The Quality workflow also runs eight visual-regression checks in a
 digest-pinned Playwright Linux container as the image's non-root test user. The
 same job runs the full Chromium contract plus focused Desktop Safari/WebKit,
 native iPhone WebKit touch, and Firefox projects. Visual baselines are

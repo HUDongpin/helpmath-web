@@ -12,7 +12,7 @@ async function preparePage(
   const fonts = await page.evaluate(async () => {
     const loaded = await Promise.all([
       document.fonts.load('400 16px "Nunito Sans Variable"'),
-      document.fonts.load('700 32px "Fredoka Variable"'),
+      document.fonts.load('700 32px "Nunito Sans Variable"'),
     ]);
     await document.fonts.ready;
     window.scrollTo(0, 0);
@@ -64,6 +64,14 @@ test('English research hero', async ({page}) => {
   await preparePage(page, '/research', {width: 1280, height: 800});
   await expect(page).toHaveScreenshot(
     'research-hero-desktop.png',
+    screenshotOptions,
+  );
+});
+
+test('English About hero uses the approved typography', async ({page}) => {
+  await preparePage(page, '/about', {width: 1280, height: 800});
+  await expect(page).toHaveScreenshot(
+    'about-hero-desktop.png',
     screenshotOptions,
   );
 });
