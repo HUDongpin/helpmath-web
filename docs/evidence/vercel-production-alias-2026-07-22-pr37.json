@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-22T11:48:56.000Z",
+  "source": {
+    "method": "Authenticated Vercel CLI inspect, authenticated Vercel API projection, and authenticated alias-list projection, reduced to non-secret deployment, build, Git identity, and alias-assignment fields",
+    "cliVersion": "56.5.0",
+    "scope": "peter-dongpin-hu-s-projects",
+    "rawOutputRetained": false,
+    "rawOutputRetentionReason": "The full authenticated response contains extensive internal deployment metadata that is unnecessary for alias identity."
+  },
+  "project": {
+    "name": "helpmath-web"
+  },
+  "deployment": {
+    "vercelDeploymentId": "dpl_HYteuZes7FqGZwLMTfsqe8Qy4jzw",
+    "vercelBuildId": "bld_i4ou0dicg",
+    "githubDeploymentId": 5554573849,
+    "githubDeploymentStatusId": 15792499347,
+    "repositoryCommit": "59bb5472568da389061464f199d94365a28ddcc1",
+    "target": "production",
+    "readyState": "READY",
+    "createdAt": "2026-07-22T11:31:25.368Z",
+    "immutableUrl": "https://helpmath-dsmt9x9tj-peter-dongpin-hu-s-projects.vercel.app"
+  },
+  "aliases": [
+    "https://www.helpmath.ai",
+    "https://helpmath.ai",
+    "https://helpmath-web.vercel.app",
+    "https://helpmath-web-peter-dongpin-hu-s-projects.vercel.app",
+    "https://helpmath-web-git-main-peter-dongpin-hu-s-projects.vercel.app"
+  ],
+  "buildBoundary": {
+    "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
+    "ignoreDecision": "build-relevant-change",
+    "installCommand": "npm ci",
+    "buildExecuted": true
+  },
+  "aliasTransition": {
+    "previousProductionDeploymentWhileBuilding": "dpl_B6gzFKvBKohVFGeCohoZPhTPBfJC",
+    "replacementProductionDeployment": "dpl_HYteuZes7FqGZwLMTfsqe8Qy4jzw",
+    "deploymentReadyAt": "2026-07-22T11:32:21.093Z",
+    "aliasesAssignedAt": "2026-07-22T11:32:22.016Z",
+    "canonicalAliasesChangedOnlyAfterReplacementReady": true
+  },
+  "corroboratingEvidence": {
+    "githubDeploymentStatus": "https://api.github.com/repos/HUDongpin/helpmath-web/deployments/5554573849/statuses",
+    "candidateQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29915306459",
+    "productionQualityRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29916020531",
+    "productionSmokeRun": "https://github.com/HUDongpin/helpmath-web/actions/runs/29916084135",
+    "pullRequest": "https://github.com/HUDongpin/helpmath-web/pull/37"
+  },
+  "checks": {
+    "canonicalWwwAliasAssigned": true,
+    "canonicalApexAliasAssigned": true,
+    "canonicalAliasesCurrentlyPointToDeployment": true,
+    "deploymentReady": true,
+    "buildReady": true,
+    "productionTarget": true,
+    "gitSourceShaMatches": true,
+    "deploymentMetadataShaMatches": true,
+    "githubDeploymentMatchesCommit": true,
+    "buildRelevantChangeWasNotSkipped": true,
+    "reproducibleInstallCommandApplied": true,
+    "canonicalAliasesChangedOnlyAfterDeploymentReady": true,
+    "privateDemoStaticLeakCountWasZero": true
+  },
+  "limitations": [
+    "This owner-authenticated operational observation is not a registrar or DNS-provider zone export.",
+    "It does not authorize a helpmath.ai or helpprogram.net DNS or hosting change.",
+    "It does not prove authenticated Executive Preview playback or public demo rights.",
+    "It records the application deployment and alias transition, not authorization to open any holding launch gate."
+  ]
+}
