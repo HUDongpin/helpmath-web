@@ -7,6 +7,8 @@ import type {ContactContent, Locale} from '@/content/types';
 import {Link} from '@/i18n/navigation';
 import {CONTACT_LIMITS, normalizeContactTopic, type ContactField} from '@/lib/contact-schema';
 
+import {ContactUnavailable} from './contact-unavailable';
+
 const DEVELOPMENT_TURNSTILE_TOKEN = 'development-bypass';
 
 type FieldErrors = Partial<Record<ContactField, string>>;
@@ -98,20 +100,7 @@ export function ContactForm({content, locale, repositoryGateApproved}: ContactFo
   }, [content.form.topicOptions]);
 
   if (!contactEnabled || (!publicSiteKey && !localSimulation)) {
-    return (
-      <div className="demo-unavailable" role="status">
-        <h2>
-          {locale === 'es'
-            ? 'El formulario de contacto aún no acepta mensajes'
-            : 'Contact intake is not accepting messages yet'}
-        </h2>
-        <p>
-          {locale === 'es'
-            ? 'La protección contra abuso y la entrega verificada todavía se están configurando. Vuelve después de la apertura y no envíes datos estudiantiles, contraseñas ni información de cuenta por otro canal.'
-            : 'Abuse protection and verified delivery are still being configured. Please return after launch, and do not send student data, passwords, or account information through another channel.'}
-        </p>
-      </div>
-    );
+    return <ContactUnavailable locale={locale} />;
   }
 
   function focusFirstError() {
@@ -190,8 +179,10 @@ export function ContactForm({content, locale, repositoryGateApproved}: ContactFo
     'mt-2 min-h-12 w-full rounded-lg border-2 border-[var(--line)] bg-white px-3 py-2 text-[var(--ink)] focus:border-[var(--blue)] focus:outline-none aria-[invalid=true]:border-[#b42318]';
   return (
     <form
+      action="/api/contact"
       aria-busy={state === 'submitting'}
       className="grid gap-6"
+      method="post"
       noValidate
       onSubmit={submit}
       ref={formRef}

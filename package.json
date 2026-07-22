@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "npm run check:generated && npm run build:executive-runtime && next build && npm run check:private-demo-traces && npm run check:private-demo-leaks",
+    "build": "npm run check:generated && npm run build:executive-runtime && next build && npm run check:public-client-boundaries && npm run check:private-demo-traces && npm run check:private-demo-leaks",
     "build:executive-runtime": "node scripts/build-executive-demo-runtime.mjs",
     "start": "next start",
     "lint": "eslint .",
@@ -19,6 +19,7 @@
     "build:legacy-source-recovery": "node scripts/build-legacy-source-recovery-bundle.mjs",
     "drill:legacy-source-recovery": "node scripts/drill-legacy-source-recovery.mjs",
     "test:e2e": "playwright test",
+    "test:coverage": "tsx --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=70 --test-coverage-functions=75 tests/**/*.test.ts tests/**/*.test.mjs",
     "smoke:production": "node scripts/release-smoke.mjs",
     "generate:demos": "npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs",
     "generate:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts",
@@ -26,9 +27,11 @@
     "check:demo-lifecycle": "tsx scripts/validate-demo-lifecycle.ts",
     "check:launch-gates": "tsx scripts/validate-launch-gates.ts",
     "check:legacy-apache": "tsx scripts/generate-apache-legacy-redirects.ts --check",
+    "check:public-client-boundaries": "node scripts/check-public-client-boundaries.mjs",
     "check:private-demo-leaks": "tsx scripts/check-private-demo-leaks.mjs",
     "check:private-demo-traces": "node scripts/verify-private-demo-traces.mjs",
-    "check:stable-links": "node scripts/check-stable-external-links.mjs"
+    "check:stable-links": "node scripts/check-stable-external-links.mjs",
+    "test:lighthouse": "lhci autorun"
   },
   "dependencies": {
     "@fontsource-variable/fredoka": "^5.3.0",
@@ -43,6 +46,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@lhci/cli": "0.15.1",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.1.1",
@@ -57,6 +61,8 @@
   },
   "overrides": {
     "postcss": "^8.5.10",
-    "sharp": "0.35.3"
+    "sharp": "0.35.3",
+    "tmp": "0.2.7",
+    "uuid": "11.1.1"
   }
 }
