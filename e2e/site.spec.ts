@@ -682,6 +682,598 @@ test('resource library filters eighteen sourced records in both languages', asyn
   expectNoRuntimeIssues(issues);
 });
 
+test('render containment preserves resource geometry, focus, and deep links', {
+  tag: ['@cross-browser-smoke'],
+}, async ({page}) => {
+  await page.addInitScript(() => {
+    const state = {value: 0};
+    Object.defineProperty(window, '__helpMathCls', {configurable: true, value: state});
+    if (
+      typeof PerformanceObserver !== 'undefined' &&
+      PerformanceObserver.supportedEntryTypes?.includes('layout-shift')
+    ) {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const shift = entry as PerformanceEntry & {hadRecentInput?: boolean; value?: number};
+          if (!shift.hadRecentInput) state.value += shift.value ?? 0;
+        }
+      });
+      observer.observe({type: 'layout-shift', buffered: true});
+    }
+  });
+
+  await expectDocument(page, '/resources', 'en');
+  const library = page.locator('#resource-library');
+  const list = library.locator('.resource-list');
+  const entries = list.locator('.resource-entry');
+  await expect(entries).toHaveCount(18);
+
+  const containment = await entries.nth(3).evaluate((entry) => ({
+    contentVisibility: getComputedStyle(entry).contentVisibility,
+    supported: CSS.supports('content-visibility', 'auto'),
+  }));
+  if (containment.supported) expect(containment.contentVisibility).toBe('auto');
+
+  const finalLink = entries.last().getByRole('link');
+  await finalLink.focus();
+  await expect(finalLink).toBeFocused();
+  await expect(finalLink).toBeInViewport();
+
+  const initialHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
+  const search = library.getByRole('searchbox', {name: 'Search resources'});
+  await search.fill('WWC');
+  await expect(entries).toHaveCount(3);
+  const filteredGeometry = await entries.evaluateAll((cards) => cards.map((card) => {
+    const bounds = card.getBoundingClientRect();
+    return {bottom: bounds.bottom, top: bounds.top};
+  }));
+  const filteredHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
+  expect(filteredHeight).toBeLessThan(initialHeight / 2);
+  for (let index = 1; index < filteredGeometry.length; index += 1) {
+    expect(
+      Math.abs(filteredGeometry[index].top - filteredGeometry[index - 1].bottom),
+    ).toBeLessThanOrEqual(1);
+  }
+
+  await expectDocument(
+    page,
+    '/resources?test=render-containment#technology-innovations-report',
+    'en',
+  );
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    }));
+  });
+  await page.waitForTimeout(250);
+
+  const readDeepLinkGeometry = () => page.evaluate(() => {
+    const target = document.querySelector<HTMLElement>('#technology-innovations-report');
+    if (!target) throw new Error('Missing deep resource target');
+    const state = (window as Window & {__helpMathCls?: {value: number}}).__helpMathCls;
+    return {
+      cls: state?.value ?? null,
+      scrollY: window.scrollY,
+      targetTop: target.getBoundingClientRect().top,
+    };
+  });
+  const firstGeometry = await readDeepLinkGeometry();
+  await page.waitForTimeout(250);
+  const settledGeometry = await readDeepLinkGeometry();
+
+  expect(Math.abs(settledGeometry.scrollY - firstGeometry.scrollY)).toBeLessThanOrEqual(1);
+  expect(Math.abs(settledGeometry.targetTop - firstGeometry.targetTop)).toBeLessThanOrEqual(1);
+  if (settledGeometry.cls !== null) expect(settledGeometry.cls).toBeLessThanOrEqual(0.01);
+
+  await page.evaluate(() => {
+    window.location.hash = 'resource-library';
+  });
+  await expect(page).toHaveURL(/#resource-library$/u);
+  await expect.poll(() => page.locator('html').evaluate(
+    (root) => root.classList.contains('resource-fragment-navigation'),
+  )).toBe(false);
+  if (containment.supported) {
+    await expect.poll(() => entries.nth(3).evaluate(
+      (entry) => getComputedStyle(entry).contentVisibility,
+    )).toBe('auto');
+  }
+});
+
+test('resource fragment fallback survives failed hydration chunks', async ({browserName, page}) => {
+  test.skip(browserName !== 'chromium', 'The parser fallback is a Chromium regression contract.');
+  await page.setViewportSize({width: 900, height: 900});
+  await page.route('**/_next/static/**/*.js', (route) => route.abort('failed'));
+
+  for (const {path, targetHash} of [
+    {path: '/resources?test=blocked-hydration-en', targetHash: '#technology-innovations-report'},
+    {path: '/es/resources?test=blocked-hydration-es', targetHash: '#codie-past-winners'},
+  ]) {
+    const response = await page.goto(`${path}${targetHash}`, {waitUntil: 'load'});
+    expect(response?.status(), path).toBe(200);
+    await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
+    await expect(page.locator('#resource-library input')).toBeDisabled();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+    const geometry = await page.locator(targetHash).evaluate((target) => ({
+      contentVisibility: getComputedStyle(target).contentVisibility,
+      scrollMarginTop: Number.parseFloat(getComputedStyle(target).scrollMarginTop),
+      scrollY: window.scrollY,
+      top: target.getBoundingClientRect().top,
+    }));
+    expect(geometry.contentVisibility).toBe('visible');
+    expect(geometry.scrollY).toBeGreaterThan(0);
+    expect(Math.abs(geometry.top - geometry.scrollMarginTop)).toBeLessThanOrEqual(12);
+  }
+
+  await page.goto('/resources?test=blocked-hydration-section#resource-library', {
+    waitUntil: 'load',
+  });
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#resource-library');
+  await expect.poll(() => page.locator('html').evaluate(
+    (root) => root.classList.contains('resource-fragment-navigation'),
+  )).toBe(false);
+  const deferredCard = page.locator('.resource-entry').nth(3);
+  if (await deferredCard.evaluate(() => CSS.supports('content-visibility', 'auto'))) {
+    await expect.poll(() => deferredCard.evaluate(
+      (entry) => getComputedStyle(entry).contentVisibility,
+    )).toBe('auto');
+  }
+});
+
+test('stale resource fallback cannot override user navigation or browser history', async ({
+  browserName,
+  page,
+}) => {
+  test.skip(browserName !== 'chromium', 'The parser fallback is a Chromium regression contract.');
+  await page.addInitScript(() => {
+    let resolveFontsReady: (() => void) | undefined;
+    const pendingFontsReady = new Promise<FontFaceSet>((resolve) => {
+      resolveFontsReady = () => resolve(document.fonts);
+    });
+    Object.defineProperty(document.fonts, 'ready', {
+      configurable: true,
+      get: () => pendingFontsReady,
+    });
+    Object.defineProperty(window, '__helpMathResolveFontsReady', {
+      configurable: true,
+      value: () => resolveFontsReady?.(),
+    });
+  });
+
+  const targetHash = '#technology-innovations-report';
+  const releaseFontsReady = () => page.evaluate(() => {
+    (window as Window & {__helpMathResolveFontsReady?: () => void})
+      .__helpMathResolveFontsReady?.();
+  });
+
+  await page.goto(`/resources?test=changed-resource-fragment${targetHash}`, {
+    waitUntil: 'load',
+  });
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
+  await expect(page.locator('#resource-library input')).toBeEnabled();
+  await page.evaluate(() => {
+    window.location.hash = 'resource-library';
+  });
+  await expect(page).toHaveURL(/#resource-library$/u);
+  await releaseFontsReady();
+  await page.waitForTimeout(1_200);
+  expect(await page.evaluate(() => window.location.hash)).toBe('#resource-library');
+  await expect(page.locator('#resource-library')).toBeInViewport();
+
+  await page.goto(`/resources?test=stale-resource-fallback${targetHash}`, {waitUntil: 'load'});
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
+  await expect(page.locator('#resource-library input')).toBeEnabled();
+  await page.locator('.site-header a[href="/research"]').click();
+  await expect(page).toHaveURL(/\/research$/u);
+  await releaseFontsReady();
+  await page.waitForTimeout(1_200);
+
+  expect(await page.evaluate(() => ({
+    fragmentGuard: document.documentElement.classList.contains(
+      'resource-fragment-navigation',
+    ),
+    hash: window.location.hash,
+    pathname: window.location.pathname,
+  }))).toEqual({fragmentGuard: false, hash: '', pathname: '/research'});
+
+  await page.goBack({waitUntil: 'domcontentloaded'});
+  await expect.poll(() => page.evaluate(() => ({
+    hash: window.location.hash,
+    pathname: window.location.pathname,
+  }))).toEqual({hash: targetHash, pathname: '/resources'});
+  await expect(page.locator(targetHash)).toBeInViewport();
+});
+
+const containmentCalibrationWidths = [
+  320, 360, 361, 375, 382, 383, 390, 430, 475, 476, 520, 521, 600, 720, 721, 900, 1280,
+] as const;
+
+for (const locale of ['en', 'es'] as const) {
+  test(`render containment cold geometry and deep-link trajectory stay calibrated in ${locale}`, async ({
+    browserName,
+    page,
+  }) => {
+    test.skip(browserName !== 'chromium', 'Cold containment geometry is a Chromium contract.');
+    test.setTimeout(120_000);
+
+    await page.addInitScript(() => {
+      if (decodeURIComponent(window.location.hash.slice(1)) !== 'technology-innovations-report') {
+        return;
+      }
+
+      const layoutShiftSupported = Boolean(
+        typeof PerformanceObserver !== 'undefined' &&
+        PerformanceObserver.supportedEntryTypes?.includes('layout-shift')
+      );
+      const probe = {
+        cls: 0,
+        done: false,
+        layoutShiftSupported,
+        samples: [{
+          readyForTail: false,
+          scrollY: window.scrollY,
+          targetTop: null as number | null,
+          time: performance.now(),
+        }],
+        shifts: [] as Array<{
+          sources: Array<{
+            current: {height: number; width: number; x: number; y: number} | null;
+            node: string | null;
+            previous: {height: number; width: number; x: number; y: number} | null;
+          }>;
+          time: number;
+          value: number;
+        }>,
+        timedOut: false,
+      };
+      Object.defineProperty(window, '__helpMathAnchorProbe', {
+        configurable: true,
+        value: probe,
+      });
+
+      let observer: PerformanceObserver | null = null;
+      const recordLayoutShifts = (entries: PerformanceEntry[]) => {
+        for (const entry of entries) {
+          const shift = entry as PerformanceEntry & {
+            hadRecentInput?: boolean;
+            sources?: Array<{
+              currentRect?: DOMRectReadOnly;
+              node?: Node;
+              previousRect?: DOMRectReadOnly;
+            }>;
+            value?: number;
+          };
+          if (shift.hadRecentInput) continue;
+
+          const value = shift.value ?? 0;
+          probe.cls += value;
+          probe.shifts.push({
+            sources: (shift.sources ?? []).map((source) => {
+              const node = source.node instanceof Element ? source.node : null;
+              const serializeRect = (rect?: DOMRectReadOnly) => rect
+                ? {height: rect.height, width: rect.width, x: rect.x, y: rect.y}
+                : null;
+              return {
+                current: serializeRect(source.currentRect),
+                node: node
+                  ? `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}` +
+                    `${node.classList.length ? `.${[...node.classList].join('.')}` : ''}`
+                  : null,
+                previous: serializeRect(source.previousRect),
+              };
+            }),
+            time: entry.startTime,
+            value,
+          });
+        }
+      };
+      if (layoutShiftSupported) {
+        observer = new PerformanceObserver((list) => {
+          recordLayoutShifts(list.getEntries());
+        });
+        observer.observe({type: 'layout-shift', buffered: true});
+      }
+      const finishProbe = (timedOut: boolean) => {
+        if (observer) recordLayoutShifts(observer.takeRecords());
+        probe.timedOut = timedOut;
+        probe.done = true;
+      };
+
+      const startedAt = performance.now();
+      let hydratedFrames = 0;
+      let lastLanded: {scrollY: number; targetTop: number} | null = null;
+      let stableFrames = 0;
+      const sample = () => {
+        const target = document.getElementById('technology-innovations-report');
+        const targetTop = target?.getBoundingClientRect().top ?? null;
+        const search = document.querySelector<HTMLInputElement>('#resource-library input');
+        hydratedFrames = search && !search.disabled ? hydratedFrames + 1 : 0;
+        const readyForTail = document.fonts.status === 'loaded' && hydratedFrames >= 4;
+        const next = {
+          readyForTail,
+          scrollY: window.scrollY,
+          targetTop,
+          time: performance.now(),
+        };
+        probe.samples.push(next);
+
+        const landed = targetTop !== null &&
+          window.scrollY > 0 &&
+          targetTop >= 0 &&
+          targetTop < window.innerHeight;
+        if (
+          landed &&
+          readyForTail &&
+          lastLanded &&
+          Math.abs(next.scrollY - lastLanded.scrollY) <= 0.25 &&
+          Math.abs(targetTop - lastLanded.targetTop) <= 0.25
+        ) {
+          stableFrames += 1;
+        } else {
+          stableFrames = landed && readyForTail ? 1 : 0;
+        }
+        lastLanded = landed && readyForTail && targetTop !== null
+          ? {scrollY: next.scrollY, targetTop}
+          : null;
+
+        const documentReady = document.readyState === 'complete' && readyForTail;
+        if (documentReady && stableFrames >= 12) {
+          finishProbe(false);
+          return;
+        }
+        if (performance.now() - startedAt >= 3_000) {
+          finishProbe(true);
+          return;
+        }
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
+    const localePrefix = locale === 'en' ? '' : '/es';
+    const settleLayout = () => page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise<void>((resolve) => setTimeout(resolve, 110));
+      await new Promise<void>((resolve) => requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      }));
+    });
+    const openColdPage = async (path: string) => {
+      const response = await page.goto(path, {waitUntil: 'domcontentloaded'});
+      expect(response?.status(), path).toBe(200);
+      await settleLayout();
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
+      expect(await page.evaluate(() => window.scrollY), `${path} starts at the top`).toBe(0);
+    };
+    const captureRoots = (selector: string) => page.locator(selector).evaluateAll((elements) =>
+      elements.map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const styles = getComputedStyle(element);
+        const firstChild = element.firstElementChild as (Element & {
+          checkVisibility?: (options?: {contentVisibilityAuto?: boolean}) => boolean;
+        }) | null;
+        const verticalInsets = [
+          styles.paddingTop,
+          styles.paddingBottom,
+          styles.borderTopWidth,
+          styles.borderBottomWidth,
+        ].reduce((total, value) => total + (Number.parseFloat(value) || 0), 0);
+        return {
+          contentBoxHeight: Math.max(0, bounds.height - verticalInsets),
+          contentVisibility: styles.contentVisibility,
+          firstChildVisible: typeof firstChild?.checkVisibility === 'function'
+            ? firstChild.checkVisibility({contentVisibilityAuto: true})
+            : null,
+          id: element.id,
+          label: element.id || element.className,
+          rectHeight: bounds.height,
+        };
+      }),
+    );
+    const expectColdRoots = (roots: Awaited<ReturnType<typeof captureRoots>>, label: string) => {
+      for (const root of roots) {
+        expect(root.contentVisibility, `${label} ${root.label} uses containment`).toBe('auto');
+        if (root.firstChildVisible !== null) {
+          expect(
+            root.firstChildVisible,
+            `${label} ${root.label} first child is skipped before the root is forced`,
+          ).toBe(false);
+        }
+      }
+    };
+    const forceVisible = async (selector: string) => {
+      await page.locator(selector).evaluateAll((elements) => {
+        for (const element of elements) {
+          (element as HTMLElement).style.setProperty('content-visibility', 'visible', 'important');
+        }
+      });
+      await settleLayout();
+    };
+    const expectNoHorizontalOverflow = async (label: string) => {
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
+      expect(overflow, `${label} overflows horizontally`).toBeLessThanOrEqual(1);
+    };
+    const expectSectionCalibration = async (
+      selector: string,
+      expectedCount: number,
+      label: string,
+    ) => {
+      const cold = await captureRoots(selector);
+      expect(cold, `${label} section count`).toHaveLength(expectedCount);
+      expectColdRoots(cold, label);
+      await forceVisible(selector);
+      const actual = await captureRoots(selector);
+      expect(actual).toHaveLength(cold.length);
+
+      // Avenir Next and bundled Nunito render the same-width Spanish quality
+      // section about 67px apart, so 72px is the smallest portable budget.
+      for (let index = 0; index < cold.length; index += 1) {
+        expect(
+          Math.abs(actual[index].rectHeight - cold[index].rectHeight),
+          `${label} ${cold[index].label} cold-to-actual delta`,
+        ).toBeLessThanOrEqual(72);
+      }
+    };
+    const mean = (values: number[]) =>
+      values.reduce((total, value) => total + value, 0) / values.length;
+
+    for (const width of containmentCalibrationWidths) {
+      const label = `${locale} ${width}px`;
+      await page.setViewportSize({width, height: 240});
+
+      const homePath = locale === 'en'
+        ? `/?test=containment-cold-${locale}-${width}-home`
+        : `/es?test=containment-cold-${locale}-${width}-home`;
+      await openColdPage(homePath);
+      await expectSectionCalibration('.deferred-section', 4, `${label} home`);
+      await expectNoHorizontalOverflow(`${label} home`);
+
+      await openColdPage(
+        `${localePrefix}/demos?test=containment-cold-${locale}-${width}-demos`,
+      );
+      await expectSectionCalibration(
+        '.deferred-section--demos-quality',
+        1,
+        `${label} demos`,
+      );
+      await expectNoHorizontalOverflow(`${label} demos`);
+
+      await openColdPage(
+        `${localePrefix}/resources?test=containment-cold-${locale}-${width}-resources`,
+      );
+      const resourceMeanSelector =
+        '.resource-list > .resource-entry:nth-child(n + 4):nth-child(-n + 14)';
+      const resourceSelector = `${resourceMeanSelector}, #technology-innovations-report`;
+      const coldResourceRoots = await captureRoots(resourceSelector);
+      expect(coldResourceRoots, `${label} calibrated resource cards and target`).toHaveLength(12);
+      expectColdRoots(coldResourceRoots, `${label} resources`);
+      const coldResources = coldResourceRoots.filter(
+        ({id}) => id !== 'technology-innovations-report',
+      );
+      const coldTarget = coldResourceRoots.find(({id}) => id === 'technology-innovations-report');
+      expect(coldResources, `${label} resource cards 4-14`).toHaveLength(11);
+      expect(coldTarget, `${label} cold target card 15`).toBeDefined();
+
+      await forceVisible(resourceSelector);
+      const actualResourceRoots = await captureRoots(resourceSelector);
+      const actualResources = actualResourceRoots.filter(
+        ({id}) => id !== 'technology-innovations-report',
+      );
+      const actualTarget = actualResourceRoots.find(({id}) => id === 'technology-innovations-report');
+      expect(actualResources, `${label} actual resource cards 4-14`).toHaveLength(11);
+      expect(actualTarget, `${label} actual target card 15`).toBeDefined();
+
+      const meanRectDelta = Math.abs(
+        mean(actualResources.map(({rectHeight}) => rectHeight)) -
+        mean(coldResources.map(({rectHeight}) => rectHeight)),
+      );
+      const meanContentBoxDelta = Math.abs(
+        mean(actualResources.map(({contentBoxHeight}) => contentBoxHeight)) -
+        mean(coldResources.map(({contentBoxHeight}) => contentBoxHeight)),
+      );
+      expect(
+        Math.max(meanRectDelta, meanContentBoxDelta),
+        `${label} resource cards 4-14 mean cold-to-actual delta`,
+      ).toBeLessThanOrEqual(24);
+      expect(
+        Math.max(
+          Math.abs(actualTarget!.rectHeight - coldTarget!.rectHeight),
+          Math.abs(actualTarget!.contentBoxHeight - coldTarget!.contentBoxHeight),
+        ),
+        `${label} resource target cold-to-actual delta`,
+      ).toBeLessThanOrEqual(32);
+      await expectNoHorizontalOverflow(`${label} resources`);
+
+      // The 240px viewport above is deliberately artificial so every root is
+      // cold; verify the user-visible fragment landing at a normal page height.
+      await page.setViewportSize({width, height: 900});
+      await page.goto('about:blank');
+      const deepLinkPath =
+        `${localePrefix}/resources?test=containment-anchor-${locale}-${width}` +
+        '#technology-innovations-report';
+      const deepLinkResponse = await page.goto(deepLinkPath, {waitUntil: 'domcontentloaded'});
+      expect(deepLinkResponse?.status(), deepLinkPath).toBe(200);
+      await page.waitForFunction(() => (
+        (window as Window & {__helpMathAnchorProbe?: {done: boolean}})
+          .__helpMathAnchorProbe?.done === true
+      ), undefined, {timeout: 4_000});
+
+      const trajectory = await page.evaluate(() => {
+        const probe = (window as Window & {
+          __helpMathAnchorProbe?: {
+            cls: number;
+            layoutShiftSupported: boolean;
+            samples: Array<{
+              readyForTail: boolean;
+              scrollY: number;
+              targetTop: number | null;
+              time: number;
+            }>;
+            shifts: Array<{
+              sources: Array<{
+                current: {height: number; width: number; x: number; y: number} | null;
+                node: string | null;
+                previous: {height: number; width: number; x: number; y: number} | null;
+              }>;
+              time: number;
+              value: number;
+            }>;
+            timedOut: boolean;
+          };
+        }).__helpMathAnchorProbe;
+        const target = document.getElementById('technology-innovations-report');
+        if (!probe || !target) throw new Error('Missing direct-hash trajectory probe');
+        return {
+          cls: probe.cls,
+          finalTargetTop: target.getBoundingClientRect().top,
+          layoutShiftSupported: probe.layoutShiftSupported,
+          samples: probe.samples,
+          shifts: probe.shifts,
+          scrollMarginTop: Number.parseFloat(getComputedStyle(target).scrollMarginTop),
+          timedOut: probe.timedOut,
+          viewportHeight: window.innerHeight,
+        };
+      });
+      expect(trajectory.timedOut, `${label} anchor trajectory settled`).toBe(false);
+      expect(
+        trajectory.layoutShiftSupported,
+        `${label} browser exposes the LayoutShift observer contract`,
+      ).toBe(true);
+      const landingIndex = trajectory.samples.findIndex(({scrollY, targetTop}) =>
+        scrollY > 0 &&
+        targetTop !== null &&
+        targetTop >= 0 &&
+        targetTop < trajectory.viewportHeight,
+      );
+      expect(landingIndex, `${label} target lands in the viewport`).toBeGreaterThanOrEqual(0);
+      const settledTail = trajectory.samples.slice(-12);
+      expect(settledTail, `${label} settled trajectory tail`).toHaveLength(12);
+      expect(
+        settledTail.every(({readyForTail, targetTop}) => readyForTail && targetTop !== null),
+        `${label} tail follows fonts, hydration, and the resource-hash correction`,
+      ).toBe(true);
+      const settledTargetTops = settledTail.flatMap(
+        ({targetTop}) => targetTop === null ? [] : [targetTop],
+      );
+      expect(
+        Math.max(...settledTargetTops) - Math.min(...settledTargetTops),
+        `${label} final settled target-top range`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(trajectory.finalTargetTop - trajectory.scrollMarginTop),
+        `${label} final target aligns with its sticky scroll margin`,
+      ).toBeLessThanOrEqual(12);
+      expect(
+        trajectory.cls,
+        `${label} direct-hash CLS; shifts=${JSON.stringify(trajectory.shifts)}`,
+      ).toBeLessThanOrEqual(0.01);
+    }
+  });
+}
+
 test.describe('resource library without JavaScript', () => {
   test.use({javaScriptEnabled: false});
 
@@ -718,6 +1310,46 @@ test.describe('resource library without JavaScript', () => {
       const firstResourceLink = entries.first().getByRole('link');
       await expect(firstResourceLink).toBeVisible();
       await expect(firstResourceLink).toHaveAttribute('href', /\S/u);
+    }
+  });
+
+  test('keeps direct resource fragments stable without JavaScript', async ({page}) => {
+    const targetHash = '#technology-innovations-report';
+
+    for (const locale of ['en', 'es'] as const) {
+      for (const width of [320, 900] as const) {
+        await page.setViewportSize({width, height: 900});
+        const prefix = locale === 'en' ? '' : '/es';
+        const response = await page.goto(
+          `${prefix}/resources?test=no-js-fragment-${locale}-${width}${targetHash}`,
+          {waitUntil: 'load'},
+        );
+        expect(response?.status()).toBe(200);
+        await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loaded');
+        await page.waitForTimeout(100);
+
+        const readGeometry = () => page.locator(targetHash).evaluate((target) => ({
+          contentVisibility: getComputedStyle(target).contentVisibility,
+          headerBottom: document.querySelector('.site-header')
+            ?.getBoundingClientRect().bottom ?? 0,
+          scrollMarginTop: Number.parseFloat(getComputedStyle(target).scrollMarginTop),
+          scrollY: window.scrollY,
+          top: target.getBoundingClientRect().top,
+          viewportHeight: window.innerHeight,
+        }));
+        const first = await readGeometry();
+        await page.waitForTimeout(150);
+        const settled = await readGeometry();
+
+        expect(await page.evaluate(() => window.location.hash)).toBe(targetHash);
+        expect(settled.contentVisibility).toBe('visible');
+        expect(settled.scrollY).toBeGreaterThan(0);
+        expect(settled.top).toBeGreaterThanOrEqual(settled.headerBottom - 1);
+        expect(settled.top).toBeLessThan(settled.viewportHeight);
+        expect(Math.abs(settled.top - settled.scrollMarginTop)).toBeLessThanOrEqual(12);
+        expect(Math.abs(settled.top - first.top)).toBeLessThanOrEqual(1);
+        expect(Math.abs(settled.scrollY - first.scrollY)).toBeLessThanOrEqual(1);
+      }
     }
   });
 });
@@ -822,14 +1454,28 @@ test('status landmark and skip link provide localized keyboard navigation', {
   expectNoRuntimeIssues(issues);
 });
 
-test('print media removes site chrome after the status strip leaves the sticky header', async ({page}) => {
-  await expectDocument(page, '/research', 'en');
+test('print media renders deferred content and removes site chrome', async ({page}) => {
+  await expectDocument(page, '/', 'en');
+  await page.emulateMedia({media: 'print'});
+  expect(
+    await page.locator('.deferred-section').first().evaluate(
+      (section) => getComputedStyle(section).contentVisibility,
+    ),
+  ).toBe('visible');
+
+  await page.emulateMedia({media: 'screen'});
+  await expectDocument(page, '/resources', 'en');
   await page.emulateMedia({media: 'print'});
 
   await expect(page.locator('.status-strip')).toBeHidden();
   await expect(page.locator('.site-header')).toBeHidden();
   await expect(page.locator('.site-footer')).toBeHidden();
   await expect(page.locator('#main-content')).toBeVisible();
+  expect(
+    await page.locator('.resource-entry').nth(3).evaluate(
+      (entry) => getComputedStyle(entry).contentVisibility,
+    ),
+  ).toBe('visible');
 });
 
 test('deep-link targets remain visible below the sticky site header', async ({page}) => {
