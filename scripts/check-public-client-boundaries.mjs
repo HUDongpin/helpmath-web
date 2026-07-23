@@ -11,10 +11,16 @@ const resourceControlsMarker = '[project]/components/resource-library-controls.t
 const pageHeroMotifMarker = '[project]/components/page-hero-motif.tsx';
 const siteHeaderMarker = '[project]/components/site-header.tsx';
 const nextLinkMarker = '[project]/node_modules/next/dist/client/app-dir/link.js';
+const localeProviderBoundaryMarker = ',"LocaleProvider"]';
+const resourceHashBootstrapMarker = 'id="help-math-resource-hash-bootstrap"';
 const clientLinkFreeRouteManifests = new Set([
   '[locale]/research/page_client-reference-manifest.js',
   '[locale]/resources/page_client-reference-manifest.js',
 ]);
+const resourceHashBootstrapExpectedPages = [
+  'en/resources.html',
+  'es/resources.html',
+];
 
 async function htmlFiles(directory) {
   const entries = await readdir(directory, {withFileTypes: true});
@@ -79,13 +85,22 @@ const pages = (await htmlFiles(appOutputRoot))
 assert.ok(pages.length > 0, 'No prerendered public locale pages were found.');
 
 const turnstilePages = [];
+const localeProviderBoundaryPages = [];
+const resourceHashBootstrapPages = [];
 for (const filename of pages) {
   const relativePath = path.relative(appOutputRoot, filename);
   const html = await readFile(filename, 'utf8');
+  const rsc = await readFile(filename.replace(/\.html$/u, '.rsc'), 'utf8');
   const hasTurnstile = await referencesTurnstile(html);
   const isContact = /^(?:en|es)\/contact\.html$/u.test(relativePath);
 
   if (hasTurnstile) turnstilePages.push(relativePath);
+  if (rsc.includes(localeProviderBoundaryMarker)) {
+    localeProviderBoundaryPages.push(relativePath);
+  }
+  if (html.includes(resourceHashBootstrapMarker)) {
+    resourceHashBootstrapPages.push(relativePath);
+  }
   assert.ok(
     isContact || !hasTurnstile,
     `${relativePath} references the gated Turnstile contact runtime.`,
@@ -105,6 +120,16 @@ for (const filename of pages) {
     );
   }
 }
+assert.deepEqual(
+  localeProviderBoundaryPages,
+  [],
+  'Shared public pages must not render the LocaleProvider client boundary.',
+);
+assert.deepEqual(
+  resourceHashBootstrapPages,
+  resourceHashBootstrapExpectedPages,
+  'Only the English and Spanish Resources pages may render the resource hash bootstrap.',
+);
 
 const clientManifests = (
   await filesNamed(appOutputRoot, '_client-reference-manifest.js')
@@ -153,6 +178,8 @@ console.log(
     checkedPublicPages: pages.length,
     clientLinkFreeManifests,
     contactRepositoryGateApproved,
+    localeProviderBoundaryPages,
+    resourceHashBootstrapPages,
     resourceControlsManifests,
     turnstilePages,
   }),

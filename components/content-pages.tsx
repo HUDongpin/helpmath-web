@@ -1,14 +1,10 @@
 import {
-  Archive,
   Building2,
-  CheckCircle2,
-  FileCheck2,
   Handshake,
   History,
   LifeBuoy,
   LockKeyhole,
   MonitorPlay,
-  SearchCheck,
   ShieldCheck
 } from 'lucide-react';
 
@@ -25,6 +21,7 @@ import type {
 } from '@/content/types';
 import {FeatureGrid} from './feature-grid';
 import {PageHero} from './page-hero';
+import {Archive, CheckCircle2, FileCheck2, SearchCheck} from './server-icons';
 import {TextSection} from './text-section';
 import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 

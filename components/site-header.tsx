@@ -1,15 +1,13 @@
-import {Sparkles} from 'lucide-react';
-
 import type {Locale, SharedContent} from '@/content/types';
 
 import {Brand} from './brand';
 import {LanguageSwitcher} from './language-switcher';
 import {
   DesktopNavigation,
-  FallbackNavigation,
   HeaderSupportLink,
   MobileNavigation,
 } from './mobile-navigation';
+import {Sparkles} from './server-icons';
 
 export function SiteHeader({
   content,
@@ -58,13 +56,6 @@ export function SiteHeader({
           />
         </div>
       </header>
-      <noscript>
-        <FallbackNavigation
-          languageSwitcherPath={languageSwitcherPath}
-          locale={locale}
-          navigation={navigation}
-        />
-      </noscript>
     </>
   );
 }

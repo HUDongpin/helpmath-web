@@ -1,18 +1,13 @@
 import assert from 'node:assert/strict';
 import {afterEach, test} from 'node:test';
-import {createElement, type ComponentType, type ReactNode} from 'react';
+import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 
 import {ContactForm} from '../components/contact-form';
 import {getPageContent} from '../content';
-import {LocaleProvider} from '../i18n/locale-context';
 
 const originalEnabled = process.env.NEXT_PUBLIC_CONTACT_ENABLED;
 const originalSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-const TestLocaleProvider = LocaleProvider as ComponentType<{
-  locale: 'en' | 'es';
-  children?: ReactNode;
-}>;
 
 afterEach(() => {
   if (originalEnabled === undefined) delete process.env.NEXT_PUBLIC_CONTACT_ENABLED;
@@ -31,15 +26,11 @@ test('the enabled contact form links its consent control to the localized privac
     ['es', '/es/privacy', 'Abrir el aviso de privacidad'],
   ] as const) {
     const html = renderToStaticMarkup(
-      createElement(
-        TestLocaleProvider,
-        {locale},
-        createElement(ContactForm, {
-          content: getPageContent(locale, 'contact'),
-          locale,
-          repositoryGateApproved: true,
-        }),
-      ),
+      createElement(ContactForm, {
+        content: getPageContent(locale, 'contact'),
+        locale,
+        repositoryGateApproved: true,
+      }),
     );
 
     assert.match(html, new RegExp(`href="${privacyPath}"`), locale);
@@ -55,15 +46,11 @@ test('the repository gate keeps the contact form closed even when the environmen
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'test-site-key';
 
   const html = renderToStaticMarkup(
-    createElement(
-      TestLocaleProvider,
-      {locale: 'en'},
-      createElement(ContactForm, {
-        content: getPageContent('en', 'contact'),
-        locale: 'en',
-        repositoryGateApproved: false,
-      }),
-    ),
+    createElement(ContactForm, {
+      content: getPageContent('en', 'contact'),
+      locale: 'en',
+      repositoryGateApproved: false,
+    }),
   );
 
   assert.doesNotMatch(html, /<form\b/);

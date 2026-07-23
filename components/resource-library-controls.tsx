@@ -6,6 +6,7 @@ import {
   useId,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
@@ -60,8 +61,10 @@ export function ResourceLibraryControls({
     getClientReady,
     getServerNotReady,
   );
+  const hasAppliedFiltering = useRef(false);
   const searchId = useId();
   const normalizedQuery = normalizeSearchValue(query);
+  const filterIsActive = selection !== 'all' || normalizedQuery.length > 0;
   const searchMatches = useMemo(
     () => normalizedQuery
       ? items.filter((item) => (
@@ -91,14 +94,19 @@ export function ResourceLibraryControls({
     : filters.resultsTemplate;
 
   useLayoutEffect(() => {
+    if (!filterIsActive && !hasAppliedFiltering.current) return;
+
     const library = document.getElementById('resource-library');
     if (!library) return;
 
     for (const entry of library.querySelectorAll<HTMLElement>('.resource-entry')) {
-      entry.hidden = !visibleIds.has(entry.id);
+      const shouldHide = !visibleIds.has(entry.id);
+      if (entry.hidden !== shouldHide) entry.hidden = shouldHide;
     }
     const list = library.querySelector<HTMLElement>('.resource-list');
-    if (list) list.hidden = visibleIds.size === 0;
+    const shouldHideList = visibleIds.size === 0;
+    if (list && list.hidden !== shouldHideList) list.hidden = shouldHideList;
+    hasAppliedFiltering.current = filterIsActive;
 
     const currentHash = window.location.hash;
     if (!currentHash) return;
@@ -119,7 +127,7 @@ export function ResourceLibraryControls({
     replaceBrowserLocation(
       `${window.location.pathname}${window.location.search}`,
     );
-  }, [visibleIds]);
+  }, [filterIsActive, visibleIds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,9 +179,18 @@ export function ResourceLibraryControls({
       }
 
       const target = document.getElementById(targetId);
-      if (!target || (target.classList.contains('resource-entry') && target.hidden)) {
+      const targetIsHiddenResource = Boolean(
+        target?.classList.contains('resource-entry') && target.hidden,
+      );
+      if (!target || targetIsHiddenResource) {
         restoreDeferredHash();
         document.documentElement.classList.remove(fragmentNavigationClass);
+        if (targetIsHiddenResource) {
+          delete resourceWindow.__helpMathDeferredResourceHash;
+          replaceBrowserLocation(
+            `${window.location.pathname}${window.location.search}`,
+          );
+        }
         return;
       }
       if (target.classList.contains('resource-entry')) {

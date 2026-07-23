@@ -335,6 +335,7 @@ export function ContactForm({content, locale, repositoryGateApproved}: ContactFo
           <Link
             className="underline decoration-2 underline-offset-2"
             href={locale === 'es' ? '/es/privacy' : '/privacy'}
+            locale={locale}
           >
             {content.form.fields.privacyNoticeLinkLabel}
           </Link>

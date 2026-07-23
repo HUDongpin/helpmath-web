@@ -110,14 +110,14 @@ svg {
 /*
  * Keep the first view fully rendered while deferring only large, below-fold
  * regions. The intrinsic sizes are calibrated across English and Spanish
- * using the bundled Nunito Sans type system. Resource cards before the
- * deepest published anchor use their own aggregate calibration so fragment
- * navigation keeps the target below the sticky header.
+ * using the bundled Nunito Sans type system. Resource cards use aggregate
+ * calibration so fragment navigation keeps the target below the sticky
+ * header without laying out the below-fold library during first paint.
  */
 @supports (content-visibility: auto) {
   .deferred-section,
   .evidence-list > .evidence-entry,
-  .resource-list > .resource-entry:nth-child(n + 4) {
+  .resource-list > .resource-entry {
     content-visibility: auto;
   }
 
@@ -173,7 +173,7 @@ svg {
     contain-intrinsic-size: auto clamp(455px, calc(630px - 13.2vw), 505px);
   }
 
-  .resource-list > .resource-entry:nth-child(n + 4) {
+  .resource-list > .resource-entry {
     contain-intrinsic-size: auto clamp(145.4px, calc(464.1px - 24.9vw), 284.6px);
   }
 
@@ -1961,10 +1961,16 @@ svg {
 }
 
 .mobile-nav__fallback {
-  display: none;
+  display: block;
 }
 
+.mobile-nav__fallback,
 .mobile-nav__trigger {
+  grid-area: 1 / 1;
+}
+
+.mobile-nav__trigger,
+.mobile-nav__fallback-trigger {
   align-items: center;
   background: transparent;
   border: 0;
@@ -1978,6 +1984,34 @@ svg {
   line-height: inherit;
   padding: 0;
   text-align: left;
+}
+
+.mobile-nav__trigger {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.mobile-nav__fallback-trigger {
+  display: flex;
+  list-style: none;
+}
+
+.mobile-nav__fallback-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-nav__fallback:not([open]) > .mobile-nav__fallback-panel {
+  display: none;
+}
+
+.mobile-nav[data-ready='true'] > .mobile-nav__fallback {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.mobile-nav[data-ready='true'] > .mobile-nav__trigger {
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .mobile-nav__panel {
@@ -1998,7 +2032,7 @@ svg {
 }
 
 .mobile-nav__panel > a,
-.mobile-nav__fallback > a {
+.mobile-nav__fallback-panel > a {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -2009,12 +2043,12 @@ svg {
 }
 
 .mobile-nav__panel > a:last-child,
-.mobile-nav__fallback > a:last-child {
+.mobile-nav__fallback-panel > a:last-child {
   border-bottom: 0;
 }
 
 .mobile-nav__panel > a[aria-current='page'],
-.mobile-nav__fallback > a[aria-current='page'] {
+.mobile-nav__fallback-panel > a[aria-current='page'] {
   background: var(--blue-pale);
   border-inline-start: 4px solid var(--blue);
   padding-inline-start: calc(0.6rem - 4px);
@@ -2656,17 +2690,7 @@ svg {
   }
 
   .mobile-nav {
-    display: block;
-  }
-
-  .mobile-nav__fallback {
-    background: var(--white);
-    border-top: 1px solid var(--line);
     display: grid;
-    gap: 0.2rem;
-    max-height: calc(100dvh - var(--site-nav-height));
-    overflow-y: auto;
-    padding-block: 0.8rem;
   }
 
   .status-strip--menu-open {
@@ -2796,7 +2820,7 @@ svg {
       --deferred-block-size: calc(1282px - 67.1vw);
     }
 
-    .resource-list > .resource-entry:nth-child(n + 4) {
+    .resource-list > .resource-entry {
       contain-intrinsic-size: auto calc(510.8px - 38.7vw);
     }
 
@@ -2948,7 +2972,7 @@ svg {
 
 @media (max-width: 520px) {
   @supports (content-visibility: auto) {
-    .resource-list > .resource-entry:nth-child(n + 4) {
+    .resource-list > .resource-entry {
       contain-intrinsic-size: auto calc(673.5px - 63.2vw);
     }
 
@@ -3191,7 +3215,7 @@ svg {
 @media print {
   .deferred-section,
   .evidence-list > .evidence-entry,
-  .resource-list > .resource-entry:nth-child(n + 4) {
+  .resource-list > .resource-entry {
     content-visibility: visible;
   }
 

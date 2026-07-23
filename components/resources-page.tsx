@@ -1,6 +1,7 @@
 import type {Locale, ResourcesContent} from '@/content/types';
 
 import {PageHero} from './page-hero';
+import {ResourceHashBootstrap} from './resource-hash-bootstrap';
 import {ResourceLibrary} from './resource-library';
 import {Callout, Container, Section} from './ui';
 
@@ -13,6 +14,7 @@ export function ResourcesPage({
 }) {
   return (
     <>
+      <ResourceHashBootstrap />
       <PageHero content={content.hero} locale={locale} tone="mint" />
       <Section className="section--compact">
         <Container>

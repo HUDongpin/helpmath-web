@@ -253,6 +253,16 @@ async function expectNoAxeViolations(
   path: string,
   viewport: string,
 ) {
+  // Axe must inspect the rendered styles inside below-fold containment roots.
+  // Chromium otherwise reports descendants of a skipped content-visibility
+  // subtree with user-agent link colors instead of their authored colors.
+  await page.addStyleTag({content: `
+    .deferred-section,
+    .evidence-list > .evidence-entry,
+    .resource-list > .resource-entry {
+      content-visibility: visible !important;
+    }
+  `});
   const results = await new AxeBuilder({page})
     .withTags([
       'wcag2a',
@@ -427,6 +437,7 @@ test('Spanish home localizes content and never duplicates the /es route prefix',
   );
   expect(localHrefs.some((href) => href?.includes('/es/es'))).toBe(false);
   for (const href of localHrefs) {
+    if (href?.startsWith('/api/language-switch/')) continue;
     expect(href === '/' || href?.startsWith('/es')).toBe(true);
   }
   const partnership = page.locator('#strategic-partnership');
@@ -768,6 +779,14 @@ test('resource filtering clears a fragment whose target becomes hidden', async (
   await library.getByRole('searchbox', {name: 'Search resources'}).clear();
   await expect(target).toBeVisible();
   await expect(page).toHaveURL(/\/resources$/u);
+
+  await library.getByRole('searchbox', {name: 'Search resources'}).fill('WWC');
+  await expect(target).toBeHidden();
+  await page.evaluate((hash) => {
+    window.location.hash = hash;
+  }, targetHash);
+  await expect(page).toHaveURL(/\/resources$/u);
+  await expect(page.locator('html')).not.toHaveClass(/resource-fragment-navigation/u);
 });
 
 test('render containment preserves resource geometry, focus, and deep links', {
@@ -796,11 +815,15 @@ test('render containment preserves resource geometry, focus, and deep links', {
   const entries = list.locator('.resource-entry');
   await expect(entries).toHaveCount(18);
 
-  const containment = await entries.nth(3).evaluate((entry) => ({
-    contentVisibility: getComputedStyle(entry).contentVisibility,
+  const containment = await entries.evaluateAll((cards) => ({
+    first: getComputedStyle(cards[0]).contentVisibility,
+    fourth: getComputedStyle(cards[3]).contentVisibility,
     supported: CSS.supports('content-visibility', 'auto'),
   }));
-  if (containment.supported) expect(containment.contentVisibility).toBe('auto');
+  if (containment.supported) {
+    expect(containment.first).toBe('auto');
+    expect(containment.fourth).toBe('auto');
+  }
 
   const finalLink = entries.last().getByRole('link');
   await finalLink.focus();
@@ -1004,7 +1027,7 @@ test('stale resource fallback cannot override user navigation or browser history
   await page.goto(`/resources?test=stale-resource-fallback${targetHash}`, {waitUntil: 'load'});
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
   await expect(page.locator('#resource-library input')).toBeEnabled();
-  await page.locator('.site-header a[href="/research"]').click();
+  await page.locator('.desktop-nav a[href="/research"]').click();
   await expect(page).toHaveURL(/\/research$/u);
   await releaseFontsReady();
   await page.waitForTimeout(1_200);
@@ -1857,6 +1880,36 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   expectNoRuntimeIssues(issues);
 });
 
+test('mobile navigation falls back to native links when hydration chunks fail', async ({
+  browserName,
+  page,
+}) => {
+  test.skip(browserName !== 'chromium', 'The blocked-chunk fallback is a Chromium contract.');
+  await page.setViewportSize({width: 390, height: 844});
+  await page.route('**/_next/static/**/*.js', (route) => route.abort('failed'));
+
+  const response = await page.goto('/?test=blocked-mobile-navigation', {waitUntil: 'load'});
+  expect(response?.status()).toBe(200);
+  await expect(page.locator('.desktop-nav')).toBeHidden();
+  await expect(page.locator('.mobile-nav__trigger')).toBeHidden();
+
+  const fallback = page.locator('details.mobile-nav__fallback');
+  const fallbackTrigger = fallback.locator(':scope > .mobile-nav__fallback-trigger');
+  await expect(fallback).toBeVisible();
+  await expect(fallbackTrigger).toBeVisible();
+  await expect(fallbackTrigger).toContainText('Open navigation');
+  await fallbackTrigger.click();
+  await expect(fallback).toHaveAttribute('open', '');
+
+  const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
+  await expect(navigation).toBeVisible();
+  const approach = navigation.getByRole('link', {name: 'Approach', exact: true});
+  await expect(approach).toHaveAttribute('href', '/approach');
+  await approach.click();
+  await expect(page).toHaveURL(/\/approach$/u);
+  await expect(page.getByRole('heading', {level: 1})).toContainText('Make the mathematics');
+});
+
 test.describe('mobile navigation without JavaScript', () => {
   test.use({javaScriptEnabled: false});
 
@@ -1876,7 +1929,11 @@ test.describe('mobile navigation without JavaScript', () => {
       await expect(page.locator('.desktop-nav')).toBeHidden();
       await expect(page.locator('.mobile-nav__trigger')).toBeHidden();
 
-      const navigation = page.locator('nav.mobile-nav__fallback');
+      const fallback = page.locator('details.mobile-nav__fallback');
+      await expect(fallback).toBeVisible();
+      await fallback.locator(':scope > .mobile-nav__fallback-trigger').click();
+      await expect(fallback).toHaveAttribute('open', '');
+      const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
       await expect(navigation).toBeVisible();
       await expect(navigation).toHaveAccessibleName(shared.navigation.ariaLabel);
       await expect(navigation.getByRole('link')).toHaveCount(
@@ -1922,7 +1979,10 @@ test.describe('mobile navigation without JavaScript', () => {
       await page.setViewportSize(viewport);
       await expectDocument(page, `/?no-js-reflow=${viewport.width}x${viewport.height}`, 'en');
 
-      const navigation = page.locator('nav.mobile-nav__fallback');
+      const fallback = page.locator('details.mobile-nav__fallback');
+      await fallback.locator(':scope > .mobile-nav__fallback-trigger').click();
+      await expect(fallback).toHaveAttribute('open', '');
+      const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
       const language = navigation.getByRole('link', {name: 'Language: Español'});
       await expect(navigation).toBeVisible();
       await language.focus();
@@ -1931,6 +1991,9 @@ test.describe('mobile navigation without JavaScript', () => {
         await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
         `${viewport.width}×${viewport.height} fallback causes horizontal overflow`,
       ).toBeLessThanOrEqual(1);
+
+      await fallback.locator(':scope > .mobile-nav__fallback-trigger').click();
+      await expect(fallback).not.toHaveAttribute('open', '');
 
       const main = page.locator('main#main-content');
       await main.scrollIntoViewIfNeeded();
@@ -2867,7 +2930,7 @@ test('unknown routes return a non-indexable branded 404 response', async ({page}
     expect(response?.headers()['content-type'], path).toContain('text/html');
     await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
     await expect(page.getByRole('link', {name: 'Return home'})).toHaveAttribute('href', '/');
-    const languageLinks = page.locator('a.language-switcher');
+    const languageLinks = page.locator('.site-header__actions a.language-switcher');
     await expect(languageLinks).toHaveCount(1);
     await expect(languageLinks).toHaveAttribute('href', '/es');
     await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
@@ -2883,7 +2946,7 @@ test('Spanish unknown routes keep localized navigation and a non-indexable 404',
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
   await expect(page.getByRole('heading', {level: 1, name: 'Página no encontrada'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'Volver al inicio'})).toHaveAttribute('href', '/es');
-  const languageLinks = page.locator('a.language-switcher');
+  const languageLinks = page.locator('.site-header__actions a.language-switcher');
   await expect(languageLinks).toHaveCount(1);
   await expect(languageLinks).toHaveAttribute('href', '/');
   await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);

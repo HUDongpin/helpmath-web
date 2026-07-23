@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
-import {ArrowRight} from 'lucide-react';
+
+import {ArrowRight} from './server-icons';
 
 type ActionLink = {
   href: string;

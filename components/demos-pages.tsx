@@ -43,7 +43,7 @@ export function DemoDetailPage({
       ) : null}
       <header className="demo-detail-header">
         <Container>
-          <Link className="back-link" href={backHref}>
+          <Link className="back-link" href={backHref} locale={locale}>
             <ArrowLeft aria-hidden="true" size={18} />
             {backLabel}
           </Link>

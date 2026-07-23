@@ -1,19 +1,18 @@
 'use client';
 
-import {Menu, X} from 'lucide-react';
+import {Languages, Menu, X} from 'lucide-react';
 import {usePathname as useNextPathname} from 'next/navigation';
 import {
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type FocusEvent,
   type KeyboardEvent,
 } from 'react';
 
 import type {Locale, SharedContent} from '@/content/types';
-import {stripLocalePrefix} from '@/i18n/href';
+import {languageSwitchGatewayHref, stripLocalePrefix} from '@/i18n/href';
 
 import {LanguageSwitcher} from './language-switcher';
 
@@ -25,18 +24,6 @@ const keyboardFocusableSelector = [
   'textarea:not([disabled])',
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
-
-function subscribeToClientReady(): () => void {
-  return () => undefined;
-}
-
-function getClientReady(): boolean {
-  return true;
-}
-
-function getServerNotReady(): boolean {
-  return false;
-}
 
 function normalizePathname(href: string): string {
   const pathname = stripLocalePrefix(href).split(/[?#]/, 1)[0] || '/';
@@ -58,13 +45,13 @@ function CurrentNavigationLinks({
   includeSupport = false,
   navigation,
   onNavigate,
+  pathname,
 }: {
   includeSupport?: boolean;
   navigation: SharedContent['navigation'];
   onNavigate?: () => void;
+  pathname: string;
 }) {
-  const pathname = stripLocalePrefix(useNextPathname());
-
   return (
     <>
       {navigation.links.map((link) => (
@@ -97,9 +84,11 @@ export function DesktopNavigation({
 }: {
   navigation: SharedContent['navigation'];
 }) {
+  const pathname = stripLocalePrefix(useNextPathname());
+
   return (
     <nav aria-label={navigation.ariaLabel} className="desktop-nav">
-      <CurrentNavigationLinks navigation={navigation} />
+      <CurrentNavigationLinks navigation={navigation} pathname={pathname} />
     </nav>
   );
 }
@@ -128,24 +117,44 @@ export function FallbackNavigation({
   languageSwitcherPath,
   locale,
   navigation,
+  pathname,
 }: {
   languageSwitcherPath?: string;
   locale: Locale;
   navigation: SharedContent['navigation'];
+  pathname: string;
 }) {
+  const targetLocale: Locale = locale === 'en' ? 'es' : 'en';
+  const languageHref = languageSwitchGatewayHref(
+    languageSwitcherPath ?? pathname,
+    targetLocale,
+  );
+
   return (
-    <nav
-      aria-label={navigation.ariaLabel}
-      className="container mobile-nav__fallback"
-    >
-      <CurrentNavigationLinks includeSupport navigation={navigation} />
-      <LanguageSwitcher
-        label={navigation.languageLabel}
-        locale={locale}
-        names={navigation.languageNames}
-        pathnameOverride={languageSwitcherPath}
-      />
-    </nav>
+    <details className="mobile-nav__fallback" suppressHydrationWarning>
+      <summary className="mobile-nav__fallback-trigger">
+        <Menu aria-hidden="true" size={24} />
+        <span>{navigation.openMenuLabel}</span>
+      </summary>
+      <nav
+        aria-label={navigation.ariaLabel}
+        className="mobile-nav__panel mobile-nav__fallback-panel"
+      >
+        <CurrentNavigationLinks
+          includeSupport
+          navigation={navigation}
+          pathname={pathname}
+        />
+        <a
+          aria-label={`${navigation.languageLabel}: ${navigation.languageNames[targetLocale]}`}
+          className="language-switcher"
+          href={languageHref}
+        >
+          <Languages aria-hidden="true" size={18} />
+          <span>{navigation.languageNames[targetLocale]}</span>
+        </a>
+      </nav>
+    </details>
   );
 }
 
@@ -158,16 +167,56 @@ export function MobileNavigation({
   locale: Locale;
   navigation: SharedContent['navigation'];
 }) {
-  const isMobileMenuReady = useSyncExternalStore(
-    subscribeToClientReady,
-    getClientReady,
-    getServerNotReady,
-  );
+  const pathname = stripLocalePrefix(useNextPathname());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileMenuMaxHeight, setMobileMenuMaxHeight] = useState<number | null>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const mobileNavSummaryRef = useRef<HTMLButtonElement>(null);
   const menuLabel = isMobileMenuOpen ? navigation.closeMenuLabel : navigation.openMenuLabel;
+
+  useLayoutEffect(() => {
+    const container = mobileNavRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    container.dataset.ready = 'true';
+    const initialHash = window.location.hash;
+    if (
+      initialHash &&
+      window.matchMedia('(max-width: 1060px)').matches &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      !document.querySelector('.resource-library')
+    ) {
+      let targetId = '';
+      try {
+        targetId = decodeURIComponent(initialHash.slice(1));
+      } catch {
+        targetId = '';
+      }
+      const target = targetId ? document.getElementById(targetId) : null;
+      if (target) {
+        void document.fonts.ready.then(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (
+                !cancelled &&
+                window.location.hash === initialHash &&
+                document.getElementById(targetId) === target &&
+                !target.hidden
+              ) {
+                target.scrollIntoView({behavior: 'instant', block: 'start'});
+              }
+            });
+          });
+        });
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      delete container.dataset.ready;
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const statusStrip = document.querySelector('.status-strip');
@@ -316,12 +365,17 @@ export function MobileNavigation({
       onKeyDownCapture={handleMobileMenuKeyDown}
       ref={mobileNavRef}
     >
+      <FallbackNavigation
+        languageSwitcherPath={languageSwitcherPath}
+        locale={locale}
+        navigation={navigation}
+        pathname={pathname}
+      />
       <button
         aria-controls="mobile-navigation-panel"
         aria-expanded={isMobileMenuOpen}
         aria-label={menuLabel}
         className="mobile-nav__trigger"
-        hidden={!isMobileMenuReady}
         onClick={() => {
           if (isMobileMenuOpen) closeMobileMenu();
           else setIsMobileMenuOpen(true);
@@ -349,6 +403,7 @@ export function MobileNavigation({
             includeSupport
             navigation={navigation}
             onNavigate={closeMobileMenuAfterActivation}
+            pathname={pathname}
           />
           <LanguageSwitcher
             label={navigation.languageLabel}
