@@ -4,6 +4,7 @@ import {tsImport} from 'tsx/esm/api';
 
 import {
   buildDemoLifecycleSmokeModel,
+  evaluateCanonicalRedirect,
   evaluateExecutivePreviewEntries,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
@@ -579,72 +580,240 @@ for (const id of demoCandidateCatalog.DEMO_CANDIDATE_IDS) {
 }
 
 const firstReviewDemoId = reviewDemoIds[0] ?? null;
+const hasPlatformEdgeRouting = !['localhost', '127.0.0.1', '[::1]'].includes(
+  baseUrl.hostname,
+);
+const executivePreviewPrivacyProbeId =
+  firstReviewDemoId ?? 'private-review-sentinel';
+const encodedEnglishPreviewReturnPath = encodeURIComponent(
+  `/demos/${executivePreviewPrivacyProbeId}`,
+);
+const encodedSpanishPreviewReturnPath = encodeURIComponent(
+  `/es/demos/${executivePreviewPrivacyProbeId}`,
+);
 const executivePreviewEntryCases = [
   {
-    path: firstReviewDemoId
-      ? `/executive-preview?returnTo=/demos/${firstReviewDemoId}`
-      : '/executive-preview',
+    canonicalPath: '/executive-preview',
     locale: 'en',
   },
   {
-    path: firstReviewDemoId
-      ? `/es/executive-preview?returnTo=/es/demos/${firstReviewDemoId}`
-      : '/es/executive-preview',
+    canonicalPath: '/es/executive-preview',
     locale: 'es',
   },
 ];
-const executivePreviewEntries = await Promise.all(
-  executivePreviewEntryCases.map(async ({path, locale}) => {
+const executivePreviewRedirectCases = [
+  {
+    path: `/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}&error=1`,
+    expectedPath: '/executive-preview?error=1',
+  },
+  {
+    path: `/es/executive-preview?returnTo=${encodedSpanishPreviewReturnPath}`,
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: `/es/executive-preview?returnTo=${encodedSpanishPreviewReturnPath}&error=1`,
+    expectedPath: '/es/executive-preview?error=1',
+  },
+  {
+    path: `/en/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/en/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}&error=1`,
+    expectedPath: '/executive-preview?error=1',
+  },
+  {
+    path: `/executive-preview/?ReturnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/es/executive-preview/?foo=${encodedSpanishPreviewReturnPath}`,
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: `/en/executive-preview/?returnto=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/executive-preview//?returnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `//en/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `//en//executive-preview?foo=${encodedEnglishPreviewReturnPath}&error=1`,
+    expectedPath: '/executive-preview?error=1',
+  },
+  {
+    path: `/es//executive-preview?ReturnTo=${encodedSpanishPreviewReturnPath}&error=1`,
+    expectedPath: '/es/executive-preview?error=1',
+  },
+  {
+    path: `/en//executive-preview?foo=${encodedEnglishPreviewReturnPath}&error=1`,
+    expectedPath: '/executive-preview?error=1',
+  },
+  {
+    path: `/executive-preview?foo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/es/executive-preview?ReturnTo=${encodedSpanishPreviewReturnPath}`,
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: `/en/executive-preview?returnto=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: '/executive-preview/',
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: '/es//executive-preview?error=1',
+    expectedPath: '/es/executive-preview?error=1',
+  },
+  {
+    path: '/en/executive-preview/',
+    expectedPath: '/executive-preview',
+  },
+].filter(({path}) =>
+  hasPlatformEdgeRouting ||
+  !(path.startsWith('//') || path.slice(1).includes('//')),
+);
+const executivePreviewCanonicalRedirects = await Promise.all(
+  executivePreviewRedirectCases.map(async ({
+    path,
+    expectedPath,
+    expectedStatus = 307,
+  }) => {
     const response = await get(path);
+    const body = await response.text();
+    const disclosureSurface = [
+      ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+      body,
+    ].join('\n').toLowerCase();
+    const redirectEvaluation = evaluateCanonicalRedirect(
+      {
+        status: response.status,
+        location: response.headers.get('location'),
+      },
+      {
+        baseUrl: origin,
+        expectedPath,
+        expectedStatus,
+      },
+    );
+
+    checkExecutivePreviewHeaders(response, path);
+    const cacheControl = robotsDirectives(response.headers.get('cache-control'));
+    const vary = robotsDirectives(response.headers.get('vary'));
+    check(cacheControl.has('private'), `${path} is missing private cache scope`);
+    check(vary.has('cookie'), `${path} is missing Vary: Cookie`);
+    check(
+      response.headers.get('x-vercel-cache')?.toLowerCase() !== 'hit',
+      `${path} was served as an x-vercel-cache HIT`,
+    );
+    for (const failure of redirectEvaluation.failures) {
+      check(false, `${path} ${failure}`);
+    }
+    if (body !== '') {
+      let bodyTarget = null;
+      try {
+        bodyTarget = new URL(body, origin);
+      } catch {
+        // The disclosure scan below still records the unexpected body safely.
+      }
+      check(
+        bodyTarget?.origin === new URL(origin).origin &&
+          `${bodyTarget.pathname}${bodyTarget.search}${bodyTarget.hash}` === expectedPath,
+        `${path} returned an unexpected redirect response body`,
+      );
+    }
+    for (const forbiddenToken of [
+      'returnto',
+      executivePreviewPrivacyProbeId.toLowerCase(),
+      '/demos/',
+      '/api/executive-preview/',
+    ]) {
+      check(
+        !disclosureSurface.includes(forbiddenToken),
+        `${path} disclosed ${forbiddenToken} in its redirect response`,
+      );
+    }
+
+    return {
+      path,
+      expectedPath,
+      location: redirectEvaluation.location,
+      status: response.status,
+    };
+  }),
+);
+const executivePreviewEntries = await Promise.all(
+  executivePreviewEntryCases.map(async ({canonicalPath, locale}) => {
+    const response = await get(canonicalPath);
     const html = await response.text();
     const inspection = inspectExecutivePreviewEntry(html);
     const language = html.match(/<html[^>]+lang=["']([^"']+)/iu)?.[1] ?? null;
-    check(response.status === 200, `${path} returned ${response.status}`);
-    check(language === locale, `${path} has lang=${language ?? 'missing'}, expected ${locale}`);
-    checkExecutivePreviewHeaders(response, path);
+    check(response.status === 200, `${canonicalPath} returned ${response.status}`);
+    check(
+      language === locale,
+      `${canonicalPath} has lang=${language ?? 'missing'}, expected ${locale}`,
+    );
+    checkExecutivePreviewHeaders(response, canonicalPath);
     check(
       hasRobotsMeta(html, ['noindex', 'nofollow', 'noarchive']),
-      `${path} is missing noindex, nofollow, noarchive robots metadata`,
+      `${canonicalPath} is missing noindex, nofollow, noarchive robots metadata`,
     );
     check(
       inspection.state !== 'unknown',
-      `${path} has an unrecognized or internally inconsistent executive preview state`,
+      `${canonicalPath} has an unrecognized or internally inconsistent executive preview state`,
     );
     if (inspection.state === 'login') {
       check(
         inspection.hasLoginForm,
-        `${path} is missing its same-origin executive preview login form`,
+        `${canonicalPath} is missing its same-origin executive preview login form`,
       );
       check(
         inspection.hasPassphraseField,
-        `${path} is missing its executive preview passphrase field`,
+        `${canonicalPath} is missing its executive preview passphrase field`,
       );
       check(
         inspection.expiryValues.length === 1,
-        `${path} has ${inspection.expiryValues.length} review expiry values, expected 1`,
+        `${canonicalPath} has ${inspection.expiryValues.length} review expiry values, expected 1`,
       );
       const expiresAt = inspection.expiryValues[0];
       check(
         isStrictIsoUtcTimestamp(expiresAt),
-        `${path} has a malformed review expiry ${expiresAt ?? 'missing'}`,
+        `${canonicalPath} has a malformed review expiry ${expiresAt ?? 'missing'}`,
       );
       const expiresAtMs = Date.parse(expiresAt ?? '');
       check(
         Number.isFinite(expiresAtMs) && expiresAtMs > smokeStartedAt,
-        `${path} review expiry is not in the future`,
+        `${canonicalPath} review expiry is not in the future`,
       );
     } else if (inspection.state === 'unavailable') {
       check(
         inspection.unavailableLocales.length === 1 &&
           inspection.unavailableLocales[0] === locale,
-        `${path} does not expose the expected ${locale} unavailable notice`,
+        `${canonicalPath} does not expose the expected ${locale} unavailable notice`,
       );
       check(
         inspection.expiryValues.length === 0,
-        `${path} exposes a review expiry while the preview is unavailable`,
+        `${canonicalPath} exposes a review expiry while the preview is unavailable`,
       );
     }
-    return {path, status: response.status, ...inspection};
+    return {
+      path: canonicalPath,
+      status: response.status,
+      ...inspection,
+    };
   }),
 );
 
@@ -1312,6 +1481,8 @@ const summary = {
   executivePreviewRuntimeProbes: executivePreviewRuntimeProbes.length,
   demoOptimizerProbes: legacyOptimizerProbes.length + lifecycleOptimizerProbes.length,
   executivePreviewEntries: executivePreviewEntries.length,
+  executivePreviewCanonicalRedirects: executivePreviewCanonicalRedirects.length,
+  executivePreviewPlatformEdgeRouting: hasPlatformEdgeRouting,
   executivePreviewExpectedState: expectedExecutivePreviewState,
   executivePreviewExpectedExpiresAt: expectedExecutivePreviewExpiresAt,
   executivePreviewState,

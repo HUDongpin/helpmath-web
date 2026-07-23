@@ -261,6 +261,10 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   reactStrictMode: true,
+  // Let proxy.ts sanitize private-entry queries before any permanent URL
+  // normalization can echo them into Location, Refresh, or response bodies.
+  skipProxyUrlNormalize: true,
+  skipTrailingSlashRedirect: true,
   outputFileTracingIncludes: {
     '/api/executive-preview/assets/[...asset]': ['./private-demo-assets/**/*'],
     '/api/executive-preview/runtime/[id]': [

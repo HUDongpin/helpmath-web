@@ -1,5 +1,61 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
-  "installCommand": "npm ci"
+  "installCommand": "npm ci",
+  "routes": [
+    {
+      "src": "^/(?:/+executive-preview/*|/+en/+executive-preview/*|executive-preview/+|en/+executive-preview/*)$",
+      "has": [
+        {
+          "type": "query",
+          "key": "error",
+          "value": "1"
+        }
+      ],
+      "headers": {
+        "Cache-Control": "private, no-store, max-age=0",
+        "Location": "/executive-preview?error=1",
+        "Vary": "Cookie",
+        "X-Robots-Tag": "noindex, nofollow, noarchive"
+      },
+      "status": 307
+    },
+    {
+      "src": "^/(?:/+executive-preview/*|/+en/+executive-preview/*|executive-preview/+|en/+executive-preview/*)$",
+      "headers": {
+        "Cache-Control": "private, no-store, max-age=0",
+        "Location": "/executive-preview",
+        "Vary": "Cookie",
+        "X-Robots-Tag": "noindex, nofollow, noarchive"
+      },
+      "status": 307
+    },
+    {
+      "src": "^/(?:/+es/+executive-preview/*|es//+executive-preview/*|es/executive-preview/+)$",
+      "has": [
+        {
+          "type": "query",
+          "key": "error",
+          "value": "1"
+        }
+      ],
+      "headers": {
+        "Cache-Control": "private, no-store, max-age=0",
+        "Location": "/es/executive-preview?error=1",
+        "Vary": "Cookie",
+        "X-Robots-Tag": "noindex, nofollow, noarchive"
+      },
+      "status": 307
+    },
+    {
+      "src": "^/(?:/+es/+executive-preview/*|es//+executive-preview/*|es/executive-preview/+)$",
+      "headers": {
+        "Cache-Control": "private, no-store, max-age=0",
+        "Location": "/es/executive-preview",
+        "Vary": "Cookie",
+        "X-Robots-Tag": "noindex, nofollow, noarchive"
+      },
+      "status": 307
+    }
+  ]
 }

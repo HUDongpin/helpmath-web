@@ -2071,6 +2071,123 @@ test('demo landing pages expose only lifecycle-public demos and eligible reviewe
   expectNoRuntimeIssues(issues);
 });
 
+test('legacy executive preview return paths canonicalize without disclosing private routes', {
+  tag: '@production-public-smoke',
+}, async ({request}) => {
+  const privacyProbeId = firstReviewDemoId ?? 'private-review-sentinel';
+  const englishReturnPath = encodeURIComponent(`/demos/${privacyProbeId}`);
+  const spanishReturnPath = encodeURIComponent(`/es/demos/${privacyProbeId}`);
+  const originResponse = await request.get('/', {maxRedirects: 0});
+  const parsedRequestOrigin = new URL(originResponse.url());
+  const requestOrigin = parsedRequestOrigin.origin;
+  const hasPlatformEdgeRouting = !['localhost', '127.0.0.1', '[::1]'].includes(
+    parsedRequestOrigin.hostname,
+  );
+
+  const executivePreviewRedirectCases = [
+    [`/executive-preview?returnTo=${englishReturnPath}`, '/executive-preview'],
+    [
+      `/executive-preview?returnTo=${englishReturnPath}&error=1`,
+      '/executive-preview?error=1',
+    ],
+    [`/es/executive-preview?returnTo=${spanishReturnPath}`, '/es/executive-preview'],
+    [
+      `/es/executive-preview?returnTo=${spanishReturnPath}&error=1`,
+      '/es/executive-preview?error=1',
+    ],
+    [`/en/executive-preview?returnTo=${englishReturnPath}`, '/executive-preview'],
+    [
+      `/en/executive-preview?returnTo=${englishReturnPath}&error=1`,
+      '/executive-preview?error=1',
+    ],
+    [`/executive-preview/?ReturnTo=${englishReturnPath}`, '/executive-preview'],
+    [`/es/executive-preview/?foo=${spanishReturnPath}`, '/es/executive-preview'],
+    [`/en/executive-preview/?returnto=${englishReturnPath}`, '/executive-preview'],
+    [`//executive-preview?returnTo=${englishReturnPath}`, '/executive-preview'],
+    [`//en/executive-preview?returnTo=${englishReturnPath}`, '/executive-preview'],
+    [
+      `//en//executive-preview?foo=${englishReturnPath}&error=1`,
+      '/executive-preview?error=1',
+    ],
+    [
+      `/es//executive-preview?ReturnTo=${spanishReturnPath}&error=1`,
+      '/es/executive-preview?error=1',
+    ],
+    [
+      `/en//executive-preview?foo=${englishReturnPath}&error=1`,
+      '/executive-preview?error=1',
+    ],
+    [`/executive-preview?foo=${englishReturnPath}`, '/executive-preview'],
+    [`/es/executive-preview?ReturnTo=${spanishReturnPath}`, '/es/executive-preview'],
+    [`/en/executive-preview?returnto=${englishReturnPath}`, '/executive-preview'],
+    ['/executive-preview/', '/executive-preview'],
+    ['/es//executive-preview?error=1', '/es/executive-preview?error=1'],
+    ['/en/executive-preview/', '/executive-preview'],
+  ] as const;
+
+  for (const [path, expectedPath, expectedStatus = 307] of
+    executivePreviewRedirectCases.filter(([path]) =>
+    hasPlatformEdgeRouting ||
+    !(path.startsWith('//') || path.slice(1).includes('//'))
+  )) {
+    const requestTarget = path.startsWith('//') ? `${requestOrigin}${path}` : path;
+    const response = await request.get(requestTarget, {maxRedirects: 0});
+    const headers = response.headers();
+    const body = await response.body();
+    const bodyText = body.toString('utf8');
+    const requestUrl = new URL(response.url());
+    const location = headers.location;
+
+    expect(response.status(), path).toBe(expectedStatus);
+    expect(location, path).toBeDefined();
+    const target = new URL(location!, requestUrl);
+    const expected = new URL(expectedPath, requestUrl);
+    expect(target.origin, path).toBe(requestUrl.origin);
+    expect(`${target.pathname}${target.search}${target.hash}`, path).toBe(
+      `${expected.pathname}${expected.search}${expected.hash}`,
+    );
+    expect(headers['cache-control'], path).toContain('private');
+    expect(headers['cache-control'], path).toContain('no-store');
+    expect(headers.vary, path).toMatch(/(?:^|,\s*)cookie(?:,|$)/iu);
+    expect(headers['x-robots-tag'], path).toBe('noindex, nofollow, noarchive');
+    if (bodyText !== '') {
+      const bodyTarget = new URL(bodyText, requestUrl);
+      expect(bodyTarget.origin, path).toBe(requestUrl.origin);
+      expect(`${bodyTarget.pathname}${bodyTarget.search}${bodyTarget.hash}`, path).toBe(
+        `${expected.pathname}${expected.search}${expected.hash}`,
+      );
+    }
+
+    const disclosureSurface = [
+      ...Object.entries(headers).map(([name, value]) => `${name}: ${value}`),
+      bodyText,
+    ].join('\n').toLowerCase();
+    for (const forbiddenToken of [
+      'returnto',
+      privacyProbeId.toLowerCase(),
+      '/demos/',
+      '/api/executive-preview/',
+    ]) {
+      expect(disclosureSurface, `${path} disclosed ${forbiddenToken}`).not.toContain(
+        forbiddenToken,
+      );
+    }
+  }
+
+  for (const [path, expectedPath] of [
+    ['/about/?source=legacy', '/about?source=legacy'],
+    ['/es/resources/?topic=research', '/es/resources?topic=research'],
+  ] as const) {
+    const response = await request.get(path, {maxRedirects: 0});
+    const location = response.headers().location;
+    expect(response.status(), path).toBe(308);
+    expect(location, path).toBeDefined();
+    const target = new URL(location!, response.url());
+    expect(target.origin, path).toBe(new URL(response.url()).origin);
+    expect(`${target.pathname}${target.search}`, path).toBe(expectedPath);
+  }
+});
+
 test('demo routes and owned assets follow the validated publication lifecycle', async ({request}) => {
   for (const id of nonPublicDemoIds) {
     for (const [path, heading] of [
