@@ -15,7 +15,6 @@ import {
 } from './release-smoke-helpers.mjs';
 import {
   parseCanonicalLaunchGateManifest,
-  validateHoldingOnlyLaunchGateManifest,
 } from '../lib/launch-gate-transition-lock.js';
 
 const launchGateManifestText = await readFile(
@@ -26,27 +25,24 @@ const parsedLaunchGateManifest = parseCanonicalLaunchGateManifest(launchGateMani
 if (parsedLaunchGateManifest.errors.length > 0) {
   throw new Error(parsedLaunchGateManifest.errors.join('; '));
 }
-const launchGateManifest = parsedLaunchGateManifest.manifest;
-const transitionLockErrors = validateHoldingOnlyLaunchGateManifest(launchGateManifest);
-if (transitionLockErrors.length > 0) {
-  throw new Error(transitionLockErrors.join('; '));
-}
 const launchGateManifestSha256 = createHash('sha256')
   .update(launchGateManifestText)
   .digest('hex');
-const legalPublicationState = launchGateManifest.gates?.legalPublication?.status;
-const contactIntakeState = launchGateManifest.gates?.contactIntake?.status;
-for (const [gate, state] of [
-  ['legalPublication', legalPublicationState],
-  ['contactIntake', contactIntakeState],
-]) {
-  if (state !== 'holding') {
-    throw new Error(`config/launch-gates.json has invalid ${gate} state ${state ?? 'missing'}.`);
-  }
+const launchGateRuntimeModule = await tsImport('../lib/launch-gates.ts', import.meta.url);
+const launchGateRuntime = launchGateRuntimeModule.resolveLaunchGateRuntime();
+if (!launchGateRuntime.valid) {
+  throw new Error(
+    `config/launch-gates.json is invalid: ${launchGateRuntime.errors.join('; ')}`,
+  );
 }
-const legalPublicationApproved = legalPublicationState === 'approved';
+const legalPublicationState =
+  launchGateRuntime.gates.legalPublication.effectiveStatus;
+const contactIntakeState =
+  launchGateRuntime.gates.contactIntake.effectiveStatus;
+const legalPublicationApproved =
+  launchGateRuntime.gates.legalPublication.active;
 const contactRepositoryApproved =
-  legalPublicationApproved && contactIntakeState === 'approved';
+  legalPublicationApproved && launchGateRuntime.gates.contactIntake.active;
 
 const [demoCatalog, demoCandidateCatalog, contentCatalog] = await Promise.all([
   tsImport('../demos/catalog.ts', import.meta.url),
@@ -1595,7 +1591,10 @@ const summary = {
   canonicalOrigin,
   launchGateManifestSha256,
   launchGates: Object.fromEntries(
-    Object.entries(launchGateManifest.gates ?? {}).map(([id, gate]) => [id, gate.status]),
+    Object.entries(launchGateRuntime.gates).map(([id, gate]) => [
+      id,
+      gate.effectiveStatus,
+    ]),
   ),
   fetchTimeoutMs,
   internalLinkConcurrency,

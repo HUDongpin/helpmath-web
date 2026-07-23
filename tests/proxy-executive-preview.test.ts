@@ -362,4 +362,25 @@ describe('executive preview entry canonicalization', () => {
       assert.equal(`${target.pathname}${target.search}`, expectedLocation, path);
     }
   });
+
+  it('keeps time-varying public consumers uncacheable and legal drafts non-indexable', async () => {
+    for (const path of ['/contact', '/es/contact', '/demos', '/es/demos']) {
+      const response = await proxy(new NextRequest(`${origin}${path}`));
+      assert.equal(
+        response.headers.get('cache-control'),
+        'private, no-store, max-age=0',
+        path,
+      );
+    }
+
+    for (const path of ['/privacy', '/terms', '/es/privacy', '/es/terms']) {
+      const response = await proxy(new NextRequest(`${origin}${path}`));
+      assert.equal(
+        response.headers.get('cache-control'),
+        'private, no-store, max-age=0',
+        path,
+      );
+      assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', path);
+    }
+  });
 });

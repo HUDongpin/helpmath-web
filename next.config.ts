@@ -35,6 +35,10 @@ const draftLegalHeaders = DRAFT_LEGAL_PATHS.map((source) => ({
 }));
 
 const indexableDemoRouteSet = new Set(indexableDemoRoutes);
+const publicDemoRouteSet = new Set(demoRoutes);
+const privateOnlyReviewDemoRoutes = reviewDemoRoutes.filter(
+  (route) => !publicDemoRouteSet.has(route),
+);
 const conditionalDemoHeaders = demoRoutes
   .filter((route) => !indexableDemoRouteSet.has(route))
   .flatMap((route) => [route, `/es${route}`])
@@ -46,8 +50,8 @@ const conditionalDemoHeaders = demoRoutes
 const executivePreviewHeaders = [
   '/executive-preview',
   '/es/executive-preview',
-  ...reviewDemoRoutes,
-  ...reviewDemoRoutes.map((route) => `/es${route}`),
+  ...privateOnlyReviewDemoRoutes,
+  ...privateOnlyReviewDemoRoutes.map((route) => `/es${route}`),
   '/api/executive-preview/session',
   '/api/executive-preview/runtime/:path*',
   '/flash-assets/:path*',

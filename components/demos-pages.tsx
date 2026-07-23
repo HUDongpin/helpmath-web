@@ -3,7 +3,6 @@ import {ArrowLeft, CheckCircle2, ShieldCheck} from 'lucide-react';
 import type {DemoDetailContent, DemoId, Locale} from '@/content/types';
 import {Link} from '@/i18n/navigation';
 
-import {DemoPlayer} from './demo-player';
 import {ExecutiveDemoRuntimeLoader} from './executive-demo-runtime-loader';
 import {Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
@@ -69,21 +68,12 @@ export function DemoDetailPage({
               <span>{content.playerLabel}</span>
               <span>{id.replace('conversion-', 'Conversion ')}</span>
             </div>
-            {reviewMode ? (
-              <ExecutiveDemoRuntimeLoader
-                content={content}
-                demoId={id}
-                locale={locale}
-                requestedFrame={requestedFrame}
-              />
-            ) : (
-              <DemoPlayer
-                content={content}
-                demoId={id}
-                locale={locale}
-                requestedFrame={requestedFrame}
-              />
-            )}
+            <ExecutiveDemoRuntimeLoader
+              content={content}
+              demoId={id}
+              locale={locale}
+              requestedFrame={requestedFrame}
+            />
           </div>
           <p className="demo-reduced-note">{content.reducedMotionNote}</p>
         </Container>

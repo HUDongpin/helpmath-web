@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile, readdir} from 'node:fs/promises';
 import path from 'node:path';
+import {tsImport} from 'tsx/esm/api';
 
 const repositoryRoot = process.cwd();
 const nextRoot = path.join(repositoryRoot, '.next');
@@ -38,12 +39,19 @@ async function referencesTurnstile(html) {
   return false;
 }
 
-const launchGates = JSON.parse(
-  await readFile(path.join(repositoryRoot, 'config/launch-gates.json'), 'utf8'),
+const launchGateRuntimeModule = await tsImport(
+  '../lib/launch-gates.ts',
+  import.meta.url,
+);
+const launchGateRuntime = launchGateRuntimeModule.resolveLaunchGateRuntime();
+assert.equal(
+  launchGateRuntime.valid,
+  true,
+  `Launch-gate runtime is invalid: ${launchGateRuntime.errors.join('; ')}`,
 );
 const contactRepositoryGateApproved =
-  launchGates.gates?.legalPublication?.status === 'approved' &&
-  launchGates.gates?.contactIntake?.status === 'approved';
+  launchGateRuntime.gates.legalPublication.active &&
+  launchGateRuntime.gates.contactIntake.active;
 const pages = (await htmlFiles(appOutputRoot))
   .filter((filename) => /\/server\/app\/(?:en|es)(?:\/|\.html$)/u.test(filename))
   .sort();

@@ -12,8 +12,10 @@ import {
   isContactIntakeEnabled,
   isLaunchGateApproved,
   LAUNCH_GATE_IDS,
+  resolveLaunchGateRuntimeForManifest,
 } from '../lib/launch-gates';
 import {validateLaunchGateManifest} from '../lib/launch-gate-validation';
+import {migrateLaunchGateManifestV2ToV3} from '../lib/launch-gate-lifecycle-v3';
 import {
   HOLDING_ONLY_LAUNCH_GATE_IDS,
   parseCanonicalLaunchGateManifest,
@@ -225,6 +227,80 @@ describe('launch gate manifest', () => {
       readFileSync('docs/CONTACT_DELIVERY.md', 'utf8'),
       /^\*\*Status:\*\* Pending\s*$/mu,
     );
+  });
+
+  it('dispatches schema v3 through the time-aware fail-closed runtime', () => {
+    const migration = migrateLaunchGateManifestV2ToV3(launchGateManifest, {
+      nowMs: NOW_MS,
+    });
+    assert.deepEqual(migration.errors, []);
+    assert.ok(migration.manifest);
+    assert.deepEqual(
+      validateLaunchGateManifest(migration.manifest, {nowMs: NOW_MS}),
+      [],
+    );
+
+    const holding = resolveLaunchGateRuntimeForManifest(
+      migration.manifest,
+      NOW_MS,
+    );
+    assert.equal(holding.valid, true);
+    assert.equal(holding.schemaVersion, 3);
+    assert.equal(
+      Object.values(holding.gates).every(
+        (gate) => gate.effectiveStatus === 'holding' && !gate.active,
+      ),
+      true,
+    );
+
+    const candidate = structuredClone(migration.manifest) as unknown as {
+      updatedAt: string;
+      gates: Record<string, {
+        events: Array<Record<string, unknown>>;
+      }>;
+    };
+    const events = candidate.gates.demoPublication.events;
+    const previous = events.at(-1);
+    assert.ok(previous);
+    const occurredAt = '2026-07-21T21:50:00.000Z';
+    events.push({
+      eventId: 'demopublication-public-review-candidate',
+      transition: 'submit',
+      from: 'holding',
+      to: 'candidate',
+      targetStatus: 'approved',
+      candidate: {
+        repositoryCommit: 'a'.repeat(40),
+        vercelDeploymentId: `dpl_${'A'.repeat(20)}`,
+      },
+      occurredAt,
+      validUntil: '2026-07-28T21:49:59.999Z',
+      previousEventId: previous.eventId,
+      supersedes: null,
+      decision: null,
+      evidence: [],
+    });
+    candidate.updatedAt = occurredAt;
+
+    const pending = resolveLaunchGateRuntimeForManifest(candidate, NOW_MS);
+    assert.equal(pending.gates.demoPublication.effectiveStatus, 'candidate');
+    assert.equal(pending.gates.demoPublication.active, false);
+    assert.deepEqual(pending.gates.demoPublication.subject, {
+      repositoryCommit: 'a'.repeat(40),
+      vercelDeploymentId: `dpl_${'A'.repeat(20)}`,
+    });
+    assert.equal(
+      pending.gates.demoPublication.validUntil,
+      '2026-07-28T21:49:59.999Z',
+    );
+
+    const expired = resolveLaunchGateRuntimeForManifest(
+      candidate,
+      Date.parse('2026-07-28T21:49:59.999Z'),
+    );
+    assert.equal(expired.gates.demoPublication.effectiveStatus, 'revoked');
+    assert.equal(expired.gates.demoPublication.expired, true);
+    assert.equal(expired.gates.demoPublication.active, false);
   });
 
   it('rejects a structurally complete synthetic approval chain while transitions are locked', () => {

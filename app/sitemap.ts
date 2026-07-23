@@ -1,17 +1,25 @@
 import type {MetadataRoute} from 'next';
 
 import {getSiteUrl, localizedPath} from '@/lib/site';
-import {indexableDemoRoutes} from '@/demos/catalog';
-import {demoLifecycleUpdatedAt} from '@/lib/demo-lifecycle';
-import {PUBLISHED_LEGAL_PAGE_PATHS} from '@/lib/legal-publishing';
+import {
+  demoLifecycleUpdatedAt,
+  getDemoLifecycleCatalog,
+} from '@/lib/demo-lifecycle';
+import {getPublishedLegalPagePaths} from '@/lib/legal-publishing';
 import {
   SITEMAP_DEMO_FALLBACK_LAST_MODIFIED,
   STATIC_SITEMAP_PAGES,
 } from '@/lib/sitemap-metadata';
 
+export const dynamic = 'force-dynamic';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();
-  const publishedLegalPaths = new Set(PUBLISHED_LEGAL_PAGE_PATHS);
+  const publishedLegalPaths = new Set(getPublishedLegalPagePaths());
+  const lifecycle = getDemoLifecycleCatalog();
+  const indexableDemoRoutes = lifecycle.indexableIds.map(
+    (id) => `/demos/${id}` as const,
+  );
   const staticPages = STATIC_SITEMAP_PAGES.filter(
     ({path, publication}) => publication !== 'legal' || publishedLegalPaths.has(path),
   );

@@ -1,8 +1,10 @@
 import type {MetadataRoute} from 'next';
 
-import {demoIds, indexableDemoIds} from '@/demos/catalog';
 import {DEMO_CANDIDATE_IDS} from '@/demos/candidates';
+import {getDemoLifecycleCatalog} from '@/lib/demo-lifecycle';
 import {getSiteUrl} from '@/lib/site';
+
+export const dynamic = 'force-dynamic';
 
 type DemoRobotsRule = Readonly<{
   userAgent: '*';
@@ -47,9 +49,14 @@ export function buildDemoLifecycleRobotsRule(
 
 export default function robots(): MetadataRoute.Robots {
   const siteUrl = getSiteUrl();
+  const lifecycle = getDemoLifecycleCatalog();
 
   return {
-    rules: buildDemoLifecycleRobotsRule(DEMO_CANDIDATE_IDS, demoIds, indexableDemoIds),
+    rules: buildDemoLifecycleRobotsRule(
+      DEMO_CANDIDATE_IDS,
+      lifecycle.publicIds,
+      lifecycle.indexableIds,
+    ),
     sitemap: new URL('/sitemap.xml', siteUrl).toString(),
     host: siteUrl.origin
   };

@@ -17,8 +17,42 @@ Follow [`LAUNCH_GATE_EVIDENCE.md`](./LAUNCH_GATE_EVIDENCE.md) for the non-secret
 envelope contract and required follow-up lifecycle work. The manifest makes
 unresolved state fail closed; it does not authenticate an approver or replace
 counsel, rights-owner, provider, DNS, mail, or release evidence. Do not change a
-gate away from `holding` until a separate reviewed change removes the code-level
-transition lock and implements every listed intermediate and terminal state.
+schema-v2 gate away from `holding`, and do not replace the manifest with schema
+v3, until a separate reviewed adoption change is authorized.
+
+## Schema status and decision authority
+
+The real checked-in manifest remains schema version 2 with all five gates
+`holding`. Every `Pending` field below is still unresolved. The schema-v3
+implementation supplies a fail-closed mechanism for a later authorized
+workflow; its code, tests, documentation, or deployment do not themselves
+record an owner decision or create approval.
+
+When schema v3 is separately adopted, each gate starts with an append-only
+`holding` event. An operator may append a `candidate` for an exact repository
+commit, exact deployment where required, intended disposition, and window of
+no more than seven days. Only the authority fixed for that gate may append the
+matching `approved`, `disabled`, or `private` decision with the exact fixed-scope
+evidence and dependency decision IDs. Later events may renew a still-valid
+decision with fresh evidence, explicitly revoke it, or reopen an expired or
+revoked gate; prior events and decisions remain immutable.
+
+The optional safe dispositions do not authorize their public features:
+
+- `contactIntake=disabled` keeps the contact page unavailable and API closed.
+  It is an accepted dependency disposition for cutover and release, but each
+  downstream decision additionally requires fresh deployment evidence that
+  intake remains disabled and an alternative support channel works.
+- `demoPublication=private` keeps anonymous demo routes, runtimes, assets, and
+  public activation closed. It may be an accepted dependency disposition for
+  release, but is not rights clearance or product acceptance.
+
+An expired candidate cannot be approved. An expired resolved decision becomes
+ineffective and dependent capabilities fail closed. Renew before expiry with
+fresh evidence; after expiry, append an explicit revocation with containment
+evidence and then reopen a new candidate. Use the same revocation path whenever
+an approved capability must be withdrawn. Never infer, fabricate, or pre-fill
+the identity, authority, decision, evidence, or timestamp.
 
 ## Operational holding state while decisions are open
 
@@ -220,7 +254,7 @@ Complete the operational details in `LEGACY_CUTOVER.md` and record:
 | MX/SPF/DKIM/DMARC and mailbox continuity owner | Pending | Pending |
 | Cutover window, timezone, monitoring window, and rollback threshold | Pending | Pending |
 | Google Search Console owners for both domains | Pending | Pending |
-| Whether `/Sales.htm` should end at `/contact` or `/resources` | Pending | Pending |
+| Whether `/Sales.htm` should end at `/contact` or `/resources` (`/resources` is mandatory when contact is disabled) | Pending | Pending |
 | Final destination for the broken historical partnership PDF | Pending | Pending |
 
 Do not call the domain migration complete until old apex and `www`, HTTP and
@@ -238,8 +272,8 @@ mail continuity, and Search Console checks all have retained evidence.
 | Production release | Pending | Pending | Pending |
 
 Completing a row records an external decision but does not unlock the current
-manifest. Only after a separate reviewed lifecycle implementation removes the
-holding-only transition lock may a later change update the matching gate. Do
-not delete `Pending` text or set a gate to `approved` in anticipation of
-evidence. `productionLaunch` remains `holding` while the lock is active or any
-required decision is unresolved.
+schema-v2 manifest. Only a separately reviewed adoption of a valid schema-v3
+append-only history may later record the matching gate candidate and decision.
+Do not delete `Pending` text, append a candidate, or set a gate to `approved`
+in anticipation of evidence. `productionLaunch` remains `holding` while the
+current manifest is schema v2 or any required decision is unresolved.

@@ -19,6 +19,43 @@ candidate and artifact digest. Both current activations are `false`, both
 acceptance records are `null`, and the holding-only transition lock rejects
 `demoPublication=approved`.
 
+## Schema-v3 publication dispositions
+
+The real checked-in launch-gate manifest remains schema version 2 with
+`demoPublication=holding`; schema v2 is holding-only. The two demo activation
+records remain `false` with null rights and product acceptances. The schema-v3
+lifecycle code does not alter any of those facts or grant publication rights.
+
+After a separately authorized schema-v3 adoption, a demo-publication candidate
+must bind the exact repository commit and Vercel deployment, target exactly one
+of `approved` or `private`, and expire no later than seven days after
+submission. Only the actual `demo-publication-authority` may resolve the exact,
+still-valid candidate:
+
+- `approved` requires fixed-scope `demo-rights` and
+  `demo-product-acceptance` evidence. This is the only launch-gate disposition
+  eligible to support public demo activation, and the separate immutable
+  per-demo acceptance and activation records must still pass.
+- `private` requires deployment-bound `demo-private-disposition` evidence. It
+  confirms the bounded private-review purpose and recipient scope and proves
+  anonymous routes, assets, and runtimes remain fail-closed. It is not
+  publication rights, technical/product acceptance, or permission to switch an
+  activation to `true`.
+
+A valid `private` disposition may satisfy the demo dependency for production
+review while public demo capability remains off. A later public proposal must
+explicitly revoke the private disposition, reopen a new candidate, and obtain
+the full approved-path evidence; an operator must not mutate the private
+decision or demo candidate to make it fit.
+
+Every decision has an expiry. Renew only before expiry through an appended
+superseding decision with fresh evidence. On expiry, fail closed, append an
+explicit revocation with containment evidence, and then reopen a new candidate.
+Use the same revocation path on rights withdrawal, failed acceptance, or an
+access-control incident. Preserve the entire event history. Code, CI, Codex, a
+candidate digest, or a successful private playback cannot create rights
+approval or product acceptance.
+
 `npm run check:demo-lifecycle` verifies canonical manifests, repository file
 hashes, candidate bindings, evidence shapes, timestamps, and fail-closed
 activation prerequisites. `npm run build:executive-runtime` independently
@@ -43,10 +80,10 @@ must contain no evidence. This packaging contract is not an acceptance record
 and does not relax the holding-only launch-gate lock.
 
 This foundation is not an executable public-release procedure. A later,
-separately reviewed change must remove or replace the holding-only launch-gate
-lock, finish public runtime and asset enforcement, activate only a fully bound
-candidate, and retain post-activation Production verification. It must not
-invalidate or replay the accepted candidate evidence.
+separately reviewed change must adopt a valid schema-v3 history, finish public
+runtime and asset enforcement, activate only a fully bound and independently
+accepted demo candidate, and retain post-activation Production verification.
+It must not invalidate or replay the accepted candidate evidence.
 
 Before that implementation may be proposed:
 

@@ -6,11 +6,12 @@ it does not collect evidence or prove the post-change result. Registrar, mail,
 Search Console, Vercel, legacy-host, DNS, and HTTP/TLS operators must produce
 the underlying evidence through approved procedures.
 
-**Current revision:** the code-level holding-only transition lock forces this
-command to return `NO_GO` with exit code `2` for every input. The conditional
-`GO_TO_CHANGE` behavior described below is dormant design documentation and
-cannot authorize a cutover until a separate reviewed lifecycle removes the
-lock and updates this contract.
+**Current manifest:** `config/launch-gates.json` is schema version 2 with every
+gate `holding`, so this command returns `NO_GO` with exit code `2`. Schema-v2
+validation remains holding-only. The schema-v3 path described below becomes
+eligible only after a separately authorized manifest-adoption change and a
+valid append-only decision history; lifecycle code cannot authorize a cutover
+by itself.
 
 Do not copy placeholder values into a real plan and do not store these files in
 the repository. The plan, evidence artifacts, underlying collector outputs,
@@ -19,19 +20,51 @@ Files must grant no group or other access. The receipt directory must already
 exist with mode `0700`. Real-path containment checks reject inputs or outputs
 that resolve into the repository through a symbolic-link ancestor.
 
+## Schema-v3 launch-gate prerequisite
+
+Before this preflight can return `GO_TO_CHANGE`, schema v3 must resolve
+`legalPublication=approved`, `legacyCutover=approved`, and exactly one safe
+contact disposition: `contactIntake=approved` or
+`contactIntake=disabled`. The `legacyCutover` decision must bind the same exact
+commit and deployment as its still-valid candidate. A candidate window may not
+exceed seven days, but that outer window does not extend the shorter evidence
+ages in this contract.
+
+The contact branch is explicit:
+
+- `contactMode=enabled` requires a valid contact approval and fresh
+  `contactDelivery` evidence covering real Production delivery, Reply-To, and
+  every abuse-control check.
+- `contactMode=disabled` requires a valid disabled disposition and fresh
+  `contactDisabled` evidence proving the contact page is unavailable, the API
+  fails closed, no delivery was attempted, and the alternative support route
+  works on the exact Production deployment.
+
+A disabled disposition satisfies the dependency only; it does not enable
+message intake. The selected plan mode, gate disposition, decision evidence,
+and external evidence key must agree. Expiry or explicit revocation of the
+legal, contact, or cutover decision makes the preflight `NO_GO`. Renewal must
+be appended before expiry with fresh fixed-scope evidence. An expired resolved
+decision must be explicitly revoked with containment evidence before the
+revoked gate can reopen through a new candidate. Prior lifecycle events must
+never be edited or removed.
+
 ## Plan schema
 
 The plan is strict JSON with no extra fields. The abbreviated `evidence` object
 shown below must be expanded to contain every evidence key in the contract
-table.
+table. The plan and each typed evidence artifact must be canonical sorted JSON
+with exactly one trailing newline; duplicate object keys and noncanonical
+encodings are rejected before semantic validation.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "cutoverId": "help-math-legacy-YYYY-MM-DD",
   "topology": "direct-one-hop",
   "repositoryCommit": "FULL_40_CHARACTER_GIT_SHA",
   "vercelDeploymentId": "dpl_DEPLOYMENT_ID",
+  "contactMode": "disabled",
   "salesDestination": "/resources",
   "owners": {
     "change": "NAMED_OWNER",
@@ -83,11 +116,11 @@ table.
       "approvedAt": "YYYY-MM-DDTHH:MM:SS.000Z",
       "evidenceKey": "mailContinuity"
     },
-    "contactDelivery": {
+    "contactDisposition": {
       "status": "approved",
       "approvedBy": "NAMED_OWNER",
       "approvedAt": "YYYY-MM-DDTHH:MM:SS.000Z",
-      "evidenceKey": "contactDelivery"
+      "evidenceKey": "contactDisabled"
     },
     "searchConsole": {
       "status": "approved",
@@ -125,19 +158,31 @@ table.
 ```
 
 `topology` accepts only `direct-one-hop` or `temporary-two-hop`;
-`salesDestination` accepts only `/contact` or `/resources`. All timestamps are
-canonical millisecond UTC. The start must be between 15 minutes in the past and
-60 minutes in the future, the monitoring end must still be future, and the
+`contactMode` accepts only `enabled` or `disabled`; `salesDestination` accepts
+only `/contact` or `/resources`. For `enabled`,
+`decisions.contactDisposition.evidenceKey` must be `contactDelivery`; for
+`disabled`, it must be `contactDisabled` and `salesDestination` must be
+`/resources` so a legacy sales redirect cannot land on a closed contact intake.
+The `evidence` object must contain exactly the selected contact key and all
+non-contact keys, never both contact keys. All timestamps are canonical
+millisecond UTC. The start must be between 15 minutes in the past and 60
+minutes in the future, the monitoring end must still be future, and the
 monitoring window must last at least one hour. The prior TTL must already have
 elapsed. Every machine approval must be later than the evidence it approves.
 Error and timeout percentages must remain below 100, and the monitoring window
 must fit the configured minimum probe count at the configured interval.
 
+The current redirect registry sends `/Sales.htm` to `/contact`. Therefore a
+disabled-contact plan is intentionally `NO_GO` until a reviewed release changes
+that exact redirect and its generated host package/tests to `/resources`; a
+plan value cannot override the observed release configuration.
+
 ## Evidence artifact envelope
 
 Each plan reference is a strict JSON artifact of at most 1 MiB. Its identity
 fields must match the plan exactly. It also binds the retained full collector
-output, which may be at most 50 MiB.
+output, which may be at most 50 MiB. The artifact-envelope schema remains
+version 1; that is independent of the required plan schema version 2 above.
 
 ```json
 {
@@ -175,6 +220,7 @@ remains an owner attestation, not an independent login to the source system.
 | `dnsZoneProposed` | 24 hours | `approvedWebsiteRecordsOnly`, `mailRecordsUnchanged`, `ownershipRecordsUnchanged`, `noApexCnameConflict` |
 | `mailContinuity` | 24 hours | `inboundDeliveryPassed`, `outboundDeliveryPassed`, `mxRecordsUnchanged`, `mailTxtRecordsUnchanged` |
 | `contactDelivery` | 24 hours | `repositoryGateApproved`, `productionEnvironmentEnabled`, `retentionAndInboxOwnersConfirmed`, plus every granular `contact-production-verification` check listed below |
+| `contactDisabled` | 24 hours | `repositoryGateDisabled`, `contactPageUnavailable`, `contactApiFailsClosed`, `noDeliveryAttempted`, `alternateSupportRouteVerified` |
 | `searchConsoleControl` | 7 days | `legacyPropertyControlled`, `newPropertyControlled`, `changeOfAddressOwnerNamed` |
 | `offDeviceArchiveRestore` | 30 days | `encryptedOffDeviceCustody`, `independentRestorePassed`, `restoredBytesHashVerified` |
 | `rightsAccessibilityDisposition` | 30 days | `allGovernedSourcesClassified`, `republicationDecisionsRecorded`, `accessibilityActionsRecorded` |
@@ -196,11 +242,18 @@ required checks are `turnstileProductionPassed`, `endToEndDeliveryPassed`,
 `logRedactionPassed`, and `failureRollbackDispositionRecorded`. Missing,
 combined, renamed, unknown, or false checks fail closed.
 
+`contactDisabled` is not a substitute for failed delivery testing. It is the
+separate fail-closed branch for an intentionally disabled contact capability.
+The artifact must bind the selected commit and deployment and prove the closed
+page/API state and working alternative support route. Any sign that intake or
+delivery occurred makes that branch invalid.
+
 ## Decision and exit behavior
 
-The current holding-only revision always returns `NO_GO` with exit `2`. The
-remaining section describes the additional conditions a future unlocked
-revision would still have to satisfy; none of them bypass the current lock.
+With the current schema-v2 all-holding manifest, the command always returns
+`NO_GO` with exit `2`. A separately adopted schema-v3 manifest still returns
+`NO_GO` unless its full append-only chain, selected contact disposition, plan,
+evidence, and operational checks all pass.
 
 The preflight returns `GO_TO_CHANGE` and exit `0` only when all plan, evidence,
 launch-gate, repository, command, destination, and receipt-store checks pass
@@ -208,13 +261,18 @@ and the receipt plus companion SHA-256 are written successfully. Every other
 result is `NO_GO` with exit `2`. There is no force, skip, or
 success-on-`NO_GO` option.
 
-The content-addressed receipt records tool hashes, repository state, plan hash,
-every artifact and underlying-evidence expected/actual hash, all checks, all
-failures, and `validUntil`, the earliest evidence/window expiry. The operator
+The content-addressed receipt records bootstrap/entry/library hashes,
+repository state, plan hash, every artifact and underlying-evidence
+expected/actual hash, all checks, all failures, and `validUntil`, the earliest
+evidence/window expiry or active legal/contact/cutover gate expiry. The operator
 must not begin a change with an expired receipt. `GO_TO_CHANGE`
 also requires at least five minutes of validity after the later of the final
-decision time and planned start time; the writer rechecks that buffer before
-atomically publishing the final JSON name. A normal
+decision time and planned start time. A bootstrap pins a clean governance HEAD
+before local modules load; the planned release candidate must exist and be an
+ancestor of that HEAD. Immediately before atomically publishing the final JSON
+name, the writer re-verifies the exact manifest, gate authorizations, external
+evidence, plan bytes, tool bytes, pinned HEAD, candidate ancestry, and validity
+buffer. A normal
 filesystem receipt must still be copied to the owner-approved append-only or
 WORM store; permissions and hashes alone do not make a filesystem immutable.
 

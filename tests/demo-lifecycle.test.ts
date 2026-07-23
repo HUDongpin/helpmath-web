@@ -22,6 +22,7 @@ import {
 import {
   deriveDemoLifecycleState,
   demoLifecycleStates,
+  getDemoLifecycleCatalog,
   getDemoLifecycleState,
   isDemoDenied,
   isDemoIndexable,
@@ -224,6 +225,10 @@ describe('demo activation manifest', () => {
       assert.equal(isDemoDenied(id), false, id);
       assert.deepEqual(demoLifecycleStates[id], state, id);
     }
+    const lifecycle = getDemoLifecycleCatalog(NOW_MS);
+    assert.deepEqual(lifecycle.publicIds, []);
+    assert.deepEqual(lifecycle.indexableIds, []);
+    assert.deepEqual(lifecycle.privatePreviewIds, DEMO_CANDIDATE_IDS);
   });
 
   it('rejects non-canonical JSON and unknown activation fields', () => {
@@ -365,6 +370,39 @@ describe('demo activation manifest', () => {
     assert.equal(inactive.privatePreview, true);
     assert.equal(inactive.public, false);
     assert.equal(inactive.indexable, false);
+  });
+
+  it('closes an activated public demo when its launch gate closes without closing private review', () => {
+    const manifest = activationFixture();
+    const id = DEMO_CANDIDATE_IDS[0];
+    activate(manifest, id);
+    const activation = manifest.demos[id];
+
+    const published = deriveDemoLifecycleState({
+      id,
+      candidate: demoCandidates[id],
+      activation,
+      candidateErrors: [],
+      manifestErrors: activationErrors(manifest, true),
+      demoPublicationGateApproved: true,
+    });
+    const gateClosed = deriveDemoLifecycleState({
+      id,
+      candidate: demoCandidates[id],
+      activation,
+      candidateErrors: [],
+      manifestErrors: activationErrors(manifest, true),
+      demoPublicationGateApproved: false,
+    });
+
+    assert.equal(published.public, true);
+    assert.equal(published.access, 'public');
+    assert.equal(gateClosed.public, false);
+    assert.equal(gateClosed.indexable, false);
+    assert.equal(gateClosed.active, false);
+    assert.equal(gateClosed.privatePreview, true);
+    assert.equal(gateClosed.access, 'private-preview');
+    assert.deepEqual(gateClosed.errors, []);
   });
 
   it('can deactivate a valid activation without changing the immutable candidate digest', () => {

@@ -3,14 +3,17 @@ import {describe, it} from 'node:test';
 
 import nextConfig from '../next.config';
 import {demoIds, reviewDemoIds} from '../demos/catalog';
-import {demoCandidates} from '../demos/candidates';
+import {DEMO_CANDIDATE_IDS, demoCandidates} from '../demos/candidates';
 import {
   EXECUTIVE_PREVIEW_ASSET_FILES,
   EXECUTIVE_PREVIEW_ASSET_OWNERS,
   EXECUTIVE_PREVIEW_RUNTIME_FILES,
+  EXECUTIVE_PREVIEW_RUNTIME_OWNERS,
   isExecutivePreviewAssetPublic,
+  isExecutivePreviewRuntimePublic,
   serveExecutivePreviewAsset,
   serveExecutivePreviewResource,
+  serveExecutivePreviewRuntime,
 } from '../lib/executive-preview-resources';
 
 function assertPrivateHeaders(response: Response) {
@@ -22,7 +25,7 @@ function assertPrivateHeaders(response: Response) {
 }
 
 function assertPublicAssetHeaders(response: Response) {
-  assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+  assert.equal(response.headers.get('cache-control'), 'private, no-store, max-age=0');
   assert.equal(response.headers.get('vary'), null);
   assert.equal(response.headers.get('x-robots-tag'), null);
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
@@ -30,10 +33,14 @@ function assertPublicAssetHeaders(response: Response) {
 }
 
 describe('executive preview resource service', () => {
-  it('allowlists only lifecycle-approved private-preview runtimes and owned assets', () => {
+  it('allowlists candidate runtimes while access remains lifecycle-gated', () => {
     assert.deepEqual(
       Object.keys(EXECUTIVE_PREVIEW_RUNTIME_FILES).sort(),
-      reviewDemoIds.map((id) => `${id}.js`).sort(),
+      DEMO_CANDIDATE_IDS.map((id) => `${id}.js`).sort(),
+    );
+    assert.deepEqual(
+      Object.keys(EXECUTIVE_PREVIEW_RUNTIME_OWNERS).sort(),
+      DEMO_CANDIDATE_IDS.map((id) => `${id}.js`).sort(),
     );
 
     const assetDemoIds = [...new Set([...reviewDemoIds, ...demoIds])];
@@ -120,6 +127,54 @@ describe('executive preview resource service', () => {
       assertPrivateHeaders(denied);
     }
     assert.equal(reads, 1);
+  });
+
+  it('rechecks public runtime access and falls back to the independent private session path', async () => {
+    const requestKey = 'conversion-1-2.js';
+    const bytes = new Uint8Array([47, 42, 32, 106, 115, 32, 42, 47]);
+    let reads = 0;
+    const readFile = async () => {
+      reads += 1;
+      return bytes;
+    };
+
+    assert.equal(
+      isExecutivePreviewRuntimePublic(requestKey, ['conversion-1-2']),
+      true,
+    );
+    const published = await serveExecutivePreviewRuntime({
+      authorized: false,
+      headOnly: false,
+      publicDemoIds: ['conversion-1-2'],
+      readFile,
+      requestKey,
+      root: '/private',
+    });
+    assert.equal(published.status, 200);
+    assertPublicAssetHeaders(published);
+
+    const gateClosed = await serveExecutivePreviewRuntime({
+      authorized: false,
+      headOnly: false,
+      publicDemoIds: [],
+      readFile,
+      requestKey,
+      root: '/private',
+    });
+    assert.equal(gateClosed.status, 404);
+    assertPrivateHeaders(gateClosed);
+
+    const privatePreview = await serveExecutivePreviewRuntime({
+      authorized: true,
+      headOnly: false,
+      publicDemoIds: [],
+      readFile,
+      requestKey,
+      root: '/private',
+    });
+    assert.equal(privatePreview.status, 200);
+    assertPrivateHeaders(privatePreview);
+    assert.equal(reads, 2);
   });
 
   it('returns the same empty 404 for unauthorized and non-allowlisted requests', async () => {

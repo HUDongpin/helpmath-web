@@ -1,6 +1,7 @@
 import type {NextRequest} from 'next/server';
 import {NextResponse} from 'next/server';
 
+import {isDemoCandidateId} from './demos/candidates';
 import {routing} from './i18n/routing';
 import {
   EXECUTIVE_PREVIEW_COOKIE_NAME,
@@ -10,6 +11,8 @@ import {
   isExecutivePreviewProtectedPath,
   verifyExecutivePreviewSession,
 } from './lib/executive-preview-access';
+import {getDemoLifecycleState} from './lib/demo-lifecycle';
+import {isDraftLegalPage} from './lib/legal-publishing';
 import {isPublicPagePath} from './lib/public-paths';
 
 const INTERNAL_LOCALE_HEADER = 'x-helpmath-internal-locale';
@@ -24,6 +27,7 @@ const EXECUTIVE_PREVIEW_ENTRY_CANONICAL_PATHS = new Map([
   ['/es/executive-preview', '/es/executive-preview'],
   ['/en/executive-preview', '/executive-preview'],
 ]);
+const GATED_PUBLIC_CACHE_CONTROL = 'private, no-store, max-age=0';
 
 const publicFilePaths = new Set([
   '/icon.svg',
@@ -48,6 +52,19 @@ function notFoundRewrite(request: NextRequest, locale: 'en' | 'es') {
 function withExecutivePreviewHeaders(response: NextResponse) {
   for (const [key, value] of Object.entries(EXECUTIVE_PREVIEW_HEADERS)) {
     response.headers.set(key, value);
+  }
+  return response;
+}
+
+function withGatedPublicHeaders(
+  response: NextResponse,
+  robots?: 'noindex-follow' | 'noindex-private',
+) {
+  response.headers.set('Cache-Control', GATED_PUBLIC_CACHE_CONTROL);
+  if (robots === 'noindex-follow') {
+    response.headers.set('X-Robots-Tag', 'noindex, follow');
+  } else if (robots === 'noindex-private') {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
   return response;
 }
@@ -103,6 +120,31 @@ function canonicalizePublicPath(request: NextRequest) {
   return NextResponse.redirect(canonical, 308);
 }
 
+function demoCandidateIdFromPathname(pathname: string) {
+  const match = /^\/(?:es\/)?demos\/([a-z0-9]+(?:-[a-z0-9]+)*)$/u.exec(
+    pathname,
+  );
+  const id = match?.[1];
+  return id && isDemoCandidateId(id) ? id : null;
+}
+
+function gatedPublicResponse(pathname: string) {
+  const localeFreePath = pathname.startsWith('/es/')
+    ? pathname.slice(3)
+    : pathname;
+  if (localeFreePath === '/contact' || localeFreePath === '/demos') {
+    return withGatedPublicHeaders(NextResponse.next());
+  }
+  const legalPage = /^\/(privacy|terms)$/u.exec(localeFreePath)?.[1];
+  if (legalPage) {
+    return withGatedPublicHeaders(
+      NextResponse.next(),
+      isDraftLegalPage(legalPage) ? 'noindex-follow' : undefined,
+    );
+  }
+  return NextResponse.next();
+}
+
 export default async function proxy(request: NextRequest) {
   const {pathname} = request.nextUrl;
 
@@ -125,6 +167,17 @@ export default async function proxy(request: NextRequest) {
 
   const canonicalPublicPath = canonicalizePublicPath(request);
   if (canonicalPublicPath) return canonicalPublicPath;
+
+  const demoCandidateId = demoCandidateIdFromPathname(pathname);
+  const demoLifecycle = demoCandidateId
+    ? getDemoLifecycleState(demoCandidateId)
+    : null;
+  if (demoLifecycle?.public) {
+    return withGatedPublicHeaders(
+      NextResponse.next(),
+      demoLifecycle.indexable ? undefined : 'noindex-private',
+    );
+  }
 
   if (isExecutivePreviewProtectedPath(pathname)) {
     const config = getExecutivePreviewConfig();
@@ -161,13 +214,29 @@ export default async function proxy(request: NextRequest) {
   if (pathname === '/es' || pathname.startsWith('/es/')) {
     const locale = pathname.slice(1, 3) as 'en' | 'es';
     const localeFree = pathname.slice(3) || '/';
-    return isPublicPagePath(localeFree) ? NextResponse.next() : notFoundRewrite(request, locale);
+    if (demoCandidateId) {
+      return withGatedPublicHeaders(
+        notFoundRewrite(request, locale),
+        'noindex-private',
+      );
+    }
+    return isPublicPagePath(localeFree)
+      ? gatedPublicResponse(pathname)
+      : notFoundRewrite(request, locale);
   }
 
   const normalizedPath = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
-  if (!isPublicPagePath(normalizedPath)) return notFoundRewrite(request, routing.defaultLocale);
+  if (demoCandidateId) {
+    return withGatedPublicHeaders(
+      notFoundRewrite(request, routing.defaultLocale),
+      'noindex-private',
+    );
+  }
+  if (!isPublicPagePath(normalizedPath)) {
+    return notFoundRewrite(request, routing.defaultLocale);
+  }
 
-  return NextResponse.next();
+  return gatedPublicResponse(pathname);
 }
 
 export const config = {

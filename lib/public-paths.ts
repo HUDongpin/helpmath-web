@@ -2,7 +2,7 @@ import {demoRoutes, reviewDemoRoutes} from '../demos/catalog';
 
 export const executivePreviewEntryPath = '/executive-preview' as const;
 
-export const publicPagePaths = Object.freeze([
+export const publicPagePaths = Object.freeze([...new Set([
   '/',
   '/about',
   '/approach',
@@ -17,12 +17,12 @@ export const publicPagePaths = Object.freeze([
   '/demos',
   executivePreviewEntryPath,
   ...demoRoutes,
-]);
+])]);
 
-export const routablePagePaths = Object.freeze([
+export const routablePagePaths = Object.freeze([...new Set([
   ...publicPagePaths,
   ...reviewDemoRoutes,
-]);
+])]);
 
 const publicPagePathSet = new Set<string>(publicPagePaths);
 
