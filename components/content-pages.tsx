@@ -12,7 +12,6 @@ import type {
   AboutContent,
   ApproachContent,
   CurriculumContent,
-  EvidenceStatus,
   LegalContent,
   LoginContent,
   Locale,
@@ -21,7 +20,7 @@ import type {
 } from '@/content/types';
 import {FeatureGrid} from './feature-grid';
 import {PageHero} from './page-hero';
-import {Archive, CheckCircle2, FileCheck2, SearchCheck} from './server-icons';
+import {renderResearchEvidenceMarkup} from './research-evidence-markup';
 import {TextSection} from './text-section';
 import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
@@ -197,14 +196,9 @@ export function CurriculumPage({content, locale}: {content: CurriculumContent; l
   );
 }
 
-const evidenceIcons: Record<EvidenceStatus, typeof Archive> = {
-  archived: Archive,
-  verification: SearchCheck,
-  context: FileCheck2,
-  verified: CheckCircle2
-};
-
 export function ResearchPage({content, locale}: {content: ResearchContent; locale: Locale}) {
+  const {entriesMarkup, indexMarkup} = renderResearchEvidenceMarkup(content.entries);
+
   return (
     <>
       <PageHero content={content.hero} locale={locale} tone="yellow" />
@@ -216,54 +210,15 @@ export function ResearchPage({content, locale}: {content: ResearchContent; local
       <Section>
         <Container>
           <Eyebrow>{content.entriesLabel}</Eyebrow>
-          <nav aria-label={content.entriesLabel} className="evidence-index">
-            <ol>
-              {content.entries.map((entry) => (
-                <li key={entry.id}>
-                  <a href={`#${entry.id}`}>
-                    <span className={`status-badge status-badge--${entry.status}`}>
-                      {entry.statusLabel}
-                    </span>
-                    <span>{entry.title}</span>
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <div className="evidence-list">
-            {content.entries.map((entry) => {
-              const Icon = evidenceIcons[entry.status];
-              return (
-                <article className="evidence-entry" id={entry.id} key={entry.id}>
-                  <div className="evidence-entry__meta">
-                    <Icon aria-hidden="true" size={22} />
-                    <span className={`status-badge status-badge--${entry.status}`}>
-                      {entry.statusLabel}
-                    </span>
-                    <span>{entry.dateLabel}</span>
-                  </div>
-                  <div>
-                    <h2>{entry.title}</h2>
-                    <p>{entry.summary}</p>
-                    <p className="evidence-entry__interpretation">{entry.interpretation}</p>
-                    <p className="evidence-entry__source">{entry.sourceLabel}</p>
-                    {entry.sourceActions?.length ? (
-                      <div className="evidence-entry__actions">
-                        {entry.sourceActions.map((action) => (
-                          <Action
-                            action={action}
-                            key={action.href}
-                            kind="quiet"
-                            navigation="document"
-                          />
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          <nav
+            aria-label={content.entriesLabel}
+            className="evidence-index"
+            dangerouslySetInnerHTML={{__html: indexMarkup}}
+          />
+          <div
+            className="evidence-list"
+            dangerouslySetInnerHTML={{__html: entriesMarkup}}
+          />
         </Container>
       </Section>
       <Section className="surface-blue">

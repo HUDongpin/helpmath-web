@@ -2081,8 +2081,23 @@ svg {
   color: var(--white);
 }
 
+/*
+ * Give the visible label its own complete color surface. Accessibility tools
+ * can inspect descendants while a content-visibility subtree is skipped; in
+ * that state Chromium may otherwise report the user-agent link color against
+ * the outer section instead of the button's authored colors.
+ */
+.action--primary > span:first-child {
+  background-color: var(--blue);
+  color: var(--white);
+}
+
 .action--primary:hover {
   background: var(--blue-dark);
+}
+
+.action--primary:hover > span:first-child {
+  background-color: var(--blue-dark);
 }
 
 .action--secondary {

@@ -1,12 +1,13 @@
-import {BookOpenText, GraduationCap, Handshake, School, UsersRound} from 'lucide-react';
+import {BookOpenText, Handshake} from 'lucide-react';
 
 import type {HomeContent, Locale} from '@/content/types';
 
-import {FeatureGrid} from './feature-grid';
+import {
+  renderHomeApproachMarkup,
+  renderHomeAudiencesMarkup,
+} from './home-deferred-markup';
 import {MathPlayground} from './math-playground';
 import {Action, Callout, Container, DotPattern, Eyebrow, Section, SectionHeading} from './ui';
-
-const audienceIcons = [GraduationCap, School, UsersRound];
 
 export function HomePage({content, locale}: {content: HomeContent; locale: Locale}) {
   return (
@@ -72,43 +73,15 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
         </Container>
       </Section>
 
-      <Section className="deferred-section deferred-section--home-audiences">
-        <Container>
-          <SectionHeading
-            align="center"
-            eyebrow={content.audiences.eyebrow}
-            intro={content.audiences.intro}
-            title={content.audiences.title}
-          />
-          <div className="audience-grid">
-            {content.audiences.cards.map((card, index) => {
-              const Icon = audienceIcons[index % audienceIcons.length];
-              return (
-                <article key={card.id}>
-                  <Icon aria-hidden="true" size={34} strokeWidth={1.9} />
-                  <h3>{card.title}</h3>
-                  <p>{card.description}</p>
-                  {card.detail ? <p className="audience-grid__detail">{card.detail}</p> : null}
-                </article>
-              );
-            })}
-          </div>
-        </Container>
-      </Section>
+      <section
+        className="section deferred-section deferred-section--home-audiences"
+        dangerouslySetInnerHTML={{__html: renderHomeAudiencesMarkup(content.audiences)}}
+      />
 
-      <Section className="deferred-section deferred-section--home-approach surface-blue">
-        <Container>
-          <div className="split-heading">
-            <SectionHeading
-              eyebrow={content.approach.eyebrow}
-              intro={content.approach.intro}
-              title={content.approach.title}
-            />
-            <Action action={content.approach.action} kind="quiet" />
-          </div>
-          <FeatureGrid cards={content.approach.cards} columns={3} />
-        </Container>
-      </Section>
+      <section
+        className="section deferred-section deferred-section--home-approach surface-blue"
+        dangerouslySetInnerHTML={{__html: renderHomeApproachMarkup(content.approach)}}
+      />
 
       <Section className="deferred-section deferred-section--home-demos">
         <Container>

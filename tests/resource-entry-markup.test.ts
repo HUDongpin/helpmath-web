@@ -65,4 +65,19 @@ describe('static resource-entry markup', () => {
       /Unsafe resource status/u,
     );
   });
+
+  it('fails closed when a resource id cannot be used as a stable fragment', () => {
+    for (const id of ['', 'has space', 'Uppercase', 'path/segment', 'quote"id']) {
+      assert.throws(
+        () => renderResourceEntriesMarkup([{...entry, id}]),
+        /Unsafe resource id/u,
+        id,
+      );
+    }
+
+    assert.throws(
+      () => renderResourceEntriesMarkup([entry, {...entry}]),
+      /Duplicate resource id: reviewed-resource/u,
+    );
+  });
 });
