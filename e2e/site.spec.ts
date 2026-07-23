@@ -2936,7 +2936,9 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   const robotsText = await robots.text();
   expect(robotsText).toContain('User-Agent: *');
   expect(robotsText).toContain('Disallow: /api/');
-  expect(robotsText).toContain('Disallow: /executive-preview');
+  for (const path of ['/executive-preview', '/es/executive-preview']) {
+    expect(robotsText).not.toContain(`Disallow: ${path}`);
+  }
   expect(robotsText).toContain('Disallow: /flash-assets/');
   expect(robotsText).toContain('Sitemap: https://www.helpmath.ai/sitemap.xml');
   for (const id of DEMO_CANDIDATE_IDS) {
