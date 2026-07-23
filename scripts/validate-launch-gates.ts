@@ -11,6 +11,8 @@ import {
   computeLaunchGateEvidenceV3SubjectDigestAtCommit,
   isLaunchGateEvidenceV3Kind,
   LAUNCH_GATE_EVIDENCE_V3_POLICY,
+  LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_DIRECTORY,
+  requiresCurrentLaunchGateEvidenceV3Binding,
   verifyLaunchGateEvidenceV3File,
 } from "../lib/launch-gate-evidence-v3";
 import { LAUNCH_GATE_IDS, type LaunchGateId } from "../lib/launch-gate-ids";
@@ -99,24 +101,42 @@ function v3DependencyDecisionIds(
 
 async function readV3EnvelopeMetadata(reference: string): Promise<{
   recordedAt: string;
-  repositoryContentSha256: string;
 }> {
   try {
     const value = JSON.parse(
       await readFile(path.join(repositoryRoot, reference), "utf8"),
     ) as unknown;
-    if (!isRecord(value))
-      return { recordedAt: "", repositoryContentSha256: "" };
-    const scope = isRecord(value.scope) ? value.scope : {};
+    if (!isRecord(value)) return { recordedAt: "" };
     return {
       recordedAt: typeof value.recordedAt === "string" ? value.recordedAt : "",
-      repositoryContentSha256:
-        typeof scope.repositoryContentSha256 === "string"
-          ? scope.repositoryContentSha256
+    };
+  } catch {
+    return { recordedAt: "" };
+  }
+}
+
+async function readV3ProductionQualityReceiptReference(
+  reference: string,
+): Promise<{ reference: string; sha256: string }> {
+  try {
+    const value = JSON.parse(
+      await readFile(path.join(repositoryRoot, reference), "utf8"),
+    ) as unknown;
+    if (!isRecord(value) || !isRecord(value.underlyingEvidence)) {
+      return { reference: "", sha256: "" };
+    }
+    return {
+      reference:
+        typeof value.underlyingEvidence.reference === "string"
+          ? value.underlyingEvidence.reference
+          : "",
+      sha256:
+        typeof value.underlyingEvidence.sha256 === "string"
+          ? value.underlyingEvidence.sha256
           : "",
     };
   } catch {
-    return { recordedAt: "", repositoryContentSha256: "" };
+    return { reference: "", sha256: "" };
   }
 }
 
@@ -266,6 +286,28 @@ errors.push(
   ).map((error) => `launch-gate evidence directory: ${error}`),
 );
 
+const productionQualityReceiptReferences = v3Manifest
+  ? await Promise.all(
+      v3Manifest.gates.productionLaunch.events.flatMap((event) =>
+        event.evidence
+          .filter((entry) => entry.kind === "production-release")
+          .map((entry) =>
+            readV3ProductionQualityReceiptReference(entry.reference),
+          ),
+      ),
+    )
+  : [];
+errors.push(
+  ...(
+    await validateEvidenceDirectoryContract({
+      repositoryRoot,
+      relativeDirectory:
+        LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_DIRECTORY,
+      references: productionQualityReceiptReferences,
+    })
+  ).map((error) => `production Quality receipt directory: ${error}`),
+);
+
 const blockerReferences =
   schemaVersion === 3
     ? Object.entries(LAUNCH_GATE_BLOCKER_REFS)
@@ -342,13 +384,11 @@ if (schemaVersion === 3 && v3Manifest) {
     for (const [eventIndex, event] of events.entries()) {
       if (!event.decision) continue;
       const isLatestEvent = eventIndex === events.length - 1;
-      const currentlyEffective =
-        event.to === "revoked" ||
-        ((event.to === "approved" ||
-          event.to === "disabled" ||
-          event.to === "private") &&
-          event.validUntil !== null &&
-          nowMs < Date.parse(event.validUntil));
+      const currentlyEffective = requiresCurrentLaunchGateEvidenceV3Binding(
+        event.to as "approved" | "disabled" | "private" | "revoked",
+        event.validUntil,
+        nowMs,
+      );
       const requireCurrentBinding = isLatestEvent && currentlyEffective;
       const dependencyDecisionIds = v3DependencyDecisionIds(
         v3Manifest,
@@ -359,22 +399,20 @@ if (schemaVersion === 3 && v3Manifest) {
         if (!isLaunchGateEvidenceV3Kind(entry.kind)) continue;
         const metadata = await readV3EnvelopeMetadata(entry.reference);
         const policy = LAUNCH_GATE_EVIDENCE_V3_POLICY[entry.kind];
-        let repositoryContentSha256 = metadata.repositoryContentSha256;
-        if (event.to !== "revoked") {
-          try {
-            repositoryContentSha256 = (
-              await v3CommitSubjectDigest(
-                entry.kind,
-                event.decision.candidate.repositoryCommit,
-              )
-            ).sha256;
-          } catch (error) {
-            errors.push(
-              `gates.${gateId}.events[${eventIndex}]: candidate commit subject could not be computed for ${entry.kind}: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            );
-          }
+        let repositoryContentSha256 = "";
+        try {
+          repositoryContentSha256 = (
+            await v3CommitSubjectDigest(
+              entry.kind,
+              event.decision.candidate.repositoryCommit,
+            )
+          ).sha256;
+        } catch (error) {
+          errors.push(
+            `gates.${gateId}.events[${eventIndex}]: candidate commit subject could not be computed for ${entry.kind}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
         }
         const verification = await verifyLaunchGateEvidenceV3File({
           gateId,

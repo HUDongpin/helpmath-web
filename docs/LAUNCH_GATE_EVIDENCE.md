@@ -28,13 +28,15 @@ decision or authority.
 
 `.vercelignore` keeps the evidence tree out of Vercel except for direct,
 non-hidden `*.json` files in exactly `docs/evidence/launch-gates/` and
-`docs/evidence/demo-publication/`. Non-JSON files, hidden files, nested files,
-and every other evidence directory remain excluded. This narrow build-input
-allowlist is packaging readiness only; it does not approve a gate or activate a
-demo.
+`docs/evidence/demo-publication/`, plus direct normalized Quality receipts in
+`docs/evidence/github-actions/`. Non-JSON files, hidden files, nested files, and
+every other evidence directory remain excluded. This narrow build-input
+allowlist is packaging readiness only; it does not approve a gate or activate
+a demo.
 
-Before the Vercel build proceeds, the launch-gate and demo-lifecycle validators
-enumerate the complete entry set in their respective allowlisted directory.
+Before the Vercel build proceeds, the launch-gate, Quality-receipt, and
+demo-lifecycle validators enumerate the complete entry set in their respective
+allowlisted directory.
 Every entry must be a direct regular non-symlink file, the set must exactly
 equal the manifest or activation references, and every file byte must match its
 recorded SHA-256. An unreferenced, missing, nested, hidden, non-JSON, symbolic,
@@ -90,8 +92,16 @@ The fixed scopes include the lifecycle validators and their transitive policy
 helpers, CI wiring, deployment workflows, and the execution/test surfaces
 whose results the evidence claims. The subject digest is recomputed from the
 candidate commit's Git tree, not from whichever working tree happens to run
-the validator. A current decision is accepted only while the present governed
-bytes still match that candidate-tree digest.
+the validator. The legal and contact contract documents remain fully bound
+except for their single machine-checked `Status` line: that line is normalized
+for hashing so an authorized `Pending` to `Satisfied` or `Disabled` lifecycle
+transition does not invalidate its own candidate, while any other contract
+change still changes the digest. A current resolved decision is accepted only
+while the present governed bytes still match that candidate-tree digest.
+
+Maximum evidence validity is measured from `observedAt`, not from the later
+approval time. Delaying recording or approval therefore consumes the evidence
+window and cannot make an old observation fresh again.
 
 `disabled` is a safe, resolved disposition only for `contactIntake`. It means
 public message intake is not authorized: the page must show the unavailable
@@ -120,12 +130,48 @@ explicit revocation path applies whenever authority is withdrawn or
 containment is otherwise required. No expiry, renewal, revocation, or reopening
 silently restores a capability.
 
+A revocation envelope permanently preserves the historical containment
+evidence and keeps the affected capability fail closed. It does not require all
+future governed repository bytes to remain identical to the historically bound
+candidate snapshot; safe remediation and maintenance after revocation must remain
+possible. The validator nevertheless recomputes the envelope's historical
+subject digest from the exact candidate commit Git tree for every revocation;
+it never trusts a digest copied from the envelope itself. Reopening still
+requires a new candidate and a new authorized decision. Revocation evidence
+must be observed strictly after the decision it supersedes, so an old
+containment artifact cannot be reused to authorize a later revocation.
+
 A downstream decision records the exact dependency decision IDs that were
 active when it was made. An upstream dependency may continue through an
 unbroken chain of timely renewals, but revocation, reopening, or a new
 candidate breaks that lineage. Re-approving the upstream gate therefore does
 not resurrect descendants; each affected downstream authority must append its
 own fresh renewal or decision in dependency order.
+
+The timestamps also enforce the operational causal chain inherited from the
+schema-v2 dependency and evidence-order rules, with strict schema-v3
+boundaries. Every evidence observation for a resolved decision must be later
+than every dependency decision active when that decision is made. Required
+evidence observations must then increase strictly in their code-defined order;
+equal timestamps are rejected, and array order alone cannot make an
+out-of-order observation valid. The same rules apply to renewal evidence
+against the dependency decisions active at renewal time.
+
+For `demoPublication=approved`, `demo-rights` must be observed before
+`demo-product-acceptance`. The `private` path has only its exact
+`demo-private-disposition` evidence and does not manufacture a second ordering
+step; because `demoPublication` has no static gate dependencies, its single
+observation remains governed by the envelope timing, candidate/decision
+binding, and freshness rules. A later `productionLaunch` decision must observe
+all of its evidence after the active `demoPublication` decision whether that
+dependency is `approved` or `private`.
+
+For `legacyCutover`, Production contact or disabled-state verification must be
+observed after the active `contactIntake` decision, and
+`legacy-cutover-authorization` must be observed after that verification. For
+`productionLaunch`, post-cutover verification must be observed after the
+active `legacyCutover` decision, followed by fresh contact verification and
+finally the production-release observation.
 
 ## Schema-v2 preparatory approval record
 
@@ -277,6 +323,85 @@ that failure.
 TLS, mail, Search Console, monitoring, and rollback decision belong to the
 `post-cutover-verification` evidence required by `productionLaunch`; requiring
 them before the change would create a circular gate.
+
+## Production Quality provenance
+
+The final schema-v3 `production-release` envelope must bind a successful
+`Quality` run triggered by the `push` of the exact Production commit. Candidate
+`pull_request` runs remain useful pre-merge evidence, but they are not the
+Production release run. A manual `workflow_dispatch` run is never acceptable
+for this envelope because its launch-transition step is skipped and it has no
+trusted push range.
+
+`production-release` therefore has one additional required top-level field,
+`qualityRun`. No other evidence kind may contain that field. Its exact shape is:
+
+```json
+{
+  "qualityRun": {
+    "repository": "HUDongpin/helpmath-web",
+    "workflow": "Quality",
+    "workflowPath": ".github/workflows/quality.yml",
+    "event": "push",
+    "ref": "refs/heads/main",
+    "headBranch": "main",
+    "headSha": "SAME_AS_CANDIDATE_REPOSITORY_COMMIT",
+    "runId": 29921608812,
+    "runAttempt": 1,
+    "runUrl": "https://github.com/HUDongpin/helpmath-web/actions/runs/29921608812",
+    "status": "completed",
+    "conclusion": "success",
+    "completedAt": "2026-07-23T19:59:30.000Z",
+    "updatedAt": "2026-07-23T20:00:00.000Z",
+    "launchTransition": {
+      "job": "verify",
+      "step": "Enforce launch-gate transition history",
+      "conclusion": "success"
+    },
+    "jobs": {
+      "verify": "success",
+      "browser-quality": "success",
+      "lighthouse": "success"
+    }
+  }
+}
+```
+
+The run ID and attempt must be positive safe integers, and the canonical URL
+must contain that exact run ID in the fixed repository. `completedAt` and
+`updatedAt` must be canonical, non-future GitHub receipt timestamps, with
+`completedAt <= updatedAt`. The envelope `observedAt` must equal
+`qualityRun.updatedAt` exactly; the time when an old run is copied or approved
+cannot be substituted as a newer observation.
+
+For this evidence kind, `underlyingEvidence.system` must be exactly
+`GitHub Actions Quality provenance receipt`. Its reference must be the derived
+repository path
+`docs/evidence/github-actions/quality-run-<runId>-attempt-<runAttempt>.json`.
+That file contains exactly the normalized `qualityRun` object shown above as
+two-space JSON followed by one newline. File verification reads the receipt,
+requires a regular non-symbolic repository file, verifies its exact byte count
+and SHA-256 against `underlyingEvidence`, and then requires the parsed receipt
+to equal the envelope `qualityRun` field. Updating the raw receipt hash while
+leaving contradictory typed provenance, or changing typed provenance without
+the receipt bytes, fails closed. Only direct referenced JSON receipts are
+admitted as Vercel build inputs; the complete directory entry set is checked,
+and the files are not exposed as public application routes.
+
+The fixed checks require `qualityRunEventWasPush`,
+`launchGateTransitionPassed`, `verifyJobPassed`,
+`browserQualityJobPassed`, and `lighthouseJobPassed` in addition to the
+aggregate quality result and commit identity. Each must be present and exactly
+true. A missing, skipped, cancelled, or failed launch-transition step or
+`verify`, `browser-quality`, or `lighthouse` job keeps
+`productionLaunch` unresolved even if the overall run, a retry, or a manually
+dispatched run is reported as successful.
+
+This repository-stored receipt and typed record remain an authority
+attestation. Validation proves internal identity, timestamp, result, and byte
+consistency; it does not log in to GitHub, independently query the Actions API,
+or prove that the recorded API response was independently obtained. Protected
+authority review and external custody remain required.
 
 ## Security boundary
 

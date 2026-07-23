@@ -27,7 +27,7 @@
     "test:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",
     "test:coverage": "npm run test:coverage:aggregate && npm run test:coverage:launch-gates-v3",
     "test:coverage:aggregate": "tsx --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=70 --test-coverage-functions=75 --test-coverage-exclude=lib/launch-gate-lifecycle-v3.ts --test-coverage-exclude=scripts/validate-launch-gates.ts --test-coverage-exclude=scripts/validate-launch-gate-transition.ts tests/**/*.test.ts tests/**/*.test.mjs",
-    "test:coverage:launch-gates-v3": "tsx --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=65 --test-coverage-functions=55 tests/launch-gate-lifecycle-v3.test.ts tests/launch-gate-transition-script.test.ts tests/validate-launch-gates-v3-script.test.ts",
+    "test:coverage:launch-gates-v3": "tsx --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=65 --test-coverage-functions=55 tests/launch-gate-evidence-v3.test.ts tests/launch-gate-lifecycle-v3.test.ts tests/launch-gate-transition-script.test.ts tests/validate-launch-gates-v3-script.test.ts",
     "smoke:production": "node scripts/release-smoke.mjs",
     "smoke:executive-preview": "tsx scripts/executive-preview-operator-check.ts",
     "generate:demos": "npm run check:demo-lifecycle && tsx scripts/generate-registry.mjs",

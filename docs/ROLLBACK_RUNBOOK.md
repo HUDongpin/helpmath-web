@@ -78,7 +78,7 @@ secret by itself.
    complete JSON plus timestamp. Confirm `failures: []`, then verify the
    specific incident path from an independent network. If executive access is
    still approved, test it only through the separate ephemeral-credential
-   procedure in `RELEASE_EVIDENCE.md`.
+   procedure in `EXECUTIVE_PREVIEW_HANDOFF.md`.
 7. If the rollback target fails the contract or preserves the incident, stop
    repeated blind promotions. Restore the last independently verified safe
    deployment or disable the affected feature at its fail-closed control,

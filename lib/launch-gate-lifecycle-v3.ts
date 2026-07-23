@@ -705,6 +705,46 @@ function expectedEvidenceKinds(
   return APPROVED_EVIDENCE_KINDS[gateId].standard;
 }
 
+function validateResolvedEvidenceCausality(
+  manifest: ParsedManifest,
+  gateId: LaunchGateId,
+  event: LaunchGateLifecycleEventV3,
+  eventIndex: number,
+  errors: string[],
+) {
+  const prefix = `gates.${gateId}.events[${eventIndex}]`;
+  const atMs = Date.parse(event.occurredAt);
+  for (const dependency of LAUNCH_GATE_LIFECYCLE_V3_DEPENDENCIES[gateId]) {
+    const dependencyDecision = eventAt(manifest, dependency, atMs)?.decision;
+    if (dependencyDecision === null || dependencyDecision === undefined) continue;
+    for (const [evidenceIndex, evidence] of event.evidence.entries()) {
+      if (
+        Date.parse(evidence.observedAt) <=
+        Date.parse(dependencyDecision.decidedAt)
+      ) {
+        errors.push(
+          `${prefix}.evidence[${evidenceIndex}].observedAt for ${evidence.kind} ` +
+            `must be later than the ${dependency} dependency decision`,
+        );
+      }
+    }
+  }
+
+  for (let evidenceIndex = 1; evidenceIndex < event.evidence.length; evidenceIndex += 1) {
+    const previousEvidence = event.evidence[evidenceIndex - 1];
+    const evidence = event.evidence[evidenceIndex];
+    if (
+      Date.parse(evidence.observedAt) <=
+      Date.parse(previousEvidence.observedAt)
+    ) {
+      errors.push(
+        `${prefix}.evidence[${evidenceIndex}].observedAt for ${evidence.kind} ` +
+          `must be later than ${previousEvidence.kind} observedAt`,
+      );
+    }
+  }
+}
+
 function decisionCandidateMatches(
   decision: LaunchGateLifecycleDecisionV3 | null,
   eventId: string,
@@ -963,6 +1003,13 @@ function validateTypedTransition(
     for (const [index, evidence] of next.evidence.entries()) {
       if (Date.parse(evidence.observedAt) <= Date.parse(previous.occurredAt)) {
         errors.push(`${field}.evidence[${index}] must be fresh for renewal`);
+      }
+    }
+  }
+  if (next.transition === 'revoke') {
+    for (const [index, evidence] of next.evidence.entries()) {
+      if (Date.parse(evidence.observedAt) <= Date.parse(previous.occurredAt)) {
+        errors.push(`${field}.evidence[${index}] must be fresh for revocation`);
       }
     }
   }
@@ -1285,6 +1332,13 @@ function parseManifest(
             `gates.${gateId}.events[${index}].evidence kinds do not match the resolved path`,
           );
         }
+        validateResolvedEvidenceCausality(
+          manifest,
+          gateId,
+          event,
+          index,
+          errors,
+        );
       }
     }
   }

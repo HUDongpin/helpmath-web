@@ -172,10 +172,11 @@ elapsed. Every machine approval must be later than the evidence it approves.
 Error and timeout percentages must remain below 100, and the monitoring window
 must fit the configured minimum probe count at the configured interval.
 
-The current redirect registry sends `/Sales.htm` to `/contact`. Therefore a
-disabled-contact plan is intentionally `NO_GO` until a reviewed release changes
-that exact redirect and its generated host package/tests to `/resources`; a
-plan value cannot override the observed release configuration.
+The current redirect registry and generated host package send `/Sales.htm` to
+`/resources`, so they match the required disabled-contact disposition. An
+enabled-contact plan may select `/contact` only after a reviewed release changes
+that exact redirect and regenerates and tests the host package; a plan value
+cannot override the observed release configuration.
 
 ## Evidence artifact envelope
 
@@ -214,6 +215,92 @@ file, validates byte length and collector metadata, and rechecks freshness at
 the final decision time after repository commands finish. A `pass` envelope
 remains an owner attestation, not an independent login to the source system.
 
+`productionQuality` has one additional, required typed field. The collector
+must derive it from the GitHub workflow, workflow-run, and attempt-specific
+jobs/steps APIs and retain a strict allowlisted bundle of the required raw API
+fields as the underlying evidence:
+
+```json
+{
+  "qualityRun": {
+    "repository": "HUDongpin/helpmath-web",
+    "workflow": "Quality",
+    "workflowPath": ".github/workflows/quality.yml",
+    "event": "push",
+    "ref": "refs/heads/main",
+    "headBranch": "main",
+    "headSha": "SAME_AS_PLAN_REPOSITORY_COMMIT",
+    "runId": 29921608812,
+    "runAttempt": 1,
+    "runUrl": "https://github.com/HUDongpin/helpmath-web/actions/runs/29921608812",
+    "conclusion": "success",
+    "launchTransition": {
+      "job": "verify",
+      "step": "Enforce launch-gate transition history",
+      "conclusion": "success"
+    },
+    "jobs": {
+      "verify": "success",
+      "browser-quality": "success",
+      "lighthouse": "success"
+    }
+  }
+}
+```
+
+This is an evidence-kind-specific extension of artifact-envelope schema
+version 1; other evidence kinds reject `qualityRun`. The Production quality
+run must be the `push` run for the exact planned commit. A
+`workflow_dispatch` run is invalid because it skips the transition check, and a
+`pull_request` run is candidate evidence rather than Production evidence.
+The typed provenance must also identify the fixed
+`HUDongpin/helpmath-web` repository, `.github/workflows/quality.yml`,
+`refs/heads/main` / `main`, a positive GitHub run ID and attempt, and the exact
+canonical run URL. A fork, another workflow or branch, or a URL that does not
+bind that run ID fails closed even when it reports the same commit SHA.
+Missing, skipped, cancelled, or failed transition/job results fail closed; an
+aggregate workflow conclusion cannot replace the required step and all three
+job conclusions.
+
+The referenced underlying file is a canonical projection plus request
+provenance, not an untouched complete API response. It must itself be canonical
+sorted JSON, use schema version 1, source `github-actions-api`, and API version
+`2022-11-28`, contain no credential-shaped values or sensitive fields, and have
+exactly these top-level objects:
+
+- `run`: the allowlisted raw workflow-run fields, including `id`,
+  `run_attempt`, `workflow_id`, `name`, `path`, `event`, `status`,
+  `conclusion`, `head_branch`, `head_sha`, canonical URLs, repository and head
+  repository full names, and the run timestamps;
+- `workflow`: the allowlisted raw workflow identity (`id`, `name`, `path`,
+  `state`, and canonical API URL);
+- `jobs`: the raw `total_count` and allowlisted raw job and step fields;
+- `requests`: the exact repository-scoped run and workflow API URLs plus the
+  attempt-specific
+  `/actions/runs/{run_id}/attempts/{run_attempt}/jobs?per_page=100` URL.
+
+The verifier derives `qualityRun` again from that retained bundle and compares
+every artifact field with the derived values. Both repository identities must
+be `HUDongpin/helpmath-web`; the run workflow ID must equal the retained
+workflow ID; the active workflow name and path must be `Quality` and
+`.github/workflows/quality.yml`; the push must target `main`; and the run and
+each job must bind the exact planned commit. The jobs response must contain
+exactly one successful `verify`, `browser-quality`, and `lighthouse` job for
+the retained run attempt, in that canonical order; steps must be ordered by
+their numeric API field. The successful launch-transition step must occur
+exactly once inside `verify`.
+
+`artifact.productionQuality.observedAt` and the plan evidence timestamp must
+represent the same epoch as the raw run `updated_at`; GitHub timestamps without
+fractional seconds and artifact timestamps ending in `.000Z` therefore bind
+correctly. Job start and completion times must remain within the run interval,
+and the normal 24-hour freshness check is reapplied directly to `updated_at`. A
+collector timestamp cannot refresh an old GitHub run. The bundle remains an
+owner-retained attestation rather than an independent
+validator login to GitHub, but a contradictory artifact, arbitrary underlying
+file, stale run, wrong repository/workflow, missing job, or missing step now
+fails closed.
+
 | Evidence key | Maximum age | Required check IDs |
 | --- | ---: | --- |
 | `dnsZoneBefore` | 24 hours | `authenticatedExport`, `completeZoneCaptured`, `rollbackValuesCaptured` |
@@ -226,7 +313,7 @@ remains an owner attestation, not an independent login to the source system.
 | `rightsAccessibilityDisposition` | 30 days | `allGovernedSourcesClassified`, `republicationDecisionsRecorded`, `accessibilityActionsRecorded` |
 | `stableExternalLinkReview` | 24 hours | `allGovernedLinksReviewed`, `zeroUnresolvedFailures`, `reviewCommitMatched` |
 | `productionAliasAssignment` | 24 hours | `canonicalWwwAssigned`, `canonicalApexAssigned`, `readyProductionDeployment`, `deploymentCommitMatched` |
-| `productionQuality` | 24 hours | `qualityRunSucceeded`, `qualityCommitMatched` |
+| `productionQuality` | 24 hours | `qualityRunSucceeded`, `qualityCommitMatched`, `qualityRunEventWasPush`, `launchGateTransitionPassed`, `verifyJobPassed`, `browserQualityJobPassed`, `lighthouseJobPassed`; plus the typed `qualityRun` push event, exact head SHA, transition step, and three successful job conclusions |
 | `productionSmoke` | 24 hours | `productionSmokeSucceeded`, `zeroFailures`, `smokeCommitMatched` |
 | `legacyHostConfigTest` | 24 hours | `targetHostVersionRecorded`, `stagedArtifactHashMatched`, `stagedConfigTestPassed` |
 | `preCutoverDnsObservation` | 15 minutes | `authoritativeResolversAgree`, `publicResolversAgree`, `websiteRecordsMatchBeforeZone`, `mailAndOwnershipRecordsMatchBeforeZone` |

@@ -26,6 +26,16 @@ import {
   LEGACY_CUTOVER_CONTACT_DECISION_EVIDENCE,
   LEGACY_CUTOVER_EVIDENCE_CHECKS,
   LEGACY_CUTOVER_EVIDENCE_KEYS,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_REF,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH,
   parseCanonicalLegacyJson,
   prepareLegacyCutoverReceiptDirectory,
   readRestrictedExternalFile,
@@ -34,6 +44,7 @@ import {
   type LegacyCutoverEvidenceKey,
   type LegacyCutoverEvidenceReference,
   type LegacyCutoverContactMode,
+  type LegacyCutoverProductionQualityEvidenceBundle,
   type LegacyCutoverPlan,
   validateLegacyCutoverPlan,
   verifyLegacyCutoverEvidence,
@@ -124,6 +135,103 @@ function planEvidence(
   return evidence;
 }
 
+function productionQualityEvidenceBundle(
+  plan: LegacyCutoverPlan,
+): LegacyCutoverProductionQualityEvidenceBundle {
+  const runId = 29_921_608_812;
+  const runAttempt = 1;
+  const runUrl =
+    "https://github.com/HUDongpin/helpmath-web/actions/runs/29921608812";
+  const jobs = [
+    {
+      name: "verify",
+      id: 1001,
+      started_at: "2026-07-21T17:05:00Z",
+      completed_at: "2026-07-21T17:25:00Z",
+      step: LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
+    },
+    {
+      name: "browser-quality",
+      id: 1002,
+      started_at: "2026-07-21T17:06:00Z",
+      completed_at: "2026-07-21T17:28:00Z",
+      step: "Enforce Chromium, Firefox, and WebKit browser contracts",
+    },
+    {
+      name: "lighthouse",
+      id: 1003,
+      started_at: "2026-07-21T17:07:00Z",
+      completed_at: "2026-07-21T17:29:00Z",
+      step: "Enforce Lighthouse performance budgets",
+    },
+  ] as const;
+  return {
+    schemaVersion: 1,
+    source: LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE,
+    apiVersion: LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION,
+    requests: {
+      run: `https://api.github.com/repos/HUDongpin/helpmath-web/actions/runs/${String(runId)}`,
+      workflow:
+        "https://api.github.com/repos/HUDongpin/helpmath-web/actions/workflows/2001",
+      jobs:
+        `https://api.github.com/repos/HUDongpin/helpmath-web/actions/runs/${String(runId)}` +
+        `/attempts/${String(runAttempt)}/jobs?per_page=100`,
+    },
+    run: {
+      id: runId,
+      run_attempt: runAttempt,
+      workflow_id: 2001,
+      name: LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW,
+      path: LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH,
+      event: LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT,
+      status: "completed",
+      conclusion: "success",
+      head_branch: LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH,
+      head_sha: plan.repositoryCommit,
+      html_url: runUrl,
+      repository: {
+        full_name: LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY,
+      },
+      head_repository: {
+        full_name: LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY,
+      },
+      created_at: "2026-07-21T17:00:00Z",
+      run_started_at: "2026-07-21T17:05:00Z",
+      updated_at: "2026-07-21T17:30:00Z",
+    },
+    workflow: {
+      id: 2001,
+      name: LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW,
+      path: LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH,
+      state: "active",
+      url: "https://api.github.com/repos/HUDongpin/helpmath-web/actions/workflows/2001",
+    },
+    jobs: {
+      total_count: jobs.length,
+      jobs: jobs.map((job) => ({
+        id: job.id,
+        run_id: runId,
+        run_attempt: runAttempt,
+        name: job.name,
+        head_sha: plan.repositoryCommit,
+        status: "completed",
+        conclusion: "success",
+        started_at: job.started_at,
+        completed_at: job.completed_at,
+        html_url: `${runUrl}/job/${String(job.id)}`,
+        steps: [
+          {
+            number: 1,
+            name: job.step,
+            status: "completed",
+            conclusion: "success",
+          },
+        ],
+      })),
+    },
+  };
+}
+
 function evidenceArtifact(
   plan: LegacyCutoverPlan,
   key: LegacyCutoverEvidenceKey,
@@ -147,13 +255,47 @@ function evidenceArtifact(
     checks: Object.fromEntries(
       LEGACY_CUTOVER_EVIDENCE_CHECKS[key].map((check) => [check, true]),
     ),
+    qualityRun:
+      key === "productionQuality"
+        ? {
+            repository: LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY,
+            workflow: LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW,
+            workflowPath: LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH,
+            event: LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT,
+            ref: LEGACY_CUTOVER_PRODUCTION_QUALITY_REF,
+            headBranch: LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH,
+            headSha: plan.repositoryCommit,
+            runId: 29_921_608_812,
+            runAttempt: 1,
+            runUrl:
+              "https://github.com/HUDongpin/helpmath-web/actions/runs/29921608812",
+            conclusion: "success" as const,
+            launchTransition: {
+              job: "verify" as const,
+              step: LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
+              conclusion: "success" as const,
+            },
+            jobs: Object.fromEntries(
+              LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS.map((job) => [
+                job,
+                "success",
+              ]),
+            ),
+          }
+        : undefined,
   };
 }
 
 async function materializeEvidence(plan: LegacyCutoverPlan, directory: string) {
   for (const key of getLegacyCutoverEvidenceKeys(plan.contactMode)) {
     const underlyingPath = path.join(directory, `${key}.underlying.json`);
-    const underlyingBytes = Buffer.from(canonicalJson({ key, retained: true }));
+    const underlyingBytes = Buffer.from(
+      canonicalJson(
+        key === "productionQuality"
+          ? productionQualityEvidenceBundle(plan)
+          : { key, retained: true },
+      ),
+    );
     await writeFile(underlyingPath, underlyingBytes, { mode: 0o600 });
     const artifact = evidenceArtifact(plan, key, {
       reference: underlyingPath,
@@ -167,6 +309,35 @@ async function materializeEvidence(plan: LegacyCutoverPlan, directory: string) {
     evidence.reference = filePath;
     evidence.sha256 = createHash("sha256").update(artifactBytes).digest("hex");
   }
+}
+
+async function writeProductionQualityEvidence(
+  plan: LegacyCutoverPlan,
+  directory: string,
+  bundle: LegacyCutoverProductionQualityEvidenceBundle,
+  mutateArtifact?: (
+    artifact: ReturnType<typeof evidenceArtifact>,
+  ) => void,
+) {
+  const underlyingPath = path.join(
+    directory,
+    "productionQuality.underlying.json",
+  );
+  const underlyingBytes = Buffer.from(canonicalJson(bundle));
+  await writeFile(underlyingPath, underlyingBytes, { mode: 0o600 });
+  const artifact = evidenceArtifact(plan, "productionQuality", {
+    reference: underlyingPath,
+    sha256: createHash("sha256").update(underlyingBytes).digest("hex"),
+    bytes: underlyingBytes.length,
+  });
+  mutateArtifact?.(artifact);
+  const artifactPath = path.join(directory, "productionQuality.json");
+  const artifactBytes = Buffer.from(canonicalJson(artifact));
+  await writeFile(artifactPath, artifactBytes, { mode: 0o600 });
+  const evidence = planEvidence(plan, "productionQuality");
+  evidence.reference = artifactPath;
+  evidence.sha256 = createHash("sha256").update(artifactBytes).digest("hex");
+  return { artifact, artifactPath, underlyingPath };
 }
 
 function passingEvidenceEntries(plan: LegacyCutoverPlan) {
@@ -562,6 +733,304 @@ describe("legacy-domain external evidence", () => {
         new RegExp(`checks\\.${required} must be true`, "u"),
       );
     }
+  });
+
+  it("rejects manual Quality runs and missing, skipped, or failed release checks", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-evidence-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const productionQualityEvidence = planEvidence(plan, "productionQuality");
+    const artifactPath = productionQualityEvidence.reference;
+    const underlyingPath = path.join(
+      directory,
+      "productionQuality.underlying.json",
+    );
+    const underlyingBytes = await readFile(underlyingPath);
+    const artifact = evidenceArtifact(plan, "productionQuality", {
+      reference: underlyingPath,
+      sha256: createHash("sha256").update(underlyingBytes).digest("hex"),
+      bytes: underlyingBytes.length,
+    });
+    assert.ok(artifact.qualityRun);
+    const untrustedQualityRun = artifact.qualityRun as unknown as {
+      repository: string;
+      workflowPath: string;
+      event: string;
+      ref: string;
+      headBranch: string;
+      runId: number;
+      runAttempt: number;
+      runUrl: string;
+      launchTransition?: unknown;
+      jobs: Partial<
+        Record<
+          (typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS)[number],
+          string
+        >
+      >;
+    };
+    untrustedQualityRun.repository = "attacker/helpmath-web-fork";
+    untrustedQualityRun.workflowPath = ".github/workflows/fake-quality.yml";
+    untrustedQualityRun.event = "workflow_dispatch";
+    untrustedQualityRun.ref = "refs/heads/release";
+    untrustedQualityRun.headBranch = "release";
+    untrustedQualityRun.runId = 0;
+    untrustedQualityRun.runAttempt = 0;
+    untrustedQualityRun.runUrl =
+      "https://github.com/attacker/helpmath-web-fork/actions/runs/29921608812";
+    delete untrustedQualityRun.launchTransition;
+    untrustedQualityRun.jobs.verify = "skipped";
+    delete untrustedQualityRun.jobs["browser-quality"];
+    untrustedQualityRun.jobs.lighthouse = "failure";
+
+    const artifactBytes = Buffer.from(canonicalJson(artifact));
+    await writeFile(artifactPath, artifactBytes, { mode: 0o600 });
+    productionQualityEvidence.sha256 = createHash("sha256")
+      .update(artifactBytes)
+      .digest("hex");
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    const errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(
+      errors,
+      /qualityRun\.repository must be HUDongpin\/helpmath-web/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.workflowPath must be \.github\/workflows\/quality\.yml/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.event must be push; workflow_dispatch and pull_request runs are not Production release evidence/u,
+    );
+    assert.match(errors, /qualityRun\.ref must be refs\/heads\/main/u);
+    assert.match(errors, /qualityRun\.headBranch must be main/u);
+    assert.match(
+      errors,
+      /qualityRun\.runId must be a positive safe integer/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.runAttempt must be a positive safe integer/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.runUrl must identify runId in HUDongpin\/helpmath-web/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.launchTransition is required/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.launchTransition must be an object/u,
+    );
+    assert.match(errors, /qualityRun\.jobs\.verify must be success/u);
+    assert.match(
+      errors,
+      /qualityRun\.jobs\.browser-quality is required/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.jobs\.browser-quality must be success/u,
+    );
+    assert.match(errors, /qualityRun\.jobs\.lighthouse must be success/u);
+  });
+
+  it("derives the artifact Quality run from the retained GitHub API bundle", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-cross-check-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    await writeProductionQualityEvidence(
+      plan,
+      directory,
+      bundle,
+      (artifact) => {
+        assert.ok(artifact.qualityRun);
+        artifact.qualityRun.runId += 1;
+        artifact.qualityRun.runUrl =
+          "https://github.com/HUDongpin/helpmath-web/actions/runs/29921608813";
+      },
+    );
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    const errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(
+      errors,
+      /qualityRun\.runId does not match the retained GitHub API evidence/u,
+    );
+    assert.match(
+      errors,
+      /qualityRun\.runUrl does not match the retained GitHub API evidence/u,
+    );
+  });
+
+  it("rejects an old Quality run masquerading behind a fresh artifact observation", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-stale-run-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    bundle.run.created_at = "2026-07-19T17:00:00.000Z";
+    bundle.run.run_started_at = "2026-07-19T17:05:00.000Z";
+    bundle.run.updated_at = "2026-07-19T17:30:00.000Z";
+    for (const [index, job] of bundle.jobs.jobs.entries()) {
+      job.started_at = `2026-07-19T17:0${String(5 + index)}:00.000Z`;
+      job.completed_at = `2026-07-19T17:2${String(5 + index)}:00.000Z`;
+    }
+    await writeProductionQualityEvidence(plan, directory, bundle);
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    const errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(
+      errors,
+      /artifact\.productionQuality\.observedAt must represent the same instant as .*run\.updated_at/u,
+    );
+    assert.match(
+      errors,
+      /run\.updated_at is older than the permitted evidence age/u,
+    );
+  });
+
+  it("rejects wrong raw repository or workflow and missing required jobs or steps", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-raw-identity-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    bundle.run.repository.full_name = "attacker/helpmath-web-fork";
+    bundle.run.head_repository.full_name = "attacker/helpmath-web-fork";
+    bundle.run.name = "Fake Quality";
+    bundle.run.path = ".github/workflows/fake-quality.yml";
+    bundle.run.event = "workflow_dispatch";
+    bundle.run.head_branch = "release";
+    bundle.run.head_sha = "b".repeat(40);
+    bundle.workflow.name = "Fake Quality";
+    bundle.workflow.path = ".github/workflows/fake-quality.yml";
+    bundle.workflow.url =
+      "https://api.github.com/repos/HUDongpin/helpmath-web/actions/workflows/9999";
+    bundle.requests.jobs =
+      "https://api.github.com/repos/HUDongpin/helpmath-web/actions/runs/29921608812/jobs?per_page=100";
+    const verify = bundle.jobs.jobs.find((job) => job.name === "verify");
+    assert.ok(verify);
+    verify.run_attempt = 2;
+    verify.steps = [];
+    bundle.jobs.jobs = bundle.jobs.jobs.filter(
+      (job) => job.name !== "lighthouse",
+    );
+    bundle.jobs.total_count = bundle.jobs.jobs.length;
+    await writeProductionQualityEvidence(plan, directory, bundle);
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    const errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(
+      errors,
+      /run\.repository\.full_name must be HUDongpin\/helpmath-web/u,
+    );
+    assert.match(errors, /run\.name must be Quality/u);
+    assert.match(errors, /run\.event must be push/u);
+    assert.match(errors, /run\.head_branch must be main/u);
+    assert.match(errors, /run\.head_sha does not match plan/u);
+    assert.match(
+      errors,
+      /workflow\.path must be \.github\/workflows\/quality\.yml/u,
+    );
+    assert.match(
+      errors,
+      /requests\.jobs must identify the exact retained GitHub API request/u,
+    );
+    assert.match(
+      errors,
+      /jobs\[0\]\.run_attempt must match .*run\.run_attempt/u,
+    );
+    assert.match(errors, /jobs\[0\]\.steps must be a non-empty array/u);
+    assert.match(
+      errors,
+      /verify steps must include exactly one Enforce launch-gate transition history/u,
+    );
+    assert.match(
+      errors,
+      /jobs must include exactly one lighthouse job/u,
+    );
+  });
+
+  it("requires canonical, secret-free GitHub API evidence bytes", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-canonical-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    const written = await writeProductionQualityEvidence(
+      plan,
+      directory,
+      bundle,
+    );
+    const noncanonicalBytes = Buffer.from(
+      JSON.stringify(bundle, null, 2),
+      "utf8",
+    );
+    await writeFile(written.underlyingPath, noncanonicalBytes, { mode: 0o600 });
+    written.artifact.underlyingEvidence.sha256 = createHash("sha256")
+      .update(noncanonicalBytes)
+      .digest("hex");
+    written.artifact.underlyingEvidence.bytes = noncanonicalBytes.length;
+    const artifactBytes = Buffer.from(canonicalJson(written.artifact));
+    await writeFile(written.artifactPath, artifactBytes, { mode: 0o600 });
+    planEvidence(plan, "productionQuality").sha256 = createHash("sha256")
+      .update(artifactBytes)
+      .digest("hex");
+
+    let verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    let errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(
+      errors,
+      /underlying productionQuality GitHub API evidence must use canonical sorted JSON/u,
+    );
+
+    const bundleWithSecret = productionQualityEvidenceBundle(plan) as
+      LegacyCutoverProductionQualityEvidenceBundle & {
+        access_token?: string;
+      };
+    bundleWithSecret.access_token = `ghp_${"a".repeat(24)}`;
+    await writeProductionQualityEvidence(plan, directory, bundleWithSecret);
+    verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(
+      errors,
+      /underlying productionQuality GitHub API evidence\.access_token is a forbidden sensitive field/u,
+    );
   });
 
   it("fails closed on artifact tampering, underlying-evidence tampering, and credentials", async () => {

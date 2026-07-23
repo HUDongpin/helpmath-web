@@ -117,14 +117,30 @@ function makeEvidence(
   slug: string,
   observedAt: string,
   validUntil: string | null,
+  observedAtByIndex?: readonly string[],
 ) {
   return kinds.map((kind, index) => ({
     kind,
     reference: `docs/evidence/launch-gates/${slug}-${index}-${kind}.json`,
     sha256: '123456789abcdef'[(index + slug.length) % 15].repeat(64),
-    observedAt,
+    observedAt: observedAtByIndex?.[index] ?? observedAt,
     validUntil,
   }));
+}
+
+function orderedEvidenceObservedAt(
+  gateId: LaunchGateId,
+  occurredAt: string,
+): string[] | undefined {
+  const offsets =
+    gateId === 'demoPublication' || gateId === 'legacyCutover'
+      ? [-2_000, -1_000]
+      : gateId === 'productionLaunch'
+        ? [-3_000, -2_000, -1_000]
+        : null;
+  return offsets?.map((offset) =>
+    new Date(Date.parse(occurredAt) + offset).toISOString(),
+  );
 }
 
 function appendCandidate(
@@ -201,6 +217,7 @@ function appendResolution(
       `${gateId.toLowerCase()}-${minute}-${outcome}`,
       occurredAt,
       validUntil,
+      orderedEvidenceObservedAt(gateId, occurredAt),
     ),
   };
   manifest.gates[gateId].events.push(event);
@@ -267,6 +284,7 @@ function appendRenewal(
       `${gateId.toLowerCase()}-${minute}-renew`,
       occurredAt,
       validUntil,
+      orderedEvidenceObservedAt(gateId, occurredAt),
     ),
   };
   manifest.gates[gateId].events.push(event);
@@ -434,6 +452,236 @@ describe('launch-gate lifecycle v3', () => {
     );
   });
 
+  it('requires all resolved evidence after each active dependency decision', () => {
+    const contactAfterLegal = resolvedManifest();
+    const legalDecision = latest(contactAfterLegal, 'legalPublication').decision;
+    assert.ok(legalDecision);
+    latest(contactAfterLegal, 'contactIntake').evidence[0] = {
+      ...latest(contactAfterLegal, 'contactIntake').evidence[0],
+      observedAt: new Date(
+        Date.parse(legalDecision.decidedAt) + 1,
+      ).toISOString(),
+    };
+    assert.deepEqual(
+      validateLaunchGateLifecycleManifestV3(contactAfterLegal, {
+        nowMs: NOW_MS,
+      }),
+      [],
+    );
+
+    const contactAtLegal = structuredClone(contactAfterLegal);
+    latest(contactAtLegal, 'contactIntake').evidence[0] = {
+      ...latest(contactAtLegal, 'contactIntake').evidence[0],
+      observedAt: legalDecision.decidedAt,
+    };
+    assert.match(
+      validateLaunchGateLifecycleManifestV3(contactAtLegal, {
+        nowMs: NOW_MS,
+      }).join('\n'),
+      /observedAt for contact-readiness must be later than the legalPublication dependency decision/u,
+    );
+
+    for (const demo of ['approved', 'private'] as const) {
+      const productionAfterDemo = resolvedManifest({demo});
+      const demoEvent = latest(productionAfterDemo, 'demoPublication');
+      assert.ok(demoEvent.decision);
+      demoEvent.occurredAt = atMinute(7);
+      demoEvent.decision = {
+        ...demoEvent.decision,
+        decidedAt: demoEvent.occurredAt,
+      };
+      assert.deepEqual(
+        validateLaunchGateLifecycleManifestV3(productionAfterDemo, {
+          nowMs: NOW_MS,
+        }),
+        [],
+      );
+
+      const productionAtDemo = structuredClone(productionAfterDemo);
+      const productionEvidence = latest(
+        productionAtDemo,
+        'productionLaunch',
+      ).evidence[0];
+      latest(productionAtDemo, 'productionLaunch').evidence[0] = {
+        ...productionEvidence,
+        observedAt: demoEvent.occurredAt,
+      };
+      assert.match(
+        validateLaunchGateLifecycleManifestV3(productionAtDemo, {
+          nowMs: NOW_MS,
+        }).join('\n'),
+        /observedAt for post-cutover-verification must be later than the demoPublication dependency decision/u,
+      );
+    }
+  });
+
+  it('requires enabled and disabled contact verification after the contact decision', () => {
+    for (const contact of ['approved', 'disabled'] as const) {
+      for (const gateId of ['legacyCutover', 'productionLaunch'] as const) {
+        const manifest = resolvedManifest({contact});
+        const contactDecision = latest(manifest, 'contactIntake').decision;
+        assert.ok(contactDecision);
+        const evidenceIndex = gateId === 'legacyCutover' ? 0 : 1;
+        latest(manifest, gateId).evidence[evidenceIndex] = {
+          ...latest(manifest, gateId).evidence[evidenceIndex],
+          observedAt: contactDecision.decidedAt,
+        };
+
+        assert.match(
+          validateLaunchGateLifecycleManifestV3(manifest, {
+            nowMs: NOW_MS,
+          }).join('\n'),
+          /observedAt for contact-(?:production|disabled)-verification must be later than the contactIntake dependency decision/u,
+        );
+      }
+    }
+  });
+
+  it('requires post-cutover verification after the legacy cutover decision', () => {
+    const manifest = resolvedManifest();
+    const legacyDecision = latest(manifest, 'legacyCutover').decision;
+    assert.ok(legacyDecision);
+    latest(manifest, 'productionLaunch').evidence[0] = {
+      ...latest(manifest, 'productionLaunch').evidence[0],
+      observedAt: legacyDecision.decidedAt,
+    };
+
+    assert.match(
+      validateLaunchGateLifecycleManifestV3(manifest, {
+        nowMs: NOW_MS,
+      }).join('\n'),
+      /observedAt for post-cutover-verification must be later than the legacyCutover dependency decision/u,
+    );
+  });
+
+  it('requires legacy cutover authorization after contact verification', () => {
+    for (const contact of ['approved', 'disabled'] as const) {
+      const manifest = resolvedManifest({contact});
+      const legacyEvidence = latest(manifest, 'legacyCutover').evidence;
+      legacyEvidence[1] = {
+        ...legacyEvidence[1],
+        observedAt: legacyEvidence[0].observedAt,
+      };
+      assert.match(
+        validateLaunchGateLifecycleManifestV3(manifest, {
+          nowMs: NOW_MS,
+        }).join('\n'),
+        /observedAt for legacy-cutover-authorization must be later than contact-(?:production|disabled)-verification observedAt/u,
+      );
+
+      const resolution = resolveLaunchGateCapabilitiesV3(manifest, {
+        nowMs: NOW_MS,
+      });
+      assert.equal(resolution.valid, false);
+      assert.deepEqual(resolution.capabilities, {
+        publishLegal: false,
+        enableContactIntake: false,
+        publishDemos: false,
+        executeLegacyCutover: false,
+        declareProductionLaunch: false,
+      });
+    }
+  });
+
+  it('requires demo publication evidence in strict approved-path order', () => {
+    const approved = resolvedManifest();
+    assert.deepEqual(
+      validateLaunchGateLifecycleManifestV3(approved, {nowMs: NOW_MS}),
+      [],
+    );
+    const demoEvidence = latest(approved, 'demoPublication').evidence;
+    demoEvidence[1] = {
+      ...demoEvidence[1],
+      observedAt: demoEvidence[0].observedAt,
+    };
+    assert.match(
+      validateLaunchGateLifecycleManifestV3(approved, {
+        nowMs: NOW_MS,
+      }).join('\n'),
+      /observedAt for demo-product-acceptance must be later than demo-rights observedAt/u,
+    );
+
+    assert.deepEqual(
+      validateLaunchGateLifecycleManifestV3(
+        resolvedManifest({demo: 'private'}),
+        {nowMs: NOW_MS},
+      ),
+      [],
+    );
+  });
+
+  it('requires production contact and release evidence in causal observation order', () => {
+    for (const contact of ['approved', 'disabled'] as const) {
+      const contactBeforePostCutover = resolvedManifest({contact});
+      const contactEvidence = latest(
+        contactBeforePostCutover,
+        'productionLaunch',
+      ).evidence[1];
+      const postCutoverEvidence = latest(
+        contactBeforePostCutover,
+        'productionLaunch',
+      ).evidence[0];
+      latest(contactBeforePostCutover, 'productionLaunch').evidence[1] = {
+        ...contactEvidence,
+        observedAt: postCutoverEvidence.observedAt,
+      };
+      assert.match(
+        validateLaunchGateLifecycleManifestV3(contactBeforePostCutover, {
+          nowMs: NOW_MS,
+        }).join('\n'),
+        /observedAt for contact-(?:production|disabled)-verification must be later than post-cutover-verification observedAt/u,
+      );
+    }
+
+    const releaseBeforeContact = resolvedManifest();
+    const precedingContactEvidence = latest(
+      releaseBeforeContact,
+      'productionLaunch',
+    ).evidence[1];
+    const releaseEvidence = latest(
+      releaseBeforeContact,
+      'productionLaunch',
+    ).evidence[2];
+    latest(releaseBeforeContact, 'productionLaunch').evidence[2] = {
+      ...releaseEvidence,
+      observedAt: precedingContactEvidence.observedAt,
+    };
+    assert.match(
+      validateLaunchGateLifecycleManifestV3(releaseBeforeContact, {
+        nowMs: NOW_MS,
+      }).join('\n'),
+      /observedAt for production-release must be later than contact-production-verification observedAt/u,
+    );
+  });
+
+  it('applies dependency causality to fresh downstream renewals', () => {
+    const manifest = resolvedManifest();
+    const contactRenewal = appendRenewal(
+      manifest,
+      'contactIntake',
+      10,
+      120,
+    );
+    appendRenewal(manifest, 'legacyCutover', 11, 130);
+    assert.deepEqual(
+      validateLaunchGateLifecycleManifestV3(manifest, {nowMs: NOW_MS}),
+      [],
+    );
+
+    const staleRenewal = structuredClone(manifest);
+    const legacyEvidence = latest(staleRenewal, 'legacyCutover').evidence;
+    legacyEvidence[0] = {
+      ...legacyEvidence[0],
+      observedAt: contactRenewal.occurredAt,
+    };
+    assert.match(
+      validateLaunchGateLifecycleManifestV3(staleRenewal, {
+        nowMs: NOW_MS,
+      }).join('\n'),
+      /observedAt for contact-production-verification must be later than the contactIntake dependency decision/u,
+    );
+  });
+
   it('expires a decision at the exact validUntil instant and recursively closes descendants', () => {
     const manifest = resolvedManifest({legalValidUntilMinute: 10});
     const result = resolveLaunchGateCapabilitiesV3(manifest, {
@@ -468,6 +716,33 @@ describe('launch-gate lifecycle v3', () => {
     assert.equal(result.gates.legacyCutover.satisfied, false);
     assert.equal(result.gates.productionLaunch.satisfied, false);
     assert.equal(result.gates.demoPublication.satisfied, true);
+  });
+
+  it('requires revocation evidence after the superseded decision', () => {
+    const fresh = resolvedManifest();
+    appendRevocation(fresh, 'legalPublication', 10);
+    assert.deepEqual(
+      validateLaunchGateLifecycleManifestV3(fresh, {nowMs: NOW_MS}),
+      [],
+    );
+
+    for (const offsetMs of [0, -1]) {
+      const stale = resolvedManifest();
+      const superseded = latest(stale, 'legalPublication');
+      const revocation = appendRevocation(stale, 'legalPublication', 10);
+      revocation.evidence[0] = {
+        ...revocation.evidence[0],
+        observedAt: new Date(
+          Date.parse(superseded.occurredAt) + offsetMs,
+        ).toISOString(),
+      };
+      assert.match(
+        validateLaunchGateLifecycleManifestV3(stale, {
+          nowMs: NOW_MS,
+        }).join('\n'),
+        /evidence\[0\] must be fresh for revocation/u,
+      );
+    }
   });
 
   it('does not silently reactivate descendants after an upstream revoke and reopen', () => {

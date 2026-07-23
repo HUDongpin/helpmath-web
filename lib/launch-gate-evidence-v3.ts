@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 import { LAUNCH_GATE_IDS, type LaunchGateId } from "./launch-gate-ids";
 import { inspectForSensitiveContent } from "./sensitive-content";
@@ -20,6 +21,29 @@ export const LAUNCH_GATE_EVIDENCE_V3_AUTHORITY_ROLES = {
 } as const satisfies Record<LaunchGateId, string>;
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
+
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REPOSITORY =
+  "HUDongpin/helpmath-web" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW =
+  "Quality" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW_PATH =
+  ".github/workflows/quality.yml" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_EVENT = "push" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REF =
+  "refs/heads/main" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_BRANCH =
+  "main" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_TRANSITION_STEP =
+  "Enforce launch-gate transition history" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_JOBS = [
+  "verify",
+  "browser-quality",
+  "lighthouse",
+] as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_SYSTEM =
+  "GitHub Actions Quality provenance receipt" as const;
+export const LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_DIRECTORY =
+  "docs/evidence/github-actions" as const;
 
 const SHARED_GOVERNANCE_SUBJECT_PATHS = [
   ".github/workflows/quality.yml",
@@ -417,6 +441,11 @@ export const LAUNCH_GATE_EVIDENCE_V3_POLICY = {
     checks: [
       "candidateIdentityMatched",
       "qualityPassed",
+      "qualityRunEventWasPush",
+      "launchGateTransitionPassed",
+      "verifyJobPassed",
+      "browserQualityJobPassed",
+      "lighthouseJobPassed",
       "productionSmokePassed",
       "canonicalAliasesVerified",
       "releaseOwnerConfirmed",
@@ -515,6 +544,32 @@ export type LaunchGateEvidenceV3Decision = {
   approvedAt: string;
 };
 
+export type LaunchGateEvidenceV3ProductionQualityRun = {
+  repository: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REPOSITORY;
+  workflow: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW;
+  workflowPath: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW_PATH;
+  event: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_EVENT;
+  ref: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REF;
+  headBranch: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_BRANCH;
+  headSha: string;
+  runId: number;
+  runAttempt: number;
+  runUrl: string;
+  status: "completed";
+  conclusion: "success";
+  completedAt: string;
+  updatedAt: string;
+  launchTransition: {
+    job: "verify";
+    step: typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_TRANSITION_STEP;
+    conclusion: "success";
+  };
+  jobs: Record<
+    (typeof LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_JOBS)[number],
+    "success"
+  >;
+};
+
 export type LaunchGateEvidenceV3ValidationOptions = {
   gateId: LaunchGateId;
   kind: LaunchGateEvidenceV3Kind;
@@ -565,6 +620,14 @@ const EVIDENCE_REFERENCE_PATTERN =
 const IDENTIFIER_PATTERN = /^[a-z0-9][a-z0-9._:-]{6,126}[a-z0-9]$/u;
 const PLACEHOLDER_PATTERN =
   /\b(?:pending|tbd|unknown|placeholder|test|testing|fixture|sample|example|dummy|none)\b/iu;
+const MUTABLE_CONTRACT_STATUS_PATHS = new Set([
+  "docs/CONTACT_DELIVERY.md",
+  "docs/LEGAL_REVIEW.md",
+]);
+const CONTRACT_STATUS_PATTERN =
+  /^\*\*Status:\*\* (?:Pending|Satisfied|Disabled)$/gmu;
+const NORMALIZED_CONTRACT_STATUS = "**Status:** <lifecycle-status>";
+const MAX_PRODUCTION_QUALITY_RECEIPT_BYTES = 1024 * 1024;
 
 function isNonzeroSha256(value: unknown): value is string {
   return (
@@ -650,6 +713,34 @@ function isInside(root: string, candidate: string): boolean {
   return candidate.startsWith(`${root}${path.sep}`);
 }
 
+function normalizedSubjectBytes(
+  relativePath: string,
+  bytes: Buffer,
+): Buffer {
+  if (!MUTABLE_CONTRACT_STATUS_PATHS.has(relativePath)) return bytes;
+  const contents = bytes.toString("utf8");
+  const statusLines = [...contents.matchAll(CONTRACT_STATUS_PATTERN)];
+  if (statusLines.length !== 1) return bytes;
+  return Buffer.from(
+    contents.replace(CONTRACT_STATUS_PATTERN, NORMALIZED_CONTRACT_STATUS),
+  );
+}
+
+function productionQualityReceiptReference(
+  runId: unknown,
+  runAttempt: unknown,
+): string | null {
+  if (
+    !Number.isSafeInteger(runId) ||
+    Number(runId) < 1 ||
+    !Number.isSafeInteger(runAttempt) ||
+    Number(runAttempt) < 1
+  ) {
+    return null;
+  }
+  return `${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_DIRECTORY}/quality-run-${String(runId)}-attempt-${String(runAttempt)}.json`;
+}
+
 export function isLaunchGateEvidenceV3Kind(
   value: unknown,
 ): value is LaunchGateEvidenceV3Kind {
@@ -663,6 +754,22 @@ export function isLaunchGateEvidenceV3Reference(
   value: unknown,
 ): value is string {
   return typeof value === "string" && EVIDENCE_REFERENCE_PATTERN.test(value);
+}
+
+export function requiresCurrentLaunchGateEvidenceV3Binding(
+  outcome: LaunchGateEvidenceV3Outcome,
+  validUntil: string | null,
+  nowMs: number,
+): boolean {
+  return (
+    (outcome === "approved" ||
+      outcome === "disabled" ||
+      outcome === "private") &&
+    typeof validUntil === "string" &&
+    Number.isFinite(nowMs) &&
+    Number.isFinite(Date.parse(validUntil)) &&
+    nowMs < Date.parse(validUntil)
+  );
 }
 
 export async function computeLaunchGateEvidenceV3SubjectDigest(
@@ -730,7 +837,10 @@ export async function computeLaunchGateEvidenceV3SubjectDigest(
   const digest = createHash("sha256");
   let totalBytes = 0;
   for (const [relativePath, canonicalPath] of orderedFiles) {
-    const bytes = await readFile(canonicalPath);
+    const bytes = normalizedSubjectBytes(
+      relativePath,
+      await readFile(canonicalPath),
+    );
     totalBytes += bytes.length;
     if (totalBytes > 250 * 1024 * 1024) {
       throw new Error(
@@ -854,7 +964,10 @@ export async function computeLaunchGateEvidenceV3SubjectDigestAtCommit(
   const digest = createHash("sha256");
   let totalBytes = 0;
   for (const [relativePath, objectId] of orderedFiles) {
-    const bytes = gitBytes(repositoryRoot, ["cat-file", "blob", objectId]);
+    const bytes = normalizedSubjectBytes(
+      relativePath,
+      gitBytes(repositoryRoot, ["cat-file", "blob", objectId]),
+    );
     totalBytes += bytes.length;
     if (totalBytes > 250 * 1024 * 1024) {
       throw new Error(
@@ -873,6 +986,197 @@ export async function computeLaunchGateEvidenceV3SubjectDigestAtCommit(
     files: orderedFiles.length,
     bytes: totalBytes,
   };
+}
+
+function validateProductionQualityRun(
+  value: unknown,
+  envelope: JsonObject,
+  options: LaunchGateEvidenceV3ValidationOptions,
+  nowMs: number,
+  errors: string[],
+): void {
+  const location = "evidence v3 envelope qualityRun";
+  if (!isObject(value)) {
+    errors.push(`${location} must be an object for production-release`);
+    return;
+  }
+  rejectUnknownKeys(
+    value,
+    [
+      "repository",
+      "workflow",
+      "workflowPath",
+      "event",
+      "ref",
+      "headBranch",
+      "headSha",
+      "runId",
+      "runAttempt",
+      "runUrl",
+      "status",
+      "conclusion",
+      "completedAt",
+      "updatedAt",
+      "launchTransition",
+      "jobs",
+    ],
+    location,
+    errors,
+  );
+  if (
+    value.repository !==
+    LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REPOSITORY
+  ) {
+    errors.push(
+      `${location}.repository must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REPOSITORY}`,
+    );
+  }
+  if (
+    value.workflow !== LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW
+  ) {
+    errors.push(
+      `${location}.workflow must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW}`,
+    );
+  }
+  if (
+    value.workflowPath !==
+    LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW_PATH
+  ) {
+    errors.push(
+      `${location}.workflowPath must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_WORKFLOW_PATH}`,
+    );
+  }
+  if (value.event !== LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_EVENT) {
+    errors.push(
+      `${location}.event must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_EVENT}`,
+    );
+  }
+  if (value.ref !== LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REF) {
+    errors.push(
+      `${location}.ref must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REF}`,
+    );
+  }
+  if (
+    value.headBranch !== LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_BRANCH
+  ) {
+    errors.push(
+      `${location}.headBranch must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_BRANCH}`,
+    );
+  }
+  if (value.headSha !== options.repositoryCommit) {
+    errors.push(
+      `${location}.headSha must match the expected candidate commit`,
+    );
+  }
+  if (!Number.isSafeInteger(value.runId) || Number(value.runId) < 1) {
+    errors.push(`${location}.runId must be a positive safe integer`);
+  }
+  if (
+    !Number.isSafeInteger(value.runAttempt) ||
+    Number(value.runAttempt) < 1
+  ) {
+    errors.push(`${location}.runAttempt must be a positive safe integer`);
+  }
+  const expectedRunUrl =
+    Number.isSafeInteger(value.runId) && Number(value.runId) >= 1
+      ? `https://github.com/${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REPOSITORY}/actions/runs/${String(value.runId)}`
+      : null;
+  if (expectedRunUrl === null || value.runUrl !== expectedRunUrl) {
+    errors.push(
+      `${location}.runUrl must identify runId in ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_REPOSITORY}`,
+    );
+  }
+  if (value.status !== "completed") {
+    errors.push(`${location}.status must be completed`);
+  }
+  if (value.conclusion !== "success") {
+    errors.push(`${location}.conclusion must be success`);
+  }
+
+  for (const field of ["completedAt", "updatedAt"] as const) {
+    if (!isCanonicalUtcTimestamp(value[field])) {
+      errors.push(`${location}.${field} must be a canonical UTC timestamp`);
+    } else if (Date.parse(value[field]) > nowMs) {
+      errors.push(`${location}.${field} must not be in the future`);
+    }
+  }
+  if (
+    isCanonicalUtcTimestamp(value.completedAt) &&
+    isCanonicalUtcTimestamp(value.updatedAt) &&
+    Date.parse(value.completedAt) > Date.parse(value.updatedAt)
+  ) {
+    errors.push(`${location}.completedAt must not be later than updatedAt`);
+  }
+  if (envelope.observedAt !== value.updatedAt) {
+    errors.push(
+      "evidence v3 envelope observedAt must exactly equal qualityRun.updatedAt",
+    );
+  }
+
+  if (!isObject(value.launchTransition)) {
+    errors.push(`${location}.launchTransition must be an object`);
+  } else {
+    rejectUnknownKeys(
+      value.launchTransition,
+      ["job", "step", "conclusion"],
+      `${location}.launchTransition`,
+      errors,
+    );
+    if (value.launchTransition.job !== "verify") {
+      errors.push(`${location}.launchTransition.job must be verify`);
+    }
+    if (
+      value.launchTransition.step !==
+      LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_TRANSITION_STEP
+    ) {
+      errors.push(
+        `${location}.launchTransition.step must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_TRANSITION_STEP}`,
+      );
+    }
+    if (value.launchTransition.conclusion !== "success") {
+      errors.push(
+        `${location}.launchTransition.conclusion must be success`,
+      );
+    }
+  }
+
+  if (!isObject(value.jobs)) {
+    errors.push(`${location}.jobs must be an object`);
+  } else {
+    rejectUnknownKeys(
+      value.jobs,
+      LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_JOBS,
+      `${location}.jobs`,
+      errors,
+    );
+    for (const job of LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_JOBS) {
+      if (value.jobs[job] !== "success") {
+        errors.push(`${location}.jobs.${job} must be success`);
+      }
+    }
+  }
+
+  if (!isObject(envelope.underlyingEvidence)) return;
+  if (
+    envelope.underlyingEvidence.system !==
+    LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_SYSTEM
+  ) {
+    errors.push(
+      `evidence v3 envelope underlyingEvidence.system must be ${LAUNCH_GATE_EVIDENCE_V3_PRODUCTION_QUALITY_RECEIPT_SYSTEM} for production-release`,
+    );
+  }
+  const expectedReceiptReference = productionQualityReceiptReference(
+    value.runId,
+    value.runAttempt,
+  );
+  if (
+    expectedReceiptReference === null ||
+    envelope.underlyingEvidence.reference !== expectedReceiptReference
+  ) {
+    errors.push(
+      "evidence v3 envelope underlyingEvidence.reference must identify the exact Quality run and attempt provenance receipt",
+    );
+  }
 }
 
 export function validateLaunchGateEvidenceV3Envelope(
@@ -909,6 +1213,7 @@ export function validateLaunchGateEvidenceV3Envelope(
       "dependencyDecisionIds",
       "underlyingEvidence",
       "checks",
+      ...(options.kind === "production-release" ? ["qualityRun"] : []),
     ],
     "evidence v3 envelope",
     errors,
@@ -1039,10 +1344,10 @@ export function validateLaunchGateEvidenceV3Envelope(
       }
       if (
         policy.maxTtlMs !== null &&
-        validUntilMs - approvedAtMs > policy.maxTtlMs
+        validUntilMs - observedAtMs > policy.maxTtlMs
       ) {
         errors.push(
-          `evidence v3 envelope TTL exceeds the ${policy.maxTtlMs}ms policy maximum`,
+          `evidence v3 envelope validity from observedAt exceeds the ${policy.maxTtlMs}ms policy maximum`,
         );
       }
     }
@@ -1308,8 +1613,133 @@ export function validateLaunchGateEvidenceV3Envelope(
     }
   }
 
+  if (options.kind === "production-release") {
+    validateProductionQualityRun(
+      value.qualityRun,
+      value,
+      options,
+      nowMs,
+      errors,
+    );
+  }
+
   inspectForSensitiveContent(value, "evidence v3 envelope", errors);
   return [...new Set(errors)];
+}
+
+async function verifyProductionQualityReceipt(
+  repositoryRoot: string,
+  envelope: JsonObject,
+  errors: string[],
+): Promise<void> {
+  if (
+    !isObject(envelope.qualityRun) ||
+    !isObject(envelope.underlyingEvidence)
+  ) {
+    return;
+  }
+  const receiptReference = productionQualityReceiptReference(
+    envelope.qualityRun.runId,
+    envelope.qualityRun.runAttempt,
+  );
+  if (
+    receiptReference === null ||
+    envelope.underlyingEvidence.reference !== receiptReference
+  ) {
+    return;
+  }
+
+  const receiptPath = path.resolve(repositoryRoot, receiptReference);
+  if (!isInside(repositoryRoot, receiptPath)) {
+    errors.push(
+      `production-release Quality provenance receipt escapes the repository: ${receiptReference}`,
+    );
+    return;
+  }
+  let metadata;
+  try {
+    metadata = await lstat(receiptPath);
+  } catch {
+    errors.push(
+      `production-release Quality provenance receipt does not exist: ${receiptReference}`,
+    );
+    return;
+  }
+  if (metadata.isSymbolicLink() || !metadata.isFile()) {
+    errors.push(
+      `production-release Quality provenance receipt must be a regular non-symbolic file: ${receiptReference}`,
+    );
+    return;
+  }
+  if (
+    metadata.size < 1 ||
+    metadata.size > MAX_PRODUCTION_QUALITY_RECEIPT_BYTES
+  ) {
+    errors.push(
+      `production-release Quality provenance receipt size must be between 1 and ${MAX_PRODUCTION_QUALITY_RECEIPT_BYTES} bytes: ${receiptReference}`,
+    );
+    return;
+  }
+  if (
+    !Number.isSafeInteger(envelope.underlyingEvidence.bytes) ||
+    Number(envelope.underlyingEvidence.bytes) !== metadata.size
+  ) {
+    errors.push(
+      "production-release Quality provenance receipt bytes must match underlyingEvidence.bytes",
+    );
+  }
+
+  const canonicalPath = await realpath(receiptPath);
+  if (
+    !isInside(repositoryRoot, canonicalPath) ||
+    canonicalPath !== receiptPath
+  ) {
+    errors.push(
+      `production-release Quality provenance receipt resolves through an unsafe path: ${receiptReference}`,
+    );
+    return;
+  }
+  const bytes = await readFile(canonicalPath);
+  const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+  if (actualSha256 !== envelope.underlyingEvidence.sha256) {
+    errors.push(
+      "production-release Quality provenance receipt SHA-256 must match underlyingEvidence.sha256",
+    );
+  }
+
+  let receipt: unknown;
+  try {
+    receipt = JSON.parse(bytes.toString("utf8")) as unknown;
+  } catch {
+    errors.push(
+      `production-release Quality provenance receipt is not valid JSON: ${receiptReference}`,
+    );
+    return;
+  }
+  let normalizedBytes: Buffer;
+  try {
+    normalizedBytes = Buffer.from(`${JSON.stringify(receipt, null, 2)}\n`);
+  } catch {
+    errors.push(
+      `production-release Quality provenance receipt nesting exceeds the supported maximum: ${receiptReference}`,
+    );
+    return;
+  }
+  if (!bytes.equals(normalizedBytes)) {
+    errors.push(
+      `production-release Quality provenance receipt must use normalized two-space JSON: ${receiptReference}`,
+    );
+  }
+  if (!isDeepStrictEqual(receipt, envelope.qualityRun)) {
+    errors.push(
+      "production-release Quality provenance receipt must exactly match envelope qualityRun",
+    );
+  }
+  inspectForSensitiveContent(
+    receipt,
+    "production-release Quality provenance receipt",
+    errors,
+  );
 }
 
 export async function verifyLaunchGateEvidenceV3File(
@@ -1413,6 +1843,12 @@ export async function verifyLaunchGateEvidenceV3File(
     );
   }
   errors.push(...validateLaunchGateEvidenceV3Envelope(value, options));
+  if (
+    options.kind === "production-release" &&
+    isObject(value)
+  ) {
+    await verifyProductionQualityReceipt(repositoryRoot, value, errors);
+  }
 
   if (options.requireCurrentSubject ?? true) {
     try {

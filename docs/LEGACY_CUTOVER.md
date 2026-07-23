@@ -7,6 +7,17 @@ The modern site is live at `https://www.helpmath.ai`. The historical site at
 domain until the legal review and the selected, deployment-verified contact
 disposition in `DEPLOYMENT.md` are complete.
 
+An additional containment issue was observed on 2026-07-23: the historical
+student, teacher, school, district, and project-administrator `.aspx` login
+paths returned `200` with unprocessed ASP.NET page directives and server-control
+markup. The response exposes legacy filenames and form structure, not the
+code-behind implementation, but it is not a working or trustworthy login
+surface and users must not submit credentials there. The legacy-host owner
+should prioritize replacing those exact paths with the already reviewed
+one-hop `/login` redirects, or an explicitly approved `410` containment, even
+if the broader domain cutover must wait. Preserve mail records and retain the
+pre-change host configuration and rollback evidence.
+
 The checked-in launch-gate manifest remains schema version 2 with all five
 gates `holding`, and the owner decisions required to execute cutover remain
 `Pending`. Schema v2 is holding-only; lifecycle code, documentation, a clean
@@ -88,10 +99,12 @@ become circular evidence once it points back to the modern page.
 | `/Beta/*`, `/beta/*` | `/curriculum` |
 
 The `/Sales.htm` row above records the current redirect implementation. A
-schema-v3 cutover plan that selects `contactMode=disabled` cannot pass while
-that route still targets `/contact`; the reviewed cutover candidate must first
-change and test the route to `/resources`. Do not edit the external plan to
-claim a destination the release commit does not implement.
+schema-v3 cutover plan that selects `contactMode=disabled` therefore uses the
+current `/resources` destination and can satisfy this routing constraint. An
+enabled-contact plan may still select `/contact`, but the reviewed release,
+generated Apache package, tests, and external plan must all implement the same
+choice. Do not edit the external plan to claim a destination the release commit
+does not implement.
 
 The crawl intentionally keeps two exceptions out of production redirects:
 

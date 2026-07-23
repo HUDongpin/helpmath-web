@@ -4,6 +4,11 @@ Production website for [www.helpmath.ai](https://www.helpmath.ai). This is a
 self-contained Next.js application with English as the unprefixed default
 locale and Spanish under `/es`.
 
+See the authoritative
+[website migration status matrix](docs/WEBSITE_MIGRATION_STATUS.md) for the
+separate public-website and HELP Math 2.0 product scopes, completed work,
+remaining launch gates, and owner inputs.
+
 ## Local verification
 
 ```bash

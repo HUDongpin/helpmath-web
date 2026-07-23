@@ -131,10 +131,12 @@ record only completion and test evidence here, never their values:
 - `SUPPORT_TO_EMAIL`
 - `SUPPORT_FROM_EMAIL`
 
-The sender domain must be verified without replacing existing MX, SPF, DKIM,
-DMARC, or ownership-verification records. Record a real end-to-end delivery
-test, Reply-To test, abuse rejection test, and approver before enabling the
-form.
+The sender domain and complete readiness plan must be verified without replacing
+existing MX, SPF, DKIM, DMARC, or ownership-verification records before
+`contactIntake` is approved. Only after that approval may the exact reviewed
+Production deployment enable the form and run the real end-to-end delivery,
+Reply-To, and abuse-control tests. Record those post-activation results before
+legacy cutover, and disable or roll back intake if any required result fails.
 
 ## 3. Rights and public demo approval
 

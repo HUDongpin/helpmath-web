@@ -61,7 +61,15 @@ export const LEGACY_CUTOVER_EVIDENCE_CHECKS = {
     "readyProductionDeployment",
     "deploymentCommitMatched",
   ],
-  productionQuality: ["qualityRunSucceeded", "qualityCommitMatched"],
+  productionQuality: [
+    "qualityRunSucceeded",
+    "qualityCommitMatched",
+    "qualityRunEventWasPush",
+    "launchGateTransitionPassed",
+    "verifyJobPassed",
+    "browserQualityJobPassed",
+    "lighthouseJobPassed",
+  ],
   productionSmoke: [
     "productionSmokeSucceeded",
     "zeroFailures",
@@ -230,6 +238,107 @@ export type LegacyCutoverEvidenceReference = {
   observedAt: string;
 };
 
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY =
+  "HUDongpin/helpmath-web" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW = "Quality" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH =
+  ".github/workflows/quality.yml" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT = "push" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_REF =
+  "refs/heads/main" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH = "main" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE =
+  "github-actions-api" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION =
+  "2022-11-28" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP =
+  "Enforce launch-gate transition history" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS = [
+  "verify",
+  "browser-quality",
+  "lighthouse",
+] as const;
+
+export type LegacyCutoverProductionQualityRun = {
+  repository: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY;
+  workflow: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW;
+  workflowPath: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH;
+  event: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT;
+  ref: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_REF;
+  headBranch: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH;
+  headSha: string;
+  runId: number;
+  runAttempt: number;
+  runUrl: string;
+  conclusion: "success";
+  launchTransition: {
+    job: "verify";
+    step: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP;
+    conclusion: "success";
+  };
+  jobs: Record<
+    (typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS)[number],
+    "success"
+  >;
+};
+
+export type LegacyCutoverProductionQualityEvidenceBundle = {
+  schemaVersion: 1;
+  source: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE;
+  apiVersion: typeof LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION;
+  requests: {
+    run: string;
+    workflow: string;
+    jobs: string;
+  };
+  run: {
+    id: number;
+    run_attempt: number;
+    workflow_id: number;
+    name: string;
+    path: string;
+    event: string;
+    status: string;
+    conclusion: string;
+    head_branch: string;
+    head_sha: string;
+    html_url: string;
+    repository: { full_name: string };
+    head_repository: { full_name: string };
+    created_at: string;
+    run_started_at: string;
+    updated_at: string;
+  };
+  workflow: {
+    id: number;
+    name: string;
+    path: string;
+    state: string;
+    url: string;
+  };
+  jobs: {
+    total_count: number;
+    jobs: Array<{
+      id: number;
+      run_id: number;
+      run_attempt: number;
+      name: string;
+      head_sha: string;
+      status: string;
+      conclusion: string;
+      started_at: string;
+      completed_at: string;
+      html_url: string;
+      steps: Array<{
+        number: number;
+        name: string;
+        status: string;
+        conclusion: string;
+      }>;
+    }>;
+  };
+};
+
 export type LegacyCutoverDecision = {
   status: "approved";
   approvedBy: string;
@@ -392,12 +501,99 @@ const ARTIFACT_FIELDS = [
   "underlyingEvidence",
   "checks",
 ] as const;
+const PRODUCTION_QUALITY_ARTIFACT_FIELDS = [
+  ...ARTIFACT_FIELDS,
+  "qualityRun",
+] as const;
 const UNDERLYING_EVIDENCE_FIELDS = [
   "reference",
   "sha256",
   "bytes",
   "collector",
   "collectorVersion",
+] as const;
+const PRODUCTION_QUALITY_RUN_FIELDS = [
+  "repository",
+  "workflow",
+  "workflowPath",
+  "event",
+  "ref",
+  "headBranch",
+  "headSha",
+  "runId",
+  "runAttempt",
+  "runUrl",
+  "conclusion",
+  "launchTransition",
+  "jobs",
+] as const;
+const PRODUCTION_QUALITY_TRANSITION_FIELDS = [
+  "job",
+  "step",
+  "conclusion",
+] as const;
+const PRODUCTION_QUALITY_BUNDLE_FIELDS = [
+  "schemaVersion",
+  "source",
+  "apiVersion",
+  "requests",
+  "run",
+  "workflow",
+  "jobs",
+] as const;
+const PRODUCTION_QUALITY_REQUEST_FIELDS = [
+  "run",
+  "workflow",
+  "jobs",
+] as const;
+const PRODUCTION_QUALITY_RAW_RUN_FIELDS = [
+  "id",
+  "run_attempt",
+  "workflow_id",
+  "name",
+  "path",
+  "event",
+  "status",
+  "conclusion",
+  "head_branch",
+  "head_sha",
+  "html_url",
+  "repository",
+  "head_repository",
+  "created_at",
+  "run_started_at",
+  "updated_at",
+] as const;
+const PRODUCTION_QUALITY_RAW_REPOSITORY_FIELDS = ["full_name"] as const;
+const PRODUCTION_QUALITY_RAW_WORKFLOW_FIELDS = [
+  "id",
+  "name",
+  "path",
+  "state",
+  "url",
+] as const;
+const PRODUCTION_QUALITY_RAW_JOBS_FIELDS = [
+  "total_count",
+  "jobs",
+] as const;
+const PRODUCTION_QUALITY_RAW_JOB_FIELDS = [
+  "id",
+  "run_id",
+  "run_attempt",
+  "name",
+  "head_sha",
+  "status",
+  "conclusion",
+  "started_at",
+  "completed_at",
+  "html_url",
+  "steps",
+] as const;
+const PRODUCTION_QUALITY_RAW_STEP_FIELDS = [
+  "number",
+  "name",
+  "status",
+  "conclusion",
 ] as const;
 const SENSITIVE_KEY =
   /(?:token|secret|password|passphrase|cookie|private.?key|credential|authorization)/iu;
@@ -490,6 +686,17 @@ function isStrictIsoUtc(value: unknown): value is string {
   return (
     Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value
   );
+}
+
+function githubTimestampMs(value: unknown): number | null {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/u.test(value)
+  ) {
+    return null;
+  }
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
 }
 
 function isResolvedText(value: unknown): value is string {
@@ -929,7 +1136,14 @@ function validateEvidenceArtifact(
   const errors: string[] = [];
   const expectedEvidence = requiredLegacyCutoverEvidence(plan, key);
   if (!isRecord(value)) return ["artifact must be a JSON object"];
-  validateExactFields(value, ARTIFACT_FIELDS, `artifact.${key}`, errors);
+  validateExactFields(
+    value,
+    key === "productionQuality"
+      ? PRODUCTION_QUALITY_ARTIFACT_FIELDS
+      : ARTIFACT_FIELDS,
+    `artifact.${key}`,
+    errors,
+  );
   errors.push(...findSensitiveMaterial(value, `artifact.${key}`));
   if (value.schemaVersion !== 1)
     errors.push(`artifact.${key}.schemaVersion must be 1`);
@@ -949,6 +1163,9 @@ function validateEvidenceArtifact(
     errors.push(`artifact.${key}.topology does not match plan`);
   if (!isResolvedText(value.source))
     errors.push(`artifact.${key}.source must be resolved`);
+  if (key === "productionQuality") {
+    validateProductionQualityRun(value.qualityRun, plan, errors);
+  }
   if (!isRecord(value.underlyingEvidence)) {
     errors.push(`artifact.${key}.underlyingEvidence must be an object`);
   } else {
@@ -1020,6 +1237,698 @@ function validateEvidenceArtifact(
       }
     }
   }
+  return [...new Set(errors)];
+}
+
+function validateProductionQualityRun(
+  value: unknown,
+  plan: LegacyCutoverPlan,
+  errors: string[],
+): void {
+  const location = "artifact.productionQuality.qualityRun";
+  if (!isRecord(value)) {
+    errors.push(`${location} must be an object`);
+    return;
+  }
+  validateExactFields(value, PRODUCTION_QUALITY_RUN_FIELDS, location, errors);
+  if (value.repository !== LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY) {
+    errors.push(
+      `${location}.repository must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}`,
+    );
+  }
+  if (value.workflow !== LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW) {
+    errors.push(
+      `${location}.workflow must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW}`,
+    );
+  }
+  if (
+    value.workflowPath !== LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH
+  ) {
+    errors.push(
+      `${location}.workflowPath must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH}`,
+    );
+  }
+  if (value.event !== LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT) {
+    errors.push(
+      `${location}.event must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT}; workflow_dispatch and pull_request runs are not Production release evidence`,
+    );
+  }
+  if (value.ref !== LEGACY_CUTOVER_PRODUCTION_QUALITY_REF) {
+    errors.push(
+      `${location}.ref must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_REF}`,
+    );
+  }
+  if (value.headBranch !== LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH) {
+    errors.push(
+      `${location}.headBranch must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH}`,
+    );
+  }
+  if (value.headSha !== plan.repositoryCommit) {
+    errors.push(`${location}.headSha does not match plan`);
+  }
+  if (!Number.isSafeInteger(value.runId) || Number(value.runId) < 1) {
+    errors.push(`${location}.runId must be a positive safe integer`);
+  }
+  if (
+    !Number.isSafeInteger(value.runAttempt) ||
+    Number(value.runAttempt) < 1
+  ) {
+    errors.push(`${location}.runAttempt must be a positive safe integer`);
+  }
+  const expectedRunUrl =
+    Number.isSafeInteger(value.runId) && Number(value.runId) >= 1
+      ? `https://github.com/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/runs/${String(value.runId)}`
+      : null;
+  if (expectedRunUrl === null || value.runUrl !== expectedRunUrl) {
+    errors.push(
+      `${location}.runUrl must identify runId in ${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}`,
+    );
+  }
+  if (value.conclusion !== "success") {
+    errors.push(`${location}.conclusion must be success`);
+  }
+
+  if (!isRecord(value.launchTransition)) {
+    errors.push(`${location}.launchTransition must be an object`);
+  } else {
+    validateExactFields(
+      value.launchTransition,
+      PRODUCTION_QUALITY_TRANSITION_FIELDS,
+      `${location}.launchTransition`,
+      errors,
+    );
+    if (value.launchTransition.job !== "verify") {
+      errors.push(`${location}.launchTransition.job must be verify`);
+    }
+    if (
+      value.launchTransition.step !==
+      LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP
+    ) {
+      errors.push(
+        `${location}.launchTransition.step must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP}`,
+      );
+    }
+    if (value.launchTransition.conclusion !== "success") {
+      errors.push(`${location}.launchTransition.conclusion must be success`);
+    }
+  }
+
+  if (!isRecord(value.jobs)) {
+    errors.push(`${location}.jobs must be an object`);
+  } else {
+    validateExactFields(
+      value.jobs,
+      LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS,
+      `${location}.jobs`,
+      errors,
+    );
+    for (const job of LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS) {
+      if (value.jobs[job] !== "success") {
+        errors.push(`${location}.jobs.${job} must be success`);
+      }
+    }
+  }
+}
+
+function positiveSafeInteger(
+  value: unknown,
+  location: string,
+  errors: string[],
+): value is number {
+  if (!Number.isSafeInteger(value) || Number(value) < 1) {
+    errors.push(`${location} must be a positive safe integer`);
+    return false;
+  }
+  return true;
+}
+
+function crossCheckProductionQualityRun(
+  artifactValue: unknown,
+  derived: LegacyCutoverProductionQualityRun,
+  errors: string[],
+): void {
+  const location = "artifact.productionQuality.qualityRun";
+  if (!isRecord(artifactValue)) {
+    errors.push(`${location} cannot be checked against underlying evidence`);
+    return;
+  }
+  for (const field of [
+    "repository",
+    "workflow",
+    "workflowPath",
+    "event",
+    "ref",
+    "headBranch",
+    "headSha",
+    "runId",
+    "runAttempt",
+    "runUrl",
+    "conclusion",
+  ] as const) {
+    if (artifactValue[field] !== derived[field]) {
+      errors.push(
+        `${location}.${field} does not match the retained GitHub API evidence`,
+      );
+    }
+  }
+  if (!isRecord(artifactValue.launchTransition)) {
+    errors.push(
+      `${location}.launchTransition cannot be checked against underlying evidence`,
+    );
+  } else {
+    for (const field of ["job", "step", "conclusion"] as const) {
+      if (
+        artifactValue.launchTransition[field] !==
+        derived.launchTransition[field]
+      ) {
+        errors.push(
+          `${location}.launchTransition.${field} does not match the retained GitHub API evidence`,
+        );
+      }
+    }
+  }
+  if (!isRecord(artifactValue.jobs)) {
+    errors.push(
+      `${location}.jobs cannot be checked against underlying evidence`,
+    );
+  } else {
+    for (const job of LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS) {
+      if (artifactValue.jobs[job] !== derived.jobs[job]) {
+        errors.push(
+          `${location}.jobs.${job} does not match the retained GitHub API evidence`,
+        );
+      }
+    }
+  }
+}
+
+function validateProductionQualityEvidenceBundle(
+  value: unknown,
+  plan: LegacyCutoverPlan,
+  artifactQualityRun: unknown,
+  expectedObservedAt: string,
+  nowMs: number,
+): string[] {
+  const errors: string[] = [];
+  const location = "underlying productionQuality GitHub API evidence";
+  if (!isRecord(value)) return [`${location} must be an object`];
+  validateExactFields(value, PRODUCTION_QUALITY_BUNDLE_FIELDS, location, errors);
+  errors.push(...findSensitiveMaterial(value, location));
+  if (value.schemaVersion !== 1) {
+    errors.push(`${location}.schemaVersion must be 1`);
+  }
+  if (value.source !== LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE) {
+    errors.push(
+      `${location}.source must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE}`,
+    );
+  }
+  if (value.apiVersion !== LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION) {
+    errors.push(
+      `${location}.apiVersion must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION}`,
+    );
+  }
+
+  const requests = isRecord(value.requests) ? value.requests : null;
+  const run = isRecord(value.run) ? value.run : null;
+  const workflow = isRecord(value.workflow) ? value.workflow : null;
+  const jobsEnvelope = isRecord(value.jobs) ? value.jobs : null;
+  if (requests === null) errors.push(`${location}.requests must be an object`);
+  if (run === null) errors.push(`${location}.run must be an object`);
+  if (workflow === null) errors.push(`${location}.workflow must be an object`);
+  if (jobsEnvelope === null) errors.push(`${location}.jobs must be an object`);
+  if (
+    requests === null ||
+    run === null ||
+    workflow === null ||
+    jobsEnvelope === null
+  ) {
+    return [...new Set(errors)];
+  }
+  validateExactFields(
+    requests,
+    PRODUCTION_QUALITY_REQUEST_FIELDS,
+    `${location}.requests`,
+    errors,
+  );
+
+  const runLocation = `${location}.run`;
+  validateExactFields(
+    run,
+    PRODUCTION_QUALITY_RAW_RUN_FIELDS,
+    runLocation,
+    errors,
+  );
+  const runIdValid = positiveSafeInteger(
+    run.id,
+    `${runLocation}.id`,
+    errors,
+  );
+  const runAttemptValid = positiveSafeInteger(
+    run.run_attempt,
+    `${runLocation}.run_attempt`,
+    errors,
+  );
+  const workflowIdValid = positiveSafeInteger(
+    run.workflow_id,
+    `${runLocation}.workflow_id`,
+    errors,
+  );
+  if (run.name !== LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW) {
+    errors.push(
+      `${runLocation}.name must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW}`,
+    );
+  }
+  const allowedRunPaths = [
+    LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH,
+    `${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH}@${LEGACY_CUTOVER_PRODUCTION_QUALITY_REF}`,
+    `${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH}@${LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH}`,
+  ];
+  if (!allowedRunPaths.includes(String(run.path))) {
+    errors.push(
+      `${runLocation}.path must identify ${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH} on main`,
+    );
+  }
+  if (run.event !== LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT) {
+    errors.push(
+      `${runLocation}.event must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT}`,
+    );
+  }
+  if (run.status !== "completed") {
+    errors.push(`${runLocation}.status must be completed`);
+  }
+  if (run.conclusion !== "success") {
+    errors.push(`${runLocation}.conclusion must be success`);
+  }
+  if (run.head_branch !== LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH) {
+    errors.push(
+      `${runLocation}.head_branch must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_BRANCH}`,
+    );
+  }
+  if (run.head_sha !== plan.repositoryCommit) {
+    errors.push(`${runLocation}.head_sha does not match plan`);
+  }
+  const expectedRunUrl = runIdValid
+    ? `https://github.com/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/runs/${String(run.id)}`
+    : null;
+  if (expectedRunUrl === null || run.html_url !== expectedRunUrl) {
+    errors.push(
+      `${runLocation}.html_url must identify the retained run in ${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}`,
+    );
+  }
+
+  for (const repositoryField of ["repository", "head_repository"] as const) {
+    const repository = isRecord(run[repositoryField])
+      ? run[repositoryField]
+      : null;
+    const repositoryLocation = `${runLocation}.${repositoryField}`;
+    if (repository === null) {
+      errors.push(`${repositoryLocation} must be an object`);
+      continue;
+    }
+    validateExactFields(
+      repository,
+      PRODUCTION_QUALITY_RAW_REPOSITORY_FIELDS,
+      repositoryLocation,
+      errors,
+    );
+    if (
+      repository.full_name !== LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY
+    ) {
+      errors.push(
+        `${repositoryLocation}.full_name must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}`,
+      );
+    }
+  }
+
+  for (const timestampField of [
+    "created_at",
+    "run_started_at",
+    "updated_at",
+  ] as const) {
+    if (githubTimestampMs(run[timestampField]) === null) {
+      errors.push(
+        `${runLocation}.${timestampField} must be a GitHub UTC timestamp`,
+      );
+    }
+  }
+  const runCreatedAtMs = githubTimestampMs(run.created_at);
+  const runStartedAtMs = githubTimestampMs(run.run_started_at);
+  const runUpdatedAtMs = githubTimestampMs(run.updated_at);
+  if (
+    runCreatedAtMs !== null &&
+    runStartedAtMs !== null &&
+    runStartedAtMs < runCreatedAtMs
+  ) {
+    errors.push(`${runLocation}.run_started_at must not precede created_at`);
+  }
+  if (
+    runStartedAtMs !== null &&
+    runUpdatedAtMs !== null &&
+    runUpdatedAtMs < runStartedAtMs
+  ) {
+    errors.push(`${runLocation}.updated_at must not precede run_started_at`);
+  }
+  if (
+    runUpdatedAtMs === null ||
+    !isStrictIsoUtc(expectedObservedAt) ||
+    runUpdatedAtMs !== Date.parse(expectedObservedAt)
+  ) {
+    errors.push(
+      `artifact.productionQuality.observedAt must represent the same instant as ${runLocation}.updated_at`,
+    );
+  }
+  if (runUpdatedAtMs !== null) {
+    if (runUpdatedAtMs > nowMs) {
+      errors.push(`${runLocation}.updated_at cannot be in the future`);
+    }
+    if (
+      nowMs - runUpdatedAtMs >
+      LEGACY_CUTOVER_EVIDENCE_MAX_AGE_MS.productionQuality
+    ) {
+      errors.push(
+        `${runLocation}.updated_at is older than the permitted evidence age`,
+      );
+    }
+  }
+
+  const workflowLocation = `${location}.workflow`;
+  validateExactFields(
+    workflow,
+    PRODUCTION_QUALITY_RAW_WORKFLOW_FIELDS,
+    workflowLocation,
+    errors,
+  );
+  const rawWorkflowIdValid = positiveSafeInteger(
+    workflow.id,
+    `${workflowLocation}.id`,
+    errors,
+  );
+  if (
+    workflowIdValid &&
+    rawWorkflowIdValid &&
+    run.workflow_id !== workflow.id
+  ) {
+    errors.push(`${runLocation}.workflow_id must match ${workflowLocation}.id`);
+  }
+  if (workflow.name !== LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW) {
+    errors.push(
+      `${workflowLocation}.name must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW}`,
+    );
+  }
+  if (workflow.path !== LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH) {
+    errors.push(
+      `${workflowLocation}.path must be ${LEGACY_CUTOVER_PRODUCTION_QUALITY_WORKFLOW_PATH}`,
+    );
+  }
+  if (workflow.state !== "active") {
+    errors.push(`${workflowLocation}.state must be active`);
+  }
+  const expectedWorkflowUrl = rawWorkflowIdValid
+    ? `https://api.github.com/repos/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/workflows/${String(workflow.id)}`
+    : null;
+  if (expectedWorkflowUrl === null || workflow.url !== expectedWorkflowUrl) {
+    errors.push(
+      `${workflowLocation}.url must identify the retained workflow ID`,
+    );
+  }
+
+  const jobsLocation = `${location}.jobs`;
+  validateExactFields(
+    jobsEnvelope,
+    PRODUCTION_QUALITY_RAW_JOBS_FIELDS,
+    jobsLocation,
+    errors,
+  );
+  const expectedRunRequest = runIdValid
+    ? `https://api.github.com/repos/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/runs/${String(run.id)}`
+    : null;
+  const expectedWorkflowRequest = rawWorkflowIdValid
+    ? `https://api.github.com/repos/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/workflows/${String(workflow.id)}`
+    : null;
+  const expectedJobsRequest =
+    runIdValid && runAttemptValid
+      ? `https://api.github.com/repos/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/runs/${String(run.id)}/attempts/${String(run.run_attempt)}/jobs?per_page=100`
+      : null;
+  for (const [requestKind, expectedRequest] of [
+    ["run", expectedRunRequest],
+    ["workflow", expectedWorkflowRequest],
+    ["jobs", expectedJobsRequest],
+  ] as const) {
+    if (
+      expectedRequest === null ||
+      requests[requestKind] !== expectedRequest
+    ) {
+      errors.push(
+        `${location}.requests.${requestKind} must identify the exact retained GitHub API request`,
+      );
+    }
+  }
+  if (
+    expectedWorkflowRequest !== null &&
+    workflow.url !== expectedWorkflowRequest
+  ) {
+    errors.push(
+      `${workflowLocation}.url must match ${location}.requests.workflow`,
+    );
+  }
+  const expectedJobCount = LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS.length;
+  if (
+    !Number.isSafeInteger(jobsEnvelope.total_count) ||
+    jobsEnvelope.total_count !== expectedJobCount
+  ) {
+    errors.push(`${jobsLocation}.total_count must be ${expectedJobCount}`);
+  }
+  if (!Array.isArray(jobsEnvelope.jobs)) {
+    errors.push(`${jobsLocation}.jobs must be an array`);
+    return [...new Set(errors)];
+  }
+  if (jobsEnvelope.jobs.length !== expectedJobCount) {
+    errors.push(
+      `${jobsLocation}.jobs must contain exactly ${expectedJobCount} required jobs`,
+    );
+  }
+
+  const jobByName = new Map<string, Record<string, unknown>>();
+  const jobIds = new Set<number>();
+  for (const [jobIndex, jobValue] of jobsEnvelope.jobs.entries()) {
+    const jobLocation = `${jobsLocation}.jobs[${jobIndex}]`;
+    if (!isRecord(jobValue)) {
+      errors.push(`${jobLocation} must be an object`);
+      continue;
+    }
+    validateExactFields(
+      jobValue,
+      PRODUCTION_QUALITY_RAW_JOB_FIELDS,
+      jobLocation,
+      errors,
+    );
+    const jobIdValid = positiveSafeInteger(
+      jobValue.id,
+      `${jobLocation}.id`,
+      errors,
+    );
+    if (jobIdValid) {
+      if (jobIds.has(jobValue.id as number)) {
+        errors.push(`${jobLocation}.id must be unique`);
+      }
+      jobIds.add(jobValue.id as number);
+    }
+    if (
+      typeof jobValue.name !== "string" ||
+      !(LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS as readonly string[]).includes(
+        jobValue.name,
+      )
+    ) {
+      errors.push(`${jobLocation}.name is not a required Quality job`);
+    } else if (jobByName.has(jobValue.name)) {
+      errors.push(`${jobLocation}.name must be unique`);
+    } else {
+      jobByName.set(jobValue.name, jobValue);
+    }
+    const expectedJobName = LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS[jobIndex];
+    if (jobValue.name !== expectedJobName) {
+      errors.push(
+        `${jobLocation}.name must preserve canonical Quality job order as ${expectedJobName ?? "no additional job"}`,
+      );
+    }
+    if (jobValue.run_id !== run.id) {
+      errors.push(`${jobLocation}.run_id must match ${runLocation}.id`);
+    }
+    if (jobValue.run_attempt !== run.run_attempt) {
+      errors.push(
+        `${jobLocation}.run_attempt must match ${runLocation}.run_attempt`,
+      );
+    }
+    if (jobValue.head_sha !== plan.repositoryCommit) {
+      errors.push(`${jobLocation}.head_sha does not match plan`);
+    }
+    if (jobValue.status !== "completed") {
+      errors.push(`${jobLocation}.status must be completed`);
+    }
+    if (jobValue.conclusion !== "success") {
+      errors.push(`${jobLocation}.conclusion must be success`);
+    }
+    const expectedJobUrls =
+      runIdValid && jobIdValid
+        ? [
+            `${expectedRunUrl}/job/${String(jobValue.id)}`,
+            `https://github.com/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/runs/${String(run.id)}/jobs/${String(jobValue.id)}`,
+          ]
+        : [];
+    if (!expectedJobUrls.includes(String(jobValue.html_url))) {
+      errors.push(`${jobLocation}.html_url must identify this run and job`);
+    }
+    for (const timestampField of ["started_at", "completed_at"] as const) {
+      if (githubTimestampMs(jobValue[timestampField]) === null) {
+        errors.push(
+          `${jobLocation}.${timestampField} must be a GitHub UTC timestamp`,
+        );
+      }
+    }
+    const jobStartedAtMs = githubTimestampMs(jobValue.started_at);
+    const jobCompletedAtMs = githubTimestampMs(jobValue.completed_at);
+    if (
+      runStartedAtMs !== null &&
+      jobStartedAtMs !== null &&
+      jobStartedAtMs < runStartedAtMs
+    ) {
+      errors.push(
+        `${jobLocation}.started_at must not precede ${runLocation}.run_started_at`,
+      );
+    }
+    if (
+      jobStartedAtMs !== null &&
+      jobCompletedAtMs !== null &&
+      jobCompletedAtMs < jobStartedAtMs
+    ) {
+      errors.push(`${jobLocation}.completed_at must not precede started_at`);
+    }
+    if (
+      jobCompletedAtMs !== null &&
+      runUpdatedAtMs !== null &&
+      jobCompletedAtMs > runUpdatedAtMs
+    ) {
+      errors.push(
+        `${jobLocation}.completed_at must not be later than ${runLocation}.updated_at`,
+      );
+    }
+    if (!Array.isArray(jobValue.steps) || jobValue.steps.length === 0) {
+      errors.push(`${jobLocation}.steps must be a non-empty array`);
+      continue;
+    }
+    const stepNumbers = new Set<number>();
+    let previousStepNumber = 0;
+    for (const [stepIndex, stepValue] of jobValue.steps.entries()) {
+      const stepLocation = `${jobLocation}.steps[${stepIndex}]`;
+      if (!isRecord(stepValue)) {
+        errors.push(`${stepLocation} must be an object`);
+        continue;
+      }
+      validateExactFields(
+        stepValue,
+        PRODUCTION_QUALITY_RAW_STEP_FIELDS,
+        stepLocation,
+        errors,
+      );
+      if (
+        !positiveSafeInteger(
+          stepValue.number,
+          `${stepLocation}.number`,
+          errors,
+        )
+      ) {
+        continue;
+      }
+      if (stepNumbers.has(stepValue.number as number)) {
+        errors.push(`${stepLocation}.number must be unique within the job`);
+      }
+      if (Number(stepValue.number) <= previousStepNumber) {
+        errors.push(
+          `${stepLocation}.number must be strictly increasing in canonical step order`,
+        );
+      }
+      stepNumbers.add(stepValue.number as number);
+      previousStepNumber = Number(stepValue.number);
+      if (
+        typeof stepValue.name !== "string" ||
+        stepValue.name.trim().length < 2 ||
+        stepValue.name.length > 200
+      ) {
+        errors.push(`${stepLocation}.name must be a substantive bounded string`);
+      }
+      if (stepValue.status !== "completed") {
+        errors.push(`${stepLocation}.status must be completed`);
+      }
+      if (stepValue.conclusion !== "success") {
+        errors.push(`${stepLocation}.conclusion must be success`);
+      }
+    }
+  }
+
+  for (const job of LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS) {
+    if (!jobByName.has(job)) {
+      errors.push(`${jobsLocation}.jobs must include exactly one ${job} job`);
+    }
+  }
+  const verifyJob = jobByName.get("verify");
+  const transitionSteps =
+    verifyJob && Array.isArray(verifyJob.steps)
+      ? verifyJob.steps.filter(
+          (step) =>
+            isRecord(step) &&
+            step.name === LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
+        )
+      : [];
+  if (transitionSteps.length !== 1) {
+    errors.push(
+      `${jobsLocation}.jobs verify steps must include exactly one ${LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP}`,
+    );
+  }
+
+  if (
+    typeof run.id === "number" &&
+    typeof run.run_attempt === "number" &&
+    isRecord(run.repository) &&
+    typeof run.repository.full_name === "string" &&
+    typeof run.name === "string" &&
+    typeof run.path === "string" &&
+    typeof run.event === "string" &&
+    typeof run.head_branch === "string" &&
+    typeof run.head_sha === "string" &&
+    typeof run.html_url === "string" &&
+    typeof run.conclusion === "string" &&
+    transitionSteps.length === 1 &&
+    isRecord(transitionSteps[0]) &&
+    typeof transitionSteps[0].conclusion === "string" &&
+    LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS.every((job) => jobByName.has(job))
+  ) {
+    const derived = {
+      repository: run.repository.full_name,
+      workflow: run.name,
+      workflowPath: workflow.path,
+      event: run.event,
+      ref: `refs/heads/${run.head_branch}`,
+      headBranch: run.head_branch,
+      headSha: run.head_sha,
+      runId: run.id,
+      runAttempt: run.run_attempt,
+      runUrl: run.html_url,
+      conclusion: run.conclusion,
+      launchTransition: {
+        job: "verify",
+        step: LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
+        conclusion: transitionSteps[0].conclusion,
+      },
+      jobs: Object.fromEntries(
+        LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS.map((job) => [
+          job,
+          jobByName.get(job)?.conclusion,
+        ]),
+      ),
+    } as LegacyCutoverProductionQualityRun;
+    crossCheckProductionQualityRun(artifactQualityRun, derived, errors);
+  }
+
   return [...new Set(errors)];
 }
 
@@ -1129,6 +2038,24 @@ export async function verifyLegacyCutoverEvidence(
                 errors.push(
                   `underlying evidence byte length does not match artifact for ${key}`,
                 );
+              }
+              if (key === "productionQuality") {
+                const parsedBundle = parseCanonicalLegacyJson(
+                  underlyingFile.bytes,
+                  "underlying productionQuality GitHub API evidence",
+                );
+                errors.push(...parsedBundle.errors);
+                if (parsedBundle.canonical) {
+                  errors.push(
+                    ...validateProductionQualityEvidenceBundle(
+                      parsedBundle.value,
+                      plan,
+                      isRecord(parsed) ? parsed.qualityRun : null,
+                      expected.observedAt,
+                      nowMs,
+                    ),
+                  );
+                }
               }
             } catch (error) {
               errors.push(
