@@ -143,14 +143,34 @@ export function applyDemoLifecycleContent(
   );
   const strictCount = indexableIdSet.size;
   const firstDemoHref = `${content.locale === 'es' ? '/es' : ''}/demos/${publicIds[0]}`;
+  const firstDemoAction = {
+    label: content.locale === 'es'
+      ? 'Abrir la primera demostración'
+      : 'Open the first demonstration',
+    href: firstDemoHref,
+  };
+  const privatePreviewAction = {
+    label: content.locale === 'es'
+      ? 'Abrir vista previa ejecutiva privada'
+      : 'Open private executive preview',
+    href: content.locale === 'es'
+      ? '/es/executive-preview'
+      : '/executive-preview',
+  };
+  const preservationAction = {
+    label: content.locale === 'es'
+      ? 'Leer el enfoque de preservación'
+      : 'Read the preservation approach',
+    href: content.locale === 'es'
+      ? '/es/about#preservation'
+      : '/about#preservation',
+  };
   const previewAction = reviewDemoIds.length > 0
-    ? content.pages.demos.previewNotice.action
-    : {
-        label: content.locale === 'es'
-          ? 'Abrir la primera demostración'
-          : 'Open the first demonstration',
-        href: firstDemoHref,
-      };
+    ? privatePreviewAction
+    : firstDemoAction;
+  const publicHeroSecondaryAction = reviewDemoIds.length > 0
+    ? privatePreviewAction
+    : preservationAction;
 
   if (content.locale === 'es') {
     return {
@@ -178,6 +198,8 @@ export function applyDemoLifecycleContent(
             summary: strictCount > 0
               ? 'Cada demostración publicada muestra su alcance y estado de revisión. La aceptación se aplica al candidato identificado, no a material Flash no publicado ni a afirmaciones nuevas de eficacia.'
               : 'Estos candidatos tienen aceptación de derechos y producto para acceso público, pero la validación estricta sigue incompleta. Se muestran con límites claros y sin indexación.',
+            primaryAction: firstDemoAction,
+            secondaryAction: publicHeroSecondaryAction,
           },
           previewNotice: {
             title: `${items.length} ${items.length === 1 ? 'demostración pública disponible' : 'demostraciones públicas disponibles'}`,
@@ -225,6 +247,8 @@ export function applyDemoLifecycleContent(
           summary: strictCount > 0
             ? 'Each published demonstration shows its scope and review status. Acceptance applies to the identified candidate, not to unpublished Flash material or new claims of effectiveness.'
             : 'These candidates have rights and product acceptance for public access, while strict validation remains incomplete. They are presented with clear limits and without indexing.',
+          primaryAction: firstDemoAction,
+          secondaryAction: publicHeroSecondaryAction,
         },
         previewNotice: {
           title: `${items.length} public ${items.length === 1 ? 'demonstration is' : 'demonstrations are'} available`,

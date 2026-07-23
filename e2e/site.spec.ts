@@ -192,6 +192,37 @@ function expectNoRuntimeIssues(issues: RuntimeIssue[]) {
   expect(issues, `Unexpected browser errors:\n${JSON.stringify(issues, null, 2)}`).toEqual([]);
 }
 
+async function expectNoPrivateDemoReferences(page: Page) {
+  const html = await page.content();
+
+  for (const id of reviewDemoIds) {
+    expect(html).not.toContain(`/demos/${id}`);
+    expect(html).not.toContain(`/es/demos/${id}`);
+    expect(html).not.toContain(`/api/executive-preview/runtime/${id}.js`);
+    expect(html).not.toContain(`/api/executive-preview/assets/${id}/`);
+  }
+}
+
+async function waitForScrollToSettle(page: Page) {
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    let previousY = window.scrollY;
+    let stableFrames = 0;
+
+    const observe = () => {
+      const currentY = window.scrollY;
+      stableFrames = currentY === previousY ? stableFrames + 1 : 0;
+      previousY = currentY;
+      if (stableFrames >= 4) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(observe);
+    };
+
+    requestAnimationFrame(observe);
+  }));
+}
+
 async function expectNoAxeViolations(
   page: Page,
   path: string,
@@ -1983,11 +2014,19 @@ test('demo landing pages expose only lifecycle-public demos and eligible reviewe
       }),
     ).toBeVisible();
   }
-  const englishReviewerEntry = page.getByRole('link', {name: 'Authorized reviewer access'});
+  const englishReviewerEntries = page.getByRole('link', {
+    name: 'Open private executive preview',
+  });
   if (reviewDemoIds.length > 0) {
-    await expect(englishReviewerEntry).toHaveAttribute('href', '/executive-preview');
+    await expect(englishReviewerEntries).toHaveCount(1);
+    for (const entry of await englishReviewerEntries.all()) {
+      await expect(entry).toHaveAttribute('href', '/executive-preview');
+    }
+    await expect(
+      page.getByText(/After verification, that page shows exactly two private prototype cards/u),
+    ).toBeVisible();
   } else {
-    await expect(englishReviewerEntry).toHaveCount(0);
+    await expect(englishReviewerEntries).toHaveCount(0);
   }
   for (const id of demoIds) {
     await expect(page.locator(`a[href="/demos/${id}"]`)).toHaveCount(1);
@@ -1996,6 +2035,7 @@ test('demo landing pages expose only lifecycle-public demos and eligible reviewe
     await expect(page.locator(`a[href="/demos/${id}"]`)).toHaveCount(0);
   }
   await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
+  await expectNoPrivateDemoReferences(page);
 
   await expectDocument(page, '/es/demos', 'es');
   if (demoIds.length === 0) {
@@ -2006,11 +2046,19 @@ test('demo landing pages expose only lifecycle-public demos and eligible reviewe
       }),
     ).toBeVisible();
   }
-  const spanishReviewerEntry = page.getByRole('link', {name: 'Acceso de revisores autorizados'});
+  const spanishReviewerEntries = page.getByRole('link', {
+    name: 'Abrir vista previa ejecutiva privada',
+  });
   if (reviewDemoIds.length > 0) {
-    await expect(spanishReviewerEntry).toHaveAttribute('href', '/es/executive-preview');
+    await expect(spanishReviewerEntries).toHaveCount(1);
+    for (const entry of await spanishReviewerEntries.all()) {
+      await expect(entry).toHaveAttribute('href', '/es/executive-preview');
+    }
+    await expect(
+      page.getByText(/Tras la verificación, esa página muestra exactamente dos tarjetas/u),
+    ).toBeVisible();
   } else {
-    await expect(spanishReviewerEntry).toHaveCount(0);
+    await expect(spanishReviewerEntries).toHaveCount(0);
   }
   for (const id of demoIds) {
     await expect(page.locator(`a[href="/es/demos/${id}"]`)).toHaveCount(1);
@@ -2019,6 +2067,7 @@ test('demo landing pages expose only lifecycle-public demos and eligible reviewe
     await expect(page.locator(`a[href="/es/demos/${id}"]`)).toHaveCount(0);
   }
   await expect(page.locator('[src*="/flash-assets/"]')).toHaveCount(0);
+  await expectNoPrivateDemoReferences(page);
   expectNoRuntimeIssues(issues);
 });
 
@@ -2155,16 +2204,20 @@ test('executive preview grants a short-lived private session for both JavaScript
   const issues = monitorRuntimeIssues(page);
   await page.emulateMedia({reducedMotion: 'no-preference'});
 
-  const entryResponse = await page.goto(
-    '/executive-preview?returnTo=/demos/conversion-1-2',
-    {waitUntil: 'networkidle'},
-  );
+  const entryResponse = await page.goto('/executive-preview', {waitUntil: 'networkidle'});
   expect(entryResponse?.status()).toBe(200);
   expect(entryResponse?.headers()['x-robots-tag']).toContain('noindex');
   expect(entryResponse?.headers()['cache-control']).toContain('no-store');
   await expect(
-    page.getByRole('heading', {level: 1, name: 'HELP Math JavaScript demo preview'}),
+    page.getByRole('heading', {
+      level: 1,
+      name: 'Review two private HELP Math prototypes',
+    }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'Sign in to view the two prototypes'}),
+  ).toBeVisible();
+  await expectNoPrivateDemoReferences(page);
   const reviewExpiry = page.locator('time[datetime]');
   await expect(reviewExpiry).toBeVisible();
   const reviewExpiryDateTime = await reviewExpiry.getAttribute('datetime');
@@ -2172,7 +2225,7 @@ test('executive preview grants a short-lived private session for both JavaScript
   expect(Date.parse(reviewExpiryDateTime!)).toBeGreaterThan(Date.now());
   await expect(page.getByText('Active sessions cannot continue beyond this time.')).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
-  await expect(page.getByRole('link', {name: 'Enter private preview'})).toHaveAttribute(
+  await expect(page.getByRole('link', {name: 'Enter reviewer passphrase'})).toHaveAttribute(
     'href',
     '#executive-preview-login',
   );
@@ -2180,10 +2233,29 @@ test('executive preview grants a short-lived private session for both JavaScript
   await page.getByLabel('Executive preview passphrase').fill(executivePreviewAccessKey!);
   await Promise.all([
     page.waitForURL((url) =>
-      url.pathname === '/demos/conversion-1-2' && url.search === ''
+      url.pathname === '/executive-preview' && url.search === ''
     ),
     page.getByRole('button', {name: 'Open private preview'}).click(),
   ]);
+  await page.waitForLoadState('networkidle');
+
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'Two private JavaScript prototypes'}),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Your temporary private review session is active. The two assigned JavaScript prototype cards appear below.',
+    ),
+  ).toBeVisible();
+  await expect(page.getByText(/Enter the separate review passphrase on this page/u)).toHaveCount(0);
+  await expect(page.locator('main article')).toHaveCount(2);
+  await expect(page.getByText(/^Private prototype [12]\/2$/u)).toHaveCount(2);
+  const englishPrototypeLinks = page.getByRole('link', {name: /^Open prototype:/u});
+  await expect(englishPrototypeLinks).toHaveCount(2);
+  await expect(
+    page.getByRole('link', {name: 'Open prototype: Conversion 1.2'}),
+  ).toHaveAttribute('href', '/demos/conversion-1-2');
+  await page.getByRole('link', {name: 'Open prototype: Conversion 1.2'}).click();
   await page.waitForLoadState('networkidle');
 
   await expect(page.getByText('Internal review only', {exact: true})).toBeVisible();
@@ -2218,6 +2290,7 @@ test('executive preview grants a short-lived private session for both JavaScript
   await expect(page.locator('.flash-replay')).toHaveAttribute('tabindex', '-1');
   const restartButton = page.getByRole('button', {name: 'Restart from the beginning'});
   await restartButton.focus();
+  await waitForScrollToSettle(page);
   const scrollBeforeRestart = await page.evaluate(() => window.scrollY);
   await page.clock.pauseAt(nextClockPauseAt);
   await page.keyboard.press('Space');
@@ -2288,9 +2361,17 @@ test('executive preview grants a short-lived private session for both JavaScript
   ]);
   await expect(page.getByLabel('Executive preview passphrase')).toBeVisible();
 
-  await page.goto('/es/executive-preview?returnTo=/demos/conversion-1-4', {
-    waitUntil: 'networkidle',
-  });
+  await page.goto('/es/executive-preview', {waitUntil: 'networkidle'});
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'Revisa dos prototipos privados de HELP Math',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'Inicia sesión para ver los dos prototipos'}),
+  ).toBeVisible();
+  await expectNoPrivateDemoReferences(page);
   await expect(
     page.getByText('Las sesiones activas no pueden continuar después de esta hora.'),
   ).toBeVisible();
@@ -2299,10 +2380,32 @@ test('executive preview grants a short-lived private session for both JavaScript
   );
   await Promise.all([
     page.waitForURL((url) =>
-      url.pathname === '/es/demos/conversion-1-4' && url.search === ''
+      url.pathname === '/es/executive-preview' && url.search === ''
     ),
     page.getByRole('button', {name: 'Abrir vista previa privada'}).click(),
   ]);
+  await expect(
+    page.getByRole('heading', {level: 2, name: 'Dos prototipos JavaScript privados'}),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Tu sesión temporal de revisión privada está activa. Las dos tarjetas de prototipos JavaScript asignadas aparecen más abajo.',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Introduce en esta página la frase de acceso específica/u),
+  ).toHaveCount(0);
+  await expect(page.locator('main article')).toHaveCount(2);
+  await expect(page.getByText(/^Prototipo privado [12]\/2$/u)).toHaveCount(2);
+  const spanishPrototypeLinks = page.getByRole('link', {name: /^Abrir prototipo:/u});
+  await expect(spanishPrototypeLinks).toHaveCount(2);
+  const spanishSecondDemoLink = page.getByRole('link', {
+    name: 'Abrir prototipo: Conversión 1.4',
+  });
+  await expect(spanishSecondDemoLink).toHaveAttribute('href', '/es/demos/conversion-1-4');
+  await spanishSecondDemoLink.click();
+  await page.waitForLoadState('networkidle');
+
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
   await expect(page.getByText('Solo revisión interna', {exact: true})).toBeVisible();
   await expect(page.locator('output').filter({hasText: 'Fotograma 1 de 67'})).toBeAttached();
@@ -2344,6 +2447,8 @@ test('executive preview reports an invalid passphrase at the input', async ({pag
   await page.goto(`/executive-preview?returnTo=/demos/${firstReviewDemoId}`, {
     waitUntil: 'networkidle',
   });
+  await expect(page).toHaveURL('/executive-preview');
+  await expectNoPrivateDemoReferences(page);
   const passphrase = page.getByLabel('Executive preview passphrase');
   await passphrase.fill('incorrect-executive-preview-key');
   await Promise.all([

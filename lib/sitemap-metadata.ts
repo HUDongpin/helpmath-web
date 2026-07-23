@@ -7,8 +7,9 @@ export type StaticSitemapPage = {
 /**
  * The canonical source for static-page sitemap dates.
  *
- * Demo dates intentionally do not live here: they come from the validated
- * demo lifecycle manifest so a demo release cannot drift from its evidence.
+ * The public demo landing page is static content and lives here. Dates for
+ * individual, indexable demo routes come from the validated lifecycle
+ * manifest so a demo release cannot drift from its evidence.
  */
 export const STATIC_SITEMAP_PAGES: readonly StaticSitemapPage[] = [
   {path: '/', lastModified: '2026-07-22T00:00:00.000Z'},
@@ -16,7 +17,8 @@ export const STATIC_SITEMAP_PAGES: readonly StaticSitemapPage[] = [
   {path: '/approach', lastModified: '2026-07-21T00:00:00.000Z'},
   {path: '/curriculum', lastModified: '2026-07-21T00:00:00.000Z'},
   {path: '/research', lastModified: '2026-07-22T00:00:00.000Z'},
-  {path: '/resources', lastModified: '2026-07-21T00:00:00.000Z'},
+  {path: '/resources', lastModified: '2026-07-23T00:00:00.000Z'},
+  {path: '/demos', lastModified: '2026-07-23T00:00:00.000Z'},
   {path: '/support', lastModified: '2026-07-22T00:00:00.000Z'},
   {path: '/login', lastModified: '2026-07-21T00:00:00.000Z'},
   {path: '/contact', lastModified: '2026-07-21T00:00:00.000Z'},

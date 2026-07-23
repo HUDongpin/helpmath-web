@@ -15,20 +15,23 @@ describe('static sitemap metadata', () => {
     }
   });
 
-  it('records the July 22 content updates without redating unchanged pages', () => {
+  it('records dated content updates without redating unchanged pages', () => {
     const dates = new Map(
       STATIC_SITEMAP_PAGES.map(({lastModified, path}) => [path, lastModified]),
     );
+    const july23 = '2026-07-23T00:00:00.000Z';
     const july22 = '2026-07-22T00:00:00.000Z';
     const july21 = '2026-07-21T00:00:00.000Z';
 
+    for (const path of ['/resources', '/demos'] as const) {
+      assert.equal(dates.get(path), july23, path);
+    }
     for (const path of ['/', '/about', '/research', '/support'] as const) {
       assert.equal(dates.get(path), july22, path);
     }
     for (const path of [
       '/approach',
       '/curriculum',
-      '/resources',
       '/login',
       '/contact',
       '/privacy',

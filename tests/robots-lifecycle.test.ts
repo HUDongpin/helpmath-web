@@ -4,9 +4,10 @@ import {describe, it} from 'node:test';
 
 import robots, {buildDemoLifecycleRobotsRule} from '../app/robots';
 import sitemap from '../app/sitemap';
-import {demoIds, indexableDemoIds} from '../demos/catalog';
+import {demoIds, indexableDemoIds, indexableDemoRoutes} from '../demos/catalog';
 import {DEMO_CANDIDATE_IDS} from '../demos/candidates';
 import {demoLifecycleUpdatedAt} from '../lib/demo-lifecycle';
+import {STATIC_SITEMAP_PAGES} from '../lib/sitemap-metadata';
 
 const require = createRequire(import.meta.url);
 const {resolveRobots} = require(
@@ -112,14 +113,30 @@ describe('demo lifecycle robots boundary', () => {
     assert.match(text, /^Disallow: \/api\/$/mu);
   });
 
-  it('dates the demo sitemap from the validated lifecycle manifest', () => {
+  it('dates the public demo landing as content and indexable demos from lifecycle evidence', () => {
     assert.ok(demoLifecycleUpdatedAt);
-    const expected = new Date(demoLifecycleUpdatedAt);
-    const demoEntries = sitemap().filter(({url}) =>
+    const entries = sitemap();
+    const landingDate = STATIC_SITEMAP_PAGES.find(({path}) => path === '/demos')
+      ?.lastModified;
+    assert.ok(landingDate);
+    const landingEntries = entries.filter(({url}) =>
       ['/demos', '/es/demos'].includes(new URL(url).pathname),
     );
 
-    assert.equal(demoEntries.length, 2);
-    for (const entry of demoEntries) assert.deepEqual(entry.lastModified, expected);
+    assert.equal(landingEntries.length, 2);
+    for (const entry of landingEntries) {
+      assert.deepEqual(entry.lastModified, new Date(landingDate));
+    }
+
+    const lifecycleDate = new Date(demoLifecycleUpdatedAt);
+    for (const route of indexableDemoRoutes) {
+      for (const localizedRoute of [route, `/es${route}`]) {
+        const entry = entries.find(({url}) =>
+          new URL(url).pathname === localizedRoute
+        );
+        assert.ok(entry, localizedRoute);
+        assert.deepEqual(entry.lastModified, lifecycleDate, localizedRoute);
+      }
+    }
   });
 });

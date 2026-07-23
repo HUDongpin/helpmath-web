@@ -4,6 +4,7 @@ import {describe, it} from 'node:test';
 import {applyDemoLifecycleContent} from '../content/demo-lifecycle-content';
 import {enContent} from '../content/en';
 import {esContent} from '../content/es';
+import {reviewDemoIds} from '../demos/catalog';
 
 describe('demo lifecycle content', () => {
   it('preserves the current no-public-demo copy byte-for-byte by identity', () => {
@@ -25,6 +26,38 @@ describe('demo lifecycle content', () => {
     );
   });
 
+  it('keeps the bilingual CEO onboarding contract bound to one private entry and two cards', () => {
+    assert.deepEqual(reviewDemoIds, ['conversion-1-2', 'conversion-1-4']);
+
+    assert.equal('action' in enContent.pages.demos.previewNotice, false);
+    assert.equal(
+      enContent.pages.demos.hero.primaryAction?.label,
+      'Open private executive preview',
+    );
+    assert.equal(
+      enContent.pages.demos.hero.primaryAction?.href,
+      '/executive-preview',
+    );
+    assert.match(
+      enContent.pages.demos.previewNotice.body,
+      /exactly two private prototype cards/u,
+    );
+
+    assert.equal('action' in esContent.pages.demos.previewNotice, false);
+    assert.equal(
+      esContent.pages.demos.hero.primaryAction?.label,
+      'Abrir vista previa ejecutiva privada',
+    );
+    assert.equal(
+      esContent.pages.demos.hero.primaryAction?.href,
+      '/es/executive-preview',
+    );
+    assert.match(
+      esContent.pages.demos.previewNotice.body,
+      /exactamente dos tarjetas de prototipos privados/u,
+    );
+  });
+
   it('publishes only selected conditional candidates with explicit limits', () => {
     const content = applyDemoLifecycleContent(enContent, {
       publicDemoIds: ['conversion-1-2'],
@@ -39,6 +72,14 @@ describe('demo lifecycle content', () => {
     );
     assert.ok(content.pages.demos.previewNotice.action);
     assert.equal(content.pages.demos.previewNotice.action.href, '/executive-preview');
+    assert.equal(
+      content.pages.demos.hero.primaryAction?.href,
+      '/demos/conversion-1-2',
+    );
+    assert.equal(
+      content.pages.demos.hero.secondaryAction?.href,
+      '/executive-preview',
+    );
     assert.match(content.pages.demos.hero.title, /conditional/u);
     assert.match(content.pages.demoDetails['conversion-1-2'].statusDetail, /Public access/u);
     assert.match(
@@ -67,6 +108,14 @@ describe('demo lifecycle content', () => {
     assert.equal(
       content.pages.demos.previewNotice.action.href,
       '/es/demos/conversion-1-4',
+    );
+    assert.equal(
+      content.pages.demos.hero.primaryAction?.href,
+      '/es/demos/conversion-1-4',
+    );
+    assert.equal(
+      content.pages.demos.hero.secondaryAction?.href,
+      '/es/about#preservation',
     );
     assert.match(content.pages.demos.hero.title, /revisadas/u);
     assert.match(content.pages.demoDetails['conversion-1-4'].statusDetail, /Publicada/u);

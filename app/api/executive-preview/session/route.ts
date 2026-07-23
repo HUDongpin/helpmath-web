@@ -168,7 +168,6 @@ export async function POST(request: NextRequest) {
       });
     }
     const failure = new URLSearchParams({error: '1'});
-    if (returnTo !== entryPath(locale)) failure.set('returnTo', returnTo);
     return redirectResponse(`${entryPath(locale)}?${failure.toString()}`);
   }
 

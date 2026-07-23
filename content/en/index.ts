@@ -1168,14 +1168,13 @@ export const enContent = {
         title: "Demos remain private while review is incomplete",
         summary:
           "The current JavaScript prototypes are kept in the private repository. No demo or extracted image is available on this public site until publication rights are documented and the required technical review is accepted.",
-        primaryAction: { label: "Read the preservation approach", href: "/about#preservation" },
-        secondaryAction: { label: "View project status", href: "/about" },
+        primaryAction: { label: "Open private executive preview", href: "/executive-preview" },
+        secondaryAction: { label: "Read the preservation approach", href: "/about#preservation" },
       },
       previewNotice: {
         title: "No public demo is currently approved",
         body:
-          "Source provenance alone does not establish publication rights or fidelity. Each prototype must receive written rights approval, complete the required validation, and record technical acceptance before its route and extracted assets can open. Authorized reviewers can check the restricted entry page; access opens only during a separately approved, time-boxed review and does not release any demo publicly.",
-        action: { label: "Authorized reviewer access", href: "/executive-preview" },
+          "Neither source provenance nor private review access establishes publication rights or fidelity. Both JavaScript prototypes remain private and unapproved for public release. If you received a separate review passphrase through an approved private channel, open the Private Executive Preview and enter it there. After verification, that page shows exactly two private prototype cards. Direct demo links remain unavailable before sign-in, and this review does not publish either prototype.",
       },
       listLabel: "Approved demonstrations",
       items: [],
