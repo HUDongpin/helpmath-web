@@ -1218,6 +1218,8 @@ export function evaluateLegacyCutoverPreflight(
   checks.push(
     gateCheck("legacy-cutover-approved", input.gateStatuses, "legacyCutover"),
   );
+  const legalAuthorization = input.gateAuthorizations.legalPublication;
+  const contactAuthorization = input.gateAuthorizations.contactIntake;
   const legacyAuthorization = input.gateAuthorizations.legacyCutover;
   const requiredGateAuthorizations = Object.values(input.gateAuthorizations);
   const requiredGateValidUntils = requiredGateAuthorizations
@@ -1255,6 +1257,39 @@ export function evaluateLegacyCutoverPreflight(
           `${authorization.validUntil ?? "missing"}`,
       )
       .join("; "),
+  });
+  checks.push({
+    id: "legal-publication-subject-bound",
+    pass: Boolean(
+      input.plan &&
+      legalAuthorization.decisionId &&
+      legalAuthorization.repositoryCommit === input.plan.repositoryCommit &&
+      legalAuthorization.vercelDeploymentId === null,
+    ),
+    detail:
+      `gate decision ${legalAuthorization.decisionId ?? "missing"}; ` +
+      `gate subject ${legalAuthorization.repositoryCommit ?? "missing"}/` +
+      `${legalAuthorization.vercelDeploymentId ?? "none"}; ` +
+      `plan subject ${input.plan?.repositoryCommit ?? "missing"}/none`,
+  });
+  const expectedContactDeploymentId =
+    input.plan?.contactMode === "enabled"
+      ? input.plan.vercelDeploymentId
+      : null;
+  checks.push({
+    id: "contact-intake-subject-bound",
+    pass: Boolean(
+      input.plan &&
+      contactAuthorization.decisionId &&
+      contactAuthorization.repositoryCommit === input.plan.repositoryCommit &&
+      contactAuthorization.vercelDeploymentId === expectedContactDeploymentId,
+    ),
+    detail:
+      `gate decision ${contactAuthorization.decisionId ?? "missing"}; ` +
+      `gate subject ${contactAuthorization.repositoryCommit ?? "missing"}/` +
+      `${contactAuthorization.vercelDeploymentId ?? "none"}; ` +
+      `plan subject ${input.plan?.repositoryCommit ?? "missing"}/` +
+      `${expectedContactDeploymentId ?? "none"}`,
   });
   checks.push({
     id: "legacy-cutover-subject-bound",

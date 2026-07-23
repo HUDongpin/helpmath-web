@@ -30,6 +30,7 @@ import {
   prepareLegacyCutoverReceiptDirectory,
   readRestrictedExternalFile,
   REQUIRED_LEGACY_PREFLIGHT_COMMANDS,
+  type LegacyCutoverPreflightInput,
   type LegacyCutoverEvidenceKey,
   type LegacyCutoverEvidenceReference,
   type LegacyCutoverContactMode,
@@ -190,7 +191,7 @@ function passingEvidenceEntries(plan: LegacyCutoverPlan) {
   }));
 }
 
-function goInput(plan: LegacyCutoverPlan) {
+function goInput(plan: LegacyCutoverPlan): LegacyCutoverPreflightInput {
   return {
     plan,
     planErrors: [] as string[],
@@ -759,6 +760,7 @@ describe("legacy-domain cutover decision", () => {
     const plan = validPlan("disabled");
     const input = goInput(plan);
     input.gateStatuses.contactIntake = "disabled";
+    input.gateAuthorizations.contactIntake.vercelDeploymentId = null;
 
     const allowed = evaluateLegacyCutoverPreflight(input);
     assert.equal(allowed.decision, "GO_TO_CHANGE");
@@ -773,7 +775,7 @@ describe("legacy-domain cutover decision", () => {
     );
   });
 
-  it("rejects a gate approved for another subject or a prerequisite expiring inside the buffer", () => {
+  it("rejects any gate approved for another subject or a prerequisite expiring inside the buffer", () => {
     const plan = validPlan();
     const input = goInput(plan);
     input.gateAuthorizations.legacyCutover.repositoryCommit = "b".repeat(40);
@@ -787,6 +789,47 @@ describe("legacy-domain cutover decision", () => {
 
     input.gateAuthorizations.legacyCutover.repositoryCommit =
       plan.repositoryCommit;
+    input.gateAuthorizations.legalPublication.repositoryCommit = "b".repeat(40);
+    const legalSubjectMismatch = evaluateLegacyCutoverPreflight(input);
+    assert.equal(legalSubjectMismatch.decision, "NO_GO");
+    assert.match(
+      legalSubjectMismatch.failures.join("\n"),
+      /legal-publication-subject-bound/u,
+    );
+
+    input.gateAuthorizations.legalPublication.repositoryCommit =
+      plan.repositoryCommit;
+    input.gateAuthorizations.legalPublication.vercelDeploymentId =
+      plan.vercelDeploymentId;
+    const legalDeploymentMismatch = evaluateLegacyCutoverPreflight(input);
+    assert.equal(legalDeploymentMismatch.decision, "NO_GO");
+    assert.match(
+      legalDeploymentMismatch.failures.join("\n"),
+      /legal-publication-subject-bound/u,
+    );
+
+    input.gateAuthorizations.legalPublication.vercelDeploymentId = null;
+    input.gateAuthorizations.contactIntake.repositoryCommit = "b".repeat(40);
+    const contactSubjectMismatch = evaluateLegacyCutoverPreflight(input);
+    assert.equal(contactSubjectMismatch.decision, "NO_GO");
+    assert.match(
+      contactSubjectMismatch.failures.join("\n"),
+      /contact-intake-subject-bound/u,
+    );
+
+    input.gateAuthorizations.contactIntake.repositoryCommit =
+      plan.repositoryCommit;
+    input.gateAuthorizations.contactIntake.vercelDeploymentId =
+      "dpl_OtherDeployment";
+    const contactDeploymentMismatch = evaluateLegacyCutoverPreflight(input);
+    assert.equal(contactDeploymentMismatch.decision, "NO_GO");
+    assert.match(
+      contactDeploymentMismatch.failures.join("\n"),
+      /contact-intake-subject-bound/u,
+    );
+
+    input.gateAuthorizations.contactIntake.vercelDeploymentId =
+      plan.vercelDeploymentId;
     input.gateAuthorizations.legalPublication.validUntil =
       "2026-07-21T18:09:00.000Z";
     const expiringDependency = evaluateLegacyCutoverPreflight(input);
@@ -794,6 +837,35 @@ describe("legacy-domain cutover decision", () => {
     assert.match(
       expiringDependency.failures.join("\n"),
       /authorization-validity-buffer/u,
+    );
+  });
+
+  it("binds a deliberately disabled contact gate to the candidate commit without a deployment", () => {
+    const plan = validPlan("disabled");
+    const input = goInput(plan);
+    input.gateStatuses.contactIntake = "disabled";
+    input.gateAuthorizations.contactIntake.vercelDeploymentId = null;
+
+    const allowed = evaluateLegacyCutoverPreflight(input);
+    assert.equal(allowed.decision, "GO_TO_CHANGE");
+    assert.deepEqual(allowed.failures, []);
+
+    input.gateAuthorizations.contactIntake.vercelDeploymentId =
+      plan.vercelDeploymentId;
+    const mismatched = evaluateLegacyCutoverPreflight(input);
+    assert.equal(mismatched.decision, "NO_GO");
+    assert.match(
+      mismatched.failures.join("\n"),
+      /contact-intake-subject-bound/u,
+    );
+
+    input.gateAuthorizations.contactIntake.vercelDeploymentId = null;
+    input.gateAuthorizations.contactIntake.repositoryCommit = "b".repeat(40);
+    const commitMismatched = evaluateLegacyCutoverPreflight(input);
+    assert.equal(commitMismatched.decision, "NO_GO");
+    assert.match(
+      commitMismatched.failures.join("\n"),
+      /contact-intake-subject-bound/u,
     );
   });
 

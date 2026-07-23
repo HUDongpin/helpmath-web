@@ -23,14 +23,25 @@ describe('Playwright CI artifact privacy', () => {
   });
 
   it('keeps the private operator run disposable and Chromium-only', async () => {
-    const handoff = await readFile(
-      path.join(repositoryRoot, 'docs/EXECUTIVE_PREVIEW_HANDOFF.md'),
-      'utf8',
-    );
+    const [handoff, operator] = await Promise.all([
+      readFile(
+        path.join(repositoryRoot, 'docs/EXECUTIVE_PREVIEW_HANDOFF.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'scripts/executive-preview-operator-check.ts'),
+        'utf8',
+      ),
+    ]);
 
-    assert.match(handoff, /mktemp -d \/tmp\/helpmath-executive-preview\.XXXXXX/u);
-    assert.match(handoff, /rm -rf -- "\$PW_OUTPUT"/u);
-    assert.match(handoff, /playwright test --project=chromium --output="\$PW_OUTPUT"/u);
-    assert.match(handoff, /must never be uploaded\s+as an artifact/iu);
+    assert.match(handoff, /if \[\[ -z "\$EXEC_KEY" \]\]/u);
+    assert.match(handoff, /npm run smoke:executive-preview/u);
+    assert.match(handoff, /single non-skipped browser result/u);
+    assert.match(handoff, /No local process can guarantee cleanup after `SIGKILL`/u);
+    assert.doesNotMatch(handoff, /EXECUTIVE_PREVIEW_DEPLOYMENT_EVIDENCE/u);
+    assert.match(operator, /EXPECTED_REPOSITORY = "HUDongpin\/helpmath-web"/u);
+    assert.match(operator, /liveIdentityCheckedBeforeAndAfter: true/u);
+    assert.match(operator, /temporaryArtifacts: "deleted-before-result"/u);
+    assert.match(operator, /--project=chromium/u);
   });
 });

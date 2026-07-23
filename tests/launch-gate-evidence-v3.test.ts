@@ -151,6 +151,14 @@ async function seedPolicyScope(
 ) {
   for (const subjectPath of LAUNCH_GATE_EVIDENCE_V3_POLICY[kind].subjectPaths) {
     const absolutePath = path.join(repositoryRoot, subjectPath);
+    if (subjectPath === "components") {
+      await mkdir(absolutePath, { recursive: true });
+      await writeFile(
+        path.join(absolutePath, "scope-fixture.tsx"),
+        `governed bytes for ${subjectPath}\n`,
+      );
+      continue;
+    }
     await mkdir(path.dirname(absolutePath), { recursive: true });
     await writeFile(absolutePath, `governed bytes for ${subjectPath}\n`);
   }
@@ -247,8 +255,21 @@ describe("launch-gate evidence v3 fixed policy", () => {
       "components/animation-player-core.tsx",
       "components",
       "content",
+      "docs/DEMO_PROMOTION.md",
+      "docs/EXECUTIVE_PREVIEW_HANDOFF.md",
+      "e2e/site.spec.ts",
       "lib/executive-preview-rate-limit.ts",
       "lib/sitemap-metadata.ts",
+      "playwright.config.ts",
+      "scripts/build-executive-demo-runtime.mjs",
+      "scripts/check-executive-preview-lifecycle.mjs",
+      "scripts/check-private-demo-leaks.mjs",
+      "scripts/executive-preview-operator-check.ts",
+      "scripts/release-smoke.mjs",
+      "scripts/verify-private-demo-traces.mjs",
+      "tests/executive-preview-operator-check.test.ts",
+      "tests/playwright-ci-artifact-policy.test.ts",
+      "tests/release-smoke-helpers.test.mjs",
       "scripts/vercel-ignore-build.mjs",
       "tests/vercel-ignore-boundary.test.ts",
       "tests/vercel-ignored-build.test.ts",
@@ -263,9 +284,18 @@ describe("launch-gate evidence v3 fixed policy", () => {
       );
     }
     for (const legalExposureDependency of [
+      "app/[locale]/layout.tsx",
+      "app/globals.css",
       "app/robots.ts",
       "app/sitemap.ts",
+      "components",
+      "docs/LEGAL_REVIEW.md",
+      "e2e/site.spec.ts",
+      "i18n",
+      "lib/metadata.ts",
       "lib/sitemap-metadata.ts",
+      "scripts/release-smoke.mjs",
+      "tests/legal-publishing.test.ts",
     ]) {
       assert.ok(
         (
@@ -273,6 +303,30 @@ describe("launch-gate evidence v3 fixed policy", () => {
             .subjectPaths as readonly string[]
         ).includes(legalExposureDependency),
         `legal review must bind ${legalExposureDependency}`,
+      );
+    }
+    for (const contactExecutionDependency of [
+      "app/[locale]/layout.tsx",
+      "app/globals.css",
+      "components",
+      "content",
+      "docs/CONTACT_DELIVERY.md",
+      "e2e/site.spec.ts",
+      "i18n",
+      "lib/legal-copy-readiness.ts",
+      "lib/metadata.ts",
+      "scripts/release-smoke.mjs",
+      "tests/contact-form.test.ts",
+      "tests/contact-route.test.ts",
+      "tests/contact-schema.test.ts",
+      "tests/legal-publishing.test.ts",
+    ]) {
+      assert.ok(
+        (
+          LAUNCH_GATE_EVIDENCE_V3_POLICY["contact-readiness"]
+            .subjectPaths as readonly string[]
+        ).includes(contactExecutionDependency),
+        `contact readiness must bind ${contactExecutionDependency}`,
       );
     }
     for (const productionQualityDependency of [
@@ -303,6 +357,9 @@ describe("launch-gate evidence v3 fixed policy", () => {
     for (const legacyPreflightDependency of [
       "docs/CONTENT_SOURCES.md",
       "docs/LAUNCH_DECISIONS.md",
+      "docs/LEGACY_CUTOVER.md",
+      "docs/LEGACY_CUTOVER_PREFLIGHT.md",
+      "docs/ROLLBACK_RUNBOOK.md",
       "docs/evidence/legacy-source-crawl-2026-07-21.csv",
       "docs/evidence/legacy-source-crawl-2026-07-21.json",
       "docs/evidence/legacy-source-crawl-2026-07-21.sha256",
@@ -311,6 +368,7 @@ describe("launch-gate evidence v3 fixed policy", () => {
       "scripts/validate-legacy-source-custody.mjs",
       "tests/apache-legacy-generator.test.ts",
       "tests/legacy-apache.contract.ts",
+      "tests/legacy-cutover-preflight.test.ts",
     ]) {
       assert.ok(
         (
@@ -811,6 +869,43 @@ describe("launch-gate evidence v3 file verification", () => {
         "legal-review",
       );
       assert.notEqual(legalAfter.sha256, legalBefore.sha256);
+
+      await writeFile(
+        path.join(repositoryRoot, "lib/metadata.ts"),
+        "changed legal canonical metadata semantics\n",
+      );
+      const legalMetadataAfter =
+        await computeLaunchGateEvidenceV3SubjectDigest(
+          repositoryRoot,
+          "legal-review",
+        );
+      assert.notEqual(legalMetadataAfter.sha256, legalAfter.sha256);
+
+      await seedPolicyScope(repositoryRoot, "contact-readiness");
+      const contactBefore = await computeLaunchGateEvidenceV3SubjectDigest(
+        repositoryRoot,
+        "contact-readiness",
+      );
+      await writeFile(
+        path.join(repositoryRoot, "lib/metadata.ts"),
+        "changed contact canonical metadata semantics\n",
+      );
+      const contactAfter = await computeLaunchGateEvidenceV3SubjectDigest(
+        repositoryRoot,
+        "contact-readiness",
+      );
+      assert.notEqual(contactAfter.sha256, contactBefore.sha256);
+
+      await writeFile(
+        path.join(repositoryRoot, "components/main-content.tsx"),
+        "changed shared page rendering semantics\n",
+      );
+      const contactSharedUiAfter =
+        await computeLaunchGateEvidenceV3SubjectDigest(
+          repositoryRoot,
+          "contact-readiness",
+        );
+      assert.notEqual(contactSharedUiAfter.sha256, contactAfter.sha256);
 
       await seedPolicyScope(repositoryRoot, "legacy-cutover-authorization");
       const legacyBefore = await computeLaunchGateEvidenceV3SubjectDigest(
