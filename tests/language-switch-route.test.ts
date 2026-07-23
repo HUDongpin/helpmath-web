@@ -11,8 +11,8 @@ import {
   PATCH,
   POST,
   PUT,
-  switchLanguage,
 } from '../app/api/language-switch/[locale]/route';
+import {switchLanguage} from '../lib/language-switch-route';
 
 const origin = 'https://www.helpmath.ai';
 

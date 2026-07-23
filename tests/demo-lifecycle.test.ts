@@ -171,6 +171,29 @@ describe('demo candidates', () => {
     );
   });
 
+  it('rejects non-PNG private demo assets while preserving the runtime contract', () => {
+    for (const extension of ['svg', 'mp3']) {
+      const candidate = candidateFixture();
+      const privateAsset = candidate.artifacts.find(({path: artifactPath}) =>
+        artifactPath.startsWith(`private-demo-assets/${candidate.id}/`),
+      );
+      assert.ok(privateAsset, 'fixture must contain a private demo asset');
+      privateAsset.path = privateAsset.path.replace(/\.png$/u, `.${extension}`);
+      candidate.artifactSha256 = computeDemoArtifactSha256(candidate);
+
+      const errors = validateDemoCandidate(candidate).join('\n');
+      assert.match(
+        errors,
+        /path under private-demo-assets must use a lowercase \.png filename/u,
+      );
+      assert.doesNotMatch(errors, /artifactSha256 does not match/u);
+    }
+
+    const candidate = candidateFixture();
+    assert.equal(candidate.runtime.entry, `private-demo-runtime/${candidate.id}.ts`);
+    assert.deepEqual(validateDemoCandidate(candidate), []);
+  });
+
   it('binds the candidate id to the runtime digest and the aggregate to ordered artifacts', () => {
     const candidate = candidateFixture();
     candidate.candidateId = `${candidate.id}--2026-07-22--deadbeef`;

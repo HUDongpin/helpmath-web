@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import {
   buildContactEmail,
   DEVELOPMENT_TURNSTILE_TOKEN,
   handleContactRequest,
-  POST as repositoryGatedPost,
-} from "../app/api/contact/route";
+  verifyTurnstile,
+  type ContactRequestDependencies,
+} from "../lib/contact-route";
 import { contactRequestSchema } from "../lib/contact-schema";
 
 const envKeys = [
@@ -25,8 +27,36 @@ const originalEnv = Object.fromEntries(
   envKeys.map((key) => [key, process.env[key]]),
 );
 const originalFetch = globalThis.fetch;
+function dependencies(
+  resolveRepositoryGateApproved: () => boolean = () => true,
+): ContactRequestDependencies {
+  return {
+    resolveRepositoryGateApproved,
+    resolveDeploymentFlagValue: () =>
+      process.env.NEXT_PUBLIC_CONTACT_ENABLED,
+    isDeliveryConfigured: () =>
+      Boolean(
+        process.env.RESEND_API_KEY?.trim() &&
+          process.env.SUPPORT_TO_EMAIL?.trim() &&
+          process.env.SUPPORT_FROM_EMAIL?.trim(),
+      ),
+    verifyTurnstile: (token, remoteIp) =>
+      verifyTurnstile(token, remoteIp, {
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        environment: process.env.NODE_ENV,
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+        allowedHostnames: process.env.TURNSTILE_ALLOWED_HOSTNAMES,
+        vercelUrl: process.env.VERCEL_URL,
+        vercelBranchUrl: process.env.VERCEL_BRANCH_URL,
+        vercelProjectProductionUrl:
+          process.env.VERCEL_PROJECT_PRODUCTION_URL,
+        fetch: globalThis.fetch,
+      }),
+    deliverContact: async () => "failed",
+  };
+}
 const POST = (request: Request) =>
-  handleContactRequest(request, { resolveRepositoryGateApproved: () => true });
+  handleContactRequest(request, dependencies());
 
 function setEnv(key: (typeof envKeys)[number], value: string | undefined) {
   if (value === undefined) Reflect.deleteProperty(process.env, key);
@@ -94,7 +124,10 @@ describe("POST /api/contact", () => {
       );
     };
 
-    const response = await repositoryGatedPost(request(validRequest()));
+    const response = await handleContactRequest(
+      request(validRequest()),
+      dependencies(() => false),
+    );
     const body = await response.json();
     assert.equal(response.status, 503);
     assertNoStore(response);
@@ -110,6 +143,15 @@ describe("POST /api/contact", () => {
     assert.deepEqual(email.to, ["team@helpmath.ai"]);
     assert.equal(email.replyTo, "ada@example.org");
     assert.doesNotMatch(email.text, /verified-token|turnstile/i);
+  });
+
+  it("keeps contact secrets and delivery code behind an explicit server-only boundary", () => {
+    const serverSource = readFileSync("lib/contact-route-server.ts", "utf8");
+    const requestSource = readFileSync("lib/contact-route.ts", "utf8");
+    assert.match(serverSource, /import ["']server-only["']/u);
+    assert.match(serverSource, /TURNSTILE_SECRET_KEY/u);
+    assert.match(serverSource, /RESEND_API_KEY/u);
+    assert.doesNotMatch(requestSource, /process\.env\.(?:TURNSTILE|RESEND)/u);
   });
 
   it("rejects header-injection addresses before they can become Reply-To", () => {
@@ -419,12 +461,13 @@ describe("POST /api/contact", () => {
       });
     };
 
-    const response = await handleContactRequest(request(validRequest()), {
-      resolveRepositoryGateApproved: () => {
+    const response = await handleContactRequest(
+      request(validRequest()),
+      dependencies(() => {
         repositoryGateChecks += 1;
         return repositoryGateApproved;
-      },
-    });
+      }),
+    );
     const body = await response.json();
 
     assert.equal(fetchCalls, 1);

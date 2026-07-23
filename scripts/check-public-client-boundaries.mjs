@@ -2,15 +2,16 @@ import assert from 'node:assert/strict';
 import {readFile, readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {tsImport} from 'tsx/esm/api';
+import {activeClientModuleSource} from './client-reference-manifest.mjs';
 
 const repositoryRoot = process.cwd();
 const nextRoot = path.join(repositoryRoot, '.next');
 const appOutputRoot = path.join(nextRoot, 'server/app');
 const turnstileRuntimeMarker = 'challenges.cloudflare.com/turnstile/';
-const resourceControlsMarker = '[project]/components/resource-library-controls.tsx';
-const pageHeroMotifMarker = '[project]/components/page-hero-motif.tsx';
-const siteHeaderMarker = '[project]/components/site-header.tsx';
-const nextLinkMarker = '[project]/node_modules/next/dist/client/app-dir/link.js';
+const resourceControlsMarker = '/components/resource-library-controls.tsx';
+const pageHeroMotifMarker = '/components/page-hero-motif.tsx';
+const siteHeaderMarker = '/components/site-header.tsx';
+const nextLinkMarker = '/node_modules/next/dist/client/app-dir/link.js';
 const localeProviderBoundaryMarker = ',"LocaleProvider"]';
 const resourceHashBootstrapMarker = 'id="help-math-resource-hash-bootstrap"';
 const clientLinkFreeRouteManifests = new Set([
@@ -58,7 +59,10 @@ function clientAssetPaths(html) {
 
 async function referencesTurnstile(html) {
   for (const assetPath of clientAssetPaths(html)) {
-    const absolutePath = path.join(nextRoot, assetPath.replace('/_next/', ''));
+    const absolutePath = path.join(
+      nextRoot,
+      decodeURIComponent(assetPath.replace('/_next/', '')),
+    );
     const source = await readFile(absolutePath, 'utf8');
     if (source.includes(turnstileRuntimeMarker)) return true;
   }
@@ -139,26 +143,27 @@ const clientLinkFreeManifests = [];
 for (const filename of clientManifests) {
   const relativePath = path.relative(appOutputRoot, filename);
   const source = await readFile(filename, 'utf8');
+  const activeModuleSource = activeClientModuleSource(source, relativePath);
 
   assert.doesNotMatch(
-    source,
+    activeModuleSource,
     new RegExp(pageHeroMotifMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
     `${relativePath} must render the static page-hero motif on the server.`,
   );
   assert.doesNotMatch(
-    source,
+    activeModuleSource,
     new RegExp(siteHeaderMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
     `${relativePath} must render the site-header shell on the server.`,
   );
   if (clientLinkFreeRouteManifests.has(relativePath)) {
     assert.doesNotMatch(
-      source,
+      activeModuleSource,
       new RegExp(nextLinkMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
       `${relativePath} must use document navigation instead of shipping Next Link.`,
     );
     clientLinkFreeManifests.push(relativePath);
   }
-  if (source.includes(resourceControlsMarker)) {
+  if (activeModuleSource.includes(resourceControlsMarker)) {
     resourceControlsManifests.push(relativePath);
   }
 }

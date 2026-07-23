@@ -383,6 +383,12 @@ export function validateDemoCandidate(value: unknown, expectedId?: string): stri
       if (!isSafeRepositoryPath(artifactPath)) {
         errors.push(`${field}.path must be a normalized in-repository artifact path`);
       }
+      if (
+        artifactPath.startsWith('private-demo-assets/') &&
+        !artifactPath.endsWith('.png')
+      ) {
+        errors.push(`${field}.path under private-demo-assets must use a lowercase .png filename`);
+      }
       validateDigest(sha256, `${field}.sha256`, errors);
       artifacts.push({path: artifactPath, sha256});
     }

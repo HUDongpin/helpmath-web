@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "npm run check:generated && npm run build:executive-runtime && next build && npm run check:public-client-boundaries && npm run check:private-demo-traces && npm run check:private-demo-leaks",
+    "build": "npm run check:generated && npm run build:executive-runtime && next build --webpack && npm run check:public-client-boundaries && npm run check:private-demo-traces && npm run check:private-demo-leaks",
     "build:executive-runtime": "node scripts/build-executive-demo-runtime.mjs",
     "start": "next start",
     "lint": "eslint .",

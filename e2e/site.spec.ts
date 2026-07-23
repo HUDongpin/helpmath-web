@@ -405,7 +405,7 @@ test('the screenshot-matched Nunito Sans typography is bundled and used consiste
   const nunitoPreload = typography.preloadedFonts.find(
     (href) => {
       const pathname = new URL(href).pathname;
-      return pathname.includes('nunito_sans_latin_wght_normal') && pathname.endsWith('.woff2');
+      return pathname.startsWith('/_next/static/media/') && pathname.endsWith('.woff2');
     },
   );
   expect(nunitoPreload).toBeDefined();
@@ -1236,12 +1236,22 @@ for (const locale of ['en', 'es'] as const) {
     );
     const expectColdRoots = (roots: Awaited<ReturnType<typeof captureRoots>>, label: string) => {
       for (const root of roots) {
-        expect(root.contentVisibility, `${label} ${root.label} uses containment`).toBe('auto');
+        const remainsVisible = String(root.label)
+          .split(/\s+/u)
+          .includes('deferred-section--home-closing');
+        expect(
+          root.contentVisibility,
+          remainsVisible
+            ? `${label} ${root.label} stays visible for accessibility inspection`
+            : `${label} ${root.label} uses containment`,
+        ).toBe(remainsVisible ? 'visible' : 'auto');
         if (root.firstChildVisible !== null) {
           expect(
             root.firstChildVisible,
-            `${label} ${root.label} first child is skipped before the root is forced`,
-          ).toBe(false);
+            remainsVisible
+              ? `${label} ${root.label} first child remains available to accessibility tools`
+              : `${label} ${root.label} first child is skipped before the root is forced`,
+          ).toBe(remainsVisible);
         }
       }
     };

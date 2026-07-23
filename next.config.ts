@@ -270,7 +270,7 @@ const nextConfig: NextConfig = {
   skipProxyUrlNormalize: true,
   skipTrailingSlashRedirect: true,
   outputFileTracingIncludes: {
-    '/api/executive-preview/assets/[...asset]': ['./private-demo-assets/**/*'],
+    '/api/executive-preview/assets/[...asset]': ['./private-demo-assets/**/*.png'],
     '/api/executive-preview/runtime/[id]': [
       './.next-private/executive-demo-runtime/*.js',
     ],

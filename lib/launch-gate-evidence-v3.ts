@@ -101,6 +101,8 @@ const CONTACT_SUBJECT_PATHS = [
   "docs/CONTACT_DELIVERY.md",
   "e2e/site.spec.ts",
   "i18n",
+  "lib/contact-route.ts",
+  "lib/contact-route-server.ts",
   "lib/contact-schema.ts",
   "lib/legal-copy-readiness.ts",
   "lib/metadata.ts",
