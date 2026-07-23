@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import {createHash} from 'node:crypto';
 import {appendFile, readdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -14,10 +15,15 @@ export const LIGHTHOUSE_EXPECTED_ROUTES = [
 ];
 export const LIGHTHOUSE_RUNS_PER_ROUTE = 3;
 export const LIGHTHOUSE_MAX_RUN_ATTEMPT = 2;
+export const LIGHTHOUSE_CAPACITY_LOG_MARKER =
+  'HELP_MATH_LIGHTHOUSE_CAPACITY_V1=';
 
 const lighthouseOrigin = 'http://127.0.0.1:3216';
 const qualityJobNames = ['verify', 'browser-quality', 'lighthouse'];
 const gitShaPattern = /^[a-f0-9]{40}$/u;
+const base64UrlPattern = /^[A-Za-z0-9_-]+$/u;
+const maxEvidenceBytes = 1024 * 1024;
+const maxJobLogBytes = 10 * 1024 * 1024;
 
 function median(values) {
   if (values.length === 0 || values.length % 2 === 0) {
@@ -204,13 +210,80 @@ function positiveIntegerString(value) {
   return typeof value === 'string' && /^[1-9][0-9]*$/u.test(value);
 }
 
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function capacityEvidenceLogLine(evidence) {
+  const encoded = Buffer.from(JSON.stringify(evidence), 'utf8').toString(
+    'base64url',
+  );
+  return `${LIGHTHOUSE_CAPACITY_LOG_MARKER}${encoded}`;
+}
+
+export function capacityEvidenceFromJobLog(source) {
+  if (
+    typeof source !== 'string' ||
+    Buffer.byteLength(source, 'utf8') > maxJobLogBytes
+  ) {
+    throw new Error('Attempt-one Lighthouse job log is missing or oversized');
+  }
+
+  const encodedRecords = [];
+  for (const line of source.split(/\r?\n/u)) {
+    const markerIndex = line.indexOf(LIGHTHOUSE_CAPACITY_LOG_MARKER);
+    if (markerIndex === -1) continue;
+    const encoded = line.slice(
+      markerIndex + LIGHTHOUSE_CAPACITY_LOG_MARKER.length,
+    );
+    if (
+      !base64UrlPattern.test(encoded) ||
+      line.indexOf(
+        LIGHTHOUSE_CAPACITY_LOG_MARKER,
+        markerIndex + LIGHTHOUSE_CAPACITY_LOG_MARKER.length,
+      ) !== -1
+    ) {
+      throw new Error(
+        'Attempt-one Lighthouse job log has a malformed capacity record',
+      );
+    }
+    encodedRecords.push(encoded);
+  }
+
+  if (encodedRecords.length !== 1) {
+    throw new Error(
+      'Attempt-one Lighthouse job log must contain exactly one capacity record',
+    );
+  }
+
+  const decoded = Buffer.from(encodedRecords[0], 'base64url');
+  if (
+    decoded.length === 0 ||
+    decoded.length > maxEvidenceBytes ||
+    decoded.toString('base64url') !== encodedRecords[0]
+  ) {
+    throw new Error(
+      'Attempt-one Lighthouse job log has a non-canonical capacity record',
+    );
+  }
+
+  try {
+    return JSON.parse(decoded.toString('utf8'));
+  } catch {
+    throw new Error(
+      'Attempt-one Lighthouse job log capacity record is not valid JSON',
+    );
+  }
+}
+
 function readRunContext() {
   const context = {
     repository: process.env.GITHUB_REPOSITORY,
     workflow: process.env.GITHUB_WORKFLOW,
     runId: process.env.GITHUB_RUN_ID,
     runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
-    headSha: process.env.GITHUB_SHA,
+    headSha: process.env.QUALITY_HEAD_SHA,
+    checkoutSha: process.env.GITHUB_SHA,
     runner: {
       name: process.env.RUNNER_NAME,
       os: process.env.RUNNER_OS,
@@ -227,6 +300,8 @@ function readRunContext() {
     context.runAttempt < 1 ||
     typeof context.headSha !== 'string' ||
     !gitShaPattern.test(context.headSha) ||
+    typeof context.checkoutSha !== 'string' ||
+    !gitShaPattern.test(context.checkoutSha) ||
     !Object.values(context.runner).every(
       value => typeof value === 'string' && value.length > 0 && value.length <= 200,
     )
@@ -245,10 +320,11 @@ function validatePriorCapacityEvidence(evidence, current) {
     'runId',
     'runAttempt',
     'headSha',
+    'checkoutSha',
     'runner',
     'classification',
   ];
-  if (!hasExactKeys(evidence, topLevelKeys) || evidence.schemaVersion !== 2) {
+  if (!hasExactKeys(evidence, topLevelKeys) || evidence.schemaVersion !== 3) {
     throw new Error('Attempt-one capacity evidence has an invalid envelope');
   }
   if (
@@ -256,7 +332,8 @@ function validatePriorCapacityEvidence(evidence, current) {
     evidence.workflow !== current.workflow ||
     evidence.runId !== current.runId ||
     evidence.runAttempt !== 1 ||
-    evidence.headSha !== current.headSha
+    evidence.headSha !== current.headSha ||
+    evidence.checkoutSha !== current.checkoutSha
   ) {
     throw new Error('Attempt-one capacity evidence identity does not match');
   }
@@ -347,6 +424,35 @@ function validateJobsEnvelope(
     jobsByName.set(job.name, job);
   }
 
+  if (expectedAttempt === 1 && expectedConclusions) {
+    const lighthouseJob = jobsByName.get('lighthouse');
+    if (!Array.isArray(lighthouseJob?.steps)) {
+      throw new Error(
+        'Quality attempt 1 Lighthouse job has no auditable steps',
+      );
+    }
+    const requiredSteps = new Map([
+      ['Authorize Lighthouse workflow attempt', 'success'],
+      ['Classify Lighthouse runner capacity', 'success'],
+      ['Enforce eligible Lighthouse verdict', 'failure'],
+      ['Retain Lighthouse reports', 'success'],
+    ]);
+    for (const [requiredName, requiredConclusion] of requiredSteps) {
+      const matches = lighthouseJob.steps.filter(
+        step => step?.name === requiredName,
+      );
+      if (
+        matches.length !== 1 ||
+        matches[0].status !== 'completed' ||
+        matches[0].conclusion !== requiredConclusion
+      ) {
+        throw new Error(
+          `Quality attempt 1 Lighthouse step ${requiredName} must conclude ${requiredConclusion}`,
+        );
+      }
+    }
+  }
+
   let latestCompletionMs = 0;
   for (const [index, expectedName] of qualityJobNames.entries()) {
     const job = jobsByName.get(expectedName);
@@ -371,12 +477,21 @@ function validateJobsEnvelope(
     }
 
     const startedAtMs = Date.parse(job.started_at);
-    if (!Number.isFinite(startedAtMs)) {
+    const mayStillBeQueued =
+      !expectedConclusions &&
+      expectedName !== 'lighthouse' &&
+      job.status === 'queued' &&
+      job.started_at === null;
+    if (!Number.isFinite(startedAtMs) && !mayStillBeQueued) {
       throw new Error(
         `Quality attempt ${expectedAttempt} ${expectedName} has no start time`,
       );
     }
-    if (earliestStartMs !== null && startedAtMs < earliestStartMs) {
+    if (
+      Number.isFinite(startedAtMs) &&
+      earliestStartMs !== null &&
+      startedAtMs < earliestStartMs
+    ) {
       throw new Error(
         `Quality attempt ${expectedAttempt} reused an earlier job instead of rerunning the full workflow`,
       );
@@ -483,7 +598,7 @@ async function classifyCommand(reportDirectory) {
   const routeMedians = JSON.stringify(result.routeBenchmarkMedians);
   const context = readRunContext();
   const evidence = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     ...context,
     classification: result,
   };
@@ -500,6 +615,7 @@ async function classifyCommand(reportDirectory) {
     route_benchmark_medians: routeMedians,
   });
 
+  console.log(capacityEvidenceLogLine(evidence));
   if (process.env.GITHUB_STEP_SUMMARY) {
     const status = result.eligible ? 'eligible' : 'ineligible';
     await appendFile(
@@ -534,7 +650,7 @@ async function verdictCommand(reportDirectory) {
     assertionOutcome,
   });
   const evidence = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     ...context,
     eligible,
     assertionOutcome,
@@ -552,16 +668,21 @@ async function verdictCommand(reportDirectory) {
   if (!result.ok) process.exitCode = 1;
 }
 
-async function readJsonFile(filePath, label) {
+async function readTextFile(filePath, label, maxBytes = maxEvidenceBytes) {
   let source;
   try {
     source = await readFile(filePath, 'utf8');
   } catch {
     throw new Error(`Missing ${label}`);
   }
-  if (Buffer.byteLength(source, 'utf8') > 1024 * 1024) {
-    throw new Error(`${label} exceeds the one-megabyte limit`);
+  if (Buffer.byteLength(source, 'utf8') > maxBytes) {
+    throw new Error(`${label} exceeds its size limit`);
   }
+  return source;
+}
+
+async function readJsonFile(filePath, label) {
+  const source = await readTextFile(filePath, label);
   try {
     return JSON.parse(source);
   } catch {
@@ -569,7 +690,7 @@ async function readJsonFile(filePath, label) {
   }
 }
 
-async function authorizeAttemptCommand(evidenceDirectory, priorCapacityPath) {
+async function authorizeAttemptCommand(evidenceDirectory, priorJobLogPath) {
   if (!evidenceDirectory) {
     throw new Error('An attempt-authorization evidence directory is required');
   }
@@ -578,15 +699,43 @@ async function authorizeAttemptCommand(evidenceDirectory, priorCapacityPath) {
   let priorCapacityEvidence = null;
   let priorJobs = null;
   let currentJobs = null;
+  let priorEvidence = null;
+  let priorEvidenceError = null;
 
   if (current.runAttempt === LIGHTHOUSE_MAX_RUN_ATTEMPT) {
-    if (!priorCapacityPath) {
-      throw new Error('The attempt-one capacity evidence path is required');
+    if (!priorJobLogPath) {
+      throw new Error('The attempt-one Lighthouse job log path is required');
     }
-    priorCapacityEvidence = await readJsonFile(
-      path.resolve(priorCapacityPath),
-      'attempt-one capacity evidence',
-    );
+    try {
+      const priorJobLog = await readTextFile(
+        path.resolve(priorJobLogPath),
+        'attempt-one Lighthouse job log',
+        maxJobLogBytes,
+      );
+      priorCapacityEvidence = capacityEvidenceFromJobLog(priorJobLog);
+      const normalizedCapacityEvidence = `${JSON.stringify(
+        priorCapacityEvidence,
+        null,
+        2,
+      )}\n`;
+      await writeFile(
+        path.join(
+          resolvedEvidenceDirectory,
+          'attempt-1-capacity-verdict.json',
+        ),
+        normalizedCapacityEvidence,
+      );
+      priorEvidence = {
+        source: 'github-actions-job-log',
+        logSha256: sha256(priorJobLog),
+        capacityEvidenceSha256: sha256(normalizedCapacityEvidence),
+      };
+    } catch (error) {
+      priorEvidenceError =
+        error instanceof Error
+          ? error.message
+          : 'Invalid attempt-one Lighthouse job log';
+    }
     priorJobs = await readJsonFile(
       path.join(resolvedEvidenceDirectory, 'attempt-1-jobs.json'),
       'attempt-one jobs evidence',
@@ -597,15 +746,22 @@ async function authorizeAttemptCommand(evidenceDirectory, priorCapacityPath) {
     );
   }
 
-  const result = authorizeLighthouseAttempt({
-    current,
-    priorCapacityEvidence,
-    priorJobs,
-    currentJobs,
-  });
+  const result = priorEvidenceError
+    ? {
+        authorized: false,
+        authorizationKind: null,
+        reason: priorEvidenceError,
+      }
+    : authorizeLighthouseAttempt({
+        current,
+        priorCapacityEvidence,
+        priorJobs,
+        currentJobs,
+      });
   const evidence = {
-    schemaVersion: 1,
+    schemaVersion: 3,
     ...current,
+    priorEvidence,
     ...result,
   };
   await writeFile(

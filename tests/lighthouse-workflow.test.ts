@@ -33,6 +33,14 @@ describe('Lighthouse quality gate', () => {
       ['verify', 'browser-quality', 'lighthouse'],
     );
     assert.match(workflow, /^permissions:\n  contents: read$/mu);
+    assert.equal(
+      [
+        ...verdict.matchAll(
+          /QUALITY_HEAD_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/gu,
+        ),
+      ].length,
+      3,
+    );
     assert.match(
       verdict,
       /permissions:\n\s+actions: read\n\s+contents: read/u,
@@ -46,11 +54,16 @@ describe('Lighthouse quality gate', () => {
     assert.match(verdict, /continue-on-error: true/u);
     assert.match(
       verdict,
-      /name: Authorize Lighthouse workflow attempt[\s\S]*gh run download "\$GITHUB_RUN_ID"[\s\S]*attempts\/1\/jobs\?per_page=100[\s\S]*attempts\/2\/jobs\?per_page=100[\s\S]*authorize-attempt/u,
+      /name: Authorize Lighthouse workflow attempt[\s\S]*attempts\/1\/jobs\?per_page=100[\s\S]*actions\/jobs\/\$prior_lighthouse_job_id\/logs[\s\S]*attempts\/2\/jobs\?per_page=100[\s\S]*authorize-attempt/u,
+    );
+    assert.doesNotMatch(verdict, /gh run download/u);
+    assert.match(
+      verdict,
+      /fetch_github_api\(\)[\s\S]*for fetch_attempt in 1 2 3 4; do[\s\S]*sleep 3/u,
     );
     assert.match(
       verdict,
-      /for poll_attempt in 1 2 3 4 5 6; do[\s\S]*sleep 5/u,
+      /for poll_attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do[\s\S]*e\.jobs\?\.length === 3[\s\S]*sleep 5/u,
     );
     assert.match(
       verdict,

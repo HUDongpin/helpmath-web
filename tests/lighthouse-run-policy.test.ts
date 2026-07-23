@@ -11,11 +11,13 @@ import path from 'node:path';
 import {describe, it} from 'node:test';
 import {promisify} from 'node:util';
 import {
+  LIGHTHOUSE_CAPACITY_LOG_MARKER,
   LIGHTHOUSE_EXPECTED_ROUTES,
   LIGHTHOUSE_MAX_RUN_ATTEMPT,
   LIGHTHOUSE_RUNS_PER_ROUTE,
   LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
   authorizeLighthouseAttempt,
+  capacityEvidenceFromJobLog,
   classifyLighthouseReports,
   evaluateLighthouseVerdict,
 } from '../scripts/lighthouse-run-policy.mjs';
@@ -23,6 +25,7 @@ import {
 const repositoryRoot = process.cwd();
 const execFileAsync = promisify(execFile);
 const headSha = 'a'.repeat(40);
+const checkoutSha = 'b'.repeat(40);
 
 function reportsWithBenchmarks(
   overrides: Partial<Record<string, number[]>> = {},
@@ -46,6 +49,7 @@ function runContext(runAttempt: number) {
     runId: '30000000000',
     runAttempt,
     headSha,
+    checkoutSha,
     runner: {
       name: `runner-${runAttempt}`,
       os: 'macOS',
@@ -75,6 +79,31 @@ function jobsEnvelope(
           conclusions[index] === null
             ? null
             : new Date(startMs + index * 1_000 + 10_000).toISOString(),
+        steps:
+          name === 'lighthouse' && runAttempt === 1
+            ? [
+                {
+                  name: 'Authorize Lighthouse workflow attempt',
+                  status: 'completed',
+                  conclusion: 'success',
+                },
+                {
+                  name: 'Classify Lighthouse runner capacity',
+                  status: 'completed',
+                  conclusion: 'success',
+                },
+                {
+                  name: 'Enforce eligible Lighthouse verdict',
+                  status: 'completed',
+                  conclusion: 'failure',
+                },
+                {
+                  name: 'Retain Lighthouse reports',
+                  status: 'completed',
+                  conclusion: 'success',
+                },
+              ]
+            : [],
       }),
     ),
   };
@@ -82,7 +111,7 @@ function jobsEnvelope(
 
 function slowCapacityEvidence() {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     ...runContext(1),
     classification: classifyLighthouseReports(
       reportsWithBenchmarks({'/': [800, 900, 1500]}),
@@ -197,14 +226,15 @@ describe('Lighthouse runner capacity policy', () => {
         GITHUB_WORKFLOW: 'Quality',
         GITHUB_RUN_ID: '30000000000',
         GITHUB_RUN_ATTEMPT: '1',
-        GITHUB_SHA: headSha,
+        QUALITY_HEAD_SHA: headSha,
+        GITHUB_SHA: checkoutSha,
         RUNNER_NAME: 'test-runner',
         RUNNER_OS: 'macOS',
         RUNNER_ARCH: 'X64',
         GITHUB_OUTPUT: outputPath,
       };
 
-      await execFileAsync(
+      const classificationRun = await execFileAsync(
         process.execPath,
         [
           'scripts/lighthouse-run-policy.mjs',
@@ -239,11 +269,19 @@ describe('Lighthouse runner capacity policy', () => {
       const quality = JSON.parse(
         await readFile(path.join(directory, 'quality-verdict.json'), 'utf8'),
       );
-      assert.equal(capacity.schemaVersion, 2);
+      assert.equal(capacity.schemaVersion, 3);
       assert.equal(capacity.runId, '30000000000');
+      assert.equal(capacity.headSha, headSha);
+      assert.equal(capacity.checkoutSha, checkoutSha);
       assert.equal(capacity.classification.eligible, true);
-      assert.equal(quality.schemaVersion, 2);
+      assert.equal(quality.schemaVersion, 3);
+      assert.equal(quality.headSha, headSha);
+      assert.equal(quality.checkoutSha, checkoutSha);
       assert.equal(quality.ok, true);
+      assert.deepEqual(
+        capacityEvidenceFromJobLog(classificationRun.stdout),
+        capacity,
+      );
       assert.match(
         await readFile(outputPath, 'utf8'),
         /^eligible=true$/mu,
@@ -251,6 +289,34 @@ describe('Lighthouse runner capacity policy', () => {
     } finally {
       await rm(directory, {recursive: true, force: true});
     }
+  });
+
+  it('rejects missing, duplicated, malformed, and non-canonical log records', () => {
+    assert.throws(
+      () => capacityEvidenceFromJobLog('ordinary log output\n'),
+      /exactly one capacity record/u,
+    );
+    assert.throws(
+      () =>
+        capacityEvidenceFromJobLog(
+          `${LIGHTHOUSE_CAPACITY_LOG_MARKER}e30\n${LIGHTHOUSE_CAPACITY_LOG_MARKER}e30\n`,
+        ),
+      /exactly one capacity record/u,
+    );
+    assert.throws(
+      () =>
+        capacityEvidenceFromJobLog(
+          `${LIGHTHOUSE_CAPACITY_LOG_MARKER}not+base64\n`,
+        ),
+      /malformed capacity record/u,
+    );
+    assert.throws(
+      () =>
+        capacityEvidenceFromJobLog(
+          `${LIGHTHOUSE_CAPACITY_LOG_MARKER}e30=\n`,
+        ),
+      /malformed capacity record/u,
+    );
   });
 });
 
@@ -329,6 +395,11 @@ describe('Lighthouse workflow-attempt authorization', () => {
       currentJobs.jobs[2],
       currentJobs.jobs[0],
     );
+    for (const job of currentJobs.jobs) {
+      if (job.name === 'lighthouse') continue;
+      job.status = 'queued';
+      (job as {started_at: string | null}).started_at = null;
+    }
     const result = authorizeLighthouseAttempt({
       current: runContext(2),
       priorCapacityEvidence: slowCapacityEvidence(),
@@ -342,7 +413,7 @@ describe('Lighthouse workflow-attempt authorization', () => {
 
   it('rejects an eligible first attempt and a focused job rerun', () => {
     const eligibleEvidence = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       ...runContext(1),
       classification: classifyLighthouseReports(reportsWithBenchmarks()),
     };
@@ -398,5 +469,148 @@ describe('Lighthouse workflow-attempt authorization', () => {
 
     assert.equal(result.authorized, false);
     assert.match(result.reason, /exceeds the maximum/u);
+  });
+
+  it('binds the source SHA and checkout SHA independently', () => {
+    const priorJobs = jobsEnvelope(
+      1,
+      ['success', 'success', 'failure'],
+      '2026-07-24T00:00:00.000Z',
+    );
+    const currentJobs = jobsEnvelope(
+      2,
+      [null, null, null],
+      '2026-07-24T00:01:00.000Z',
+    );
+    const current = runContext(2);
+
+    assert.equal(
+      authorizeLighthouseAttempt({
+        current,
+        priorCapacityEvidence: slowCapacityEvidence(),
+        priorJobs,
+        currentJobs,
+      }).authorized,
+      true,
+    );
+
+    const wrongCheckout = structuredClone(slowCapacityEvidence());
+    wrongCheckout.checkoutSha = 'c'.repeat(40);
+    assert.equal(
+      authorizeLighthouseAttempt({
+        current,
+        priorCapacityEvidence: wrongCheckout,
+        priorJobs,
+        currentJobs,
+      }).authorized,
+      false,
+    );
+
+    const wrongSourceJobs = structuredClone(currentJobs);
+    wrongSourceJobs.jobs[0].head_sha = 'd'.repeat(40);
+    assert.equal(
+      authorizeLighthouseAttempt({
+        current,
+        priorCapacityEvidence: slowCapacityEvidence(),
+        priorJobs,
+        currentJobs: wrongSourceJobs,
+      }).authorized,
+      false,
+    );
+  });
+
+  it('authorizes attempt two from the GitHub-served prior job-log record', async () => {
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), 'helpmath-lighthouse-rerun-'),
+    );
+    const priorLogPath = path.join(directory, 'attempt-1-lighthouse.log');
+    const priorCapacity = slowCapacityEvidence();
+    try {
+      await Promise.all([
+        writeFile(
+          path.join(directory, 'attempt-1-jobs.json'),
+          JSON.stringify(
+            jobsEnvelope(
+              1,
+              ['success', 'success', 'failure'],
+              '2026-07-24T00:00:00.000Z',
+            ),
+          ),
+        ),
+        writeFile(
+          path.join(directory, 'attempt-2-jobs.json'),
+          JSON.stringify(
+            jobsEnvelope(
+              2,
+              [null, null, null],
+              '2026-07-24T00:01:00.000Z',
+            ),
+          ),
+        ),
+        writeFile(
+          priorLogPath,
+          `2026-07-24T00:00:30.0000000Z ${LIGHTHOUSE_CAPACITY_LOG_MARKER}${Buffer.from(
+            JSON.stringify(priorCapacity),
+            'utf8',
+          ).toString('base64url')}\n`,
+        ),
+      ]);
+
+      await execFileAsync(
+        process.execPath,
+        [
+          'scripts/lighthouse-run-policy.mjs',
+          'authorize-attempt',
+          directory,
+          priorLogPath,
+        ],
+        {
+          cwd: repositoryRoot,
+          env: {
+            ...process.env,
+            GITHUB_REPOSITORY: 'HUDongpin/helpmath-web',
+            GITHUB_WORKFLOW: 'Quality',
+            GITHUB_RUN_ID: '30000000000',
+            GITHUB_RUN_ATTEMPT: '2',
+            QUALITY_HEAD_SHA: headSha,
+            GITHUB_SHA: checkoutSha,
+            RUNNER_NAME: 'replacement-runner',
+            RUNNER_OS: 'macOS',
+            RUNNER_ARCH: 'X64',
+          },
+        },
+      );
+
+      const authorization = JSON.parse(
+        await readFile(
+          path.join(directory, 'attempt-authorization.json'),
+          'utf8',
+        ),
+      );
+      const extractedCapacity = JSON.parse(
+        await readFile(
+          path.join(directory, 'attempt-1-capacity-verdict.json'),
+          'utf8',
+        ),
+      );
+      assert.equal(authorization.schemaVersion, 3);
+      assert.equal(authorization.authorized, true);
+      assert.equal(
+        authorization.authorizationKind,
+        'capacity-replacement',
+      );
+      assert.equal(
+        authorization.priorEvidence.source,
+        'github-actions-job-log',
+      );
+      assert.match(authorization.priorEvidence.logSha256, /^[a-f0-9]{64}$/u);
+      assert.match(
+        authorization.priorEvidence.capacityEvidenceSha256,
+        /^[a-f0-9]{64}$/u,
+      );
+      assert.deepEqual(extractedCapacity, priorCapacity);
+    } finally {
+      await rm(directory, {recursive: true, force: true});
+    }
   });
 });

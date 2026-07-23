@@ -101,33 +101,65 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          # Pull-request jobs report this source SHA through the Jobs API while
+          # GITHUB_SHA identifies the synthetic merge commit being checked out.
+          QUALITY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p artifacts/lighthouse-rerun
-          prior_artifact_dir="$RUNNER_TEMP/lighthouse-attempt-1"
-          prior_capacity_path="$prior_artifact_dir/lighthouse-ci/capacity-verdict.json"
-          if [[ "$GITHUB_RUN_ATTEMPT" == "2" ]]; then
-            gh run download "$GITHUB_RUN_ID" \
-              --repo "$GITHUB_REPOSITORY" \
-              --name "lighthouse-$GITHUB_RUN_ID-1" \
-              --dir "$prior_artifact_dir"
-            if [[ ! -f "$prior_capacity_path" ]]; then
-              prior_capacity_path="$prior_artifact_dir/capacity-verdict.json"
-            fi
-            gh api \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/1/jobs?per_page=100" \
-              > artifacts/lighthouse-rerun/attempt-1-jobs.json
-            for poll_attempt in 1 2 3 4 5 6; do
-              gh api \
+          prior_job_log_path="$RUNNER_TEMP/lighthouse-attempt-1.log"
+          fetch_github_api() {
+            local endpoint="$1"
+            local output_path="$2"
+            local fetch_attempt
+            for fetch_attempt in 1 2 3 4; do
+              if gh api \
                 -H "X-GitHub-Api-Version: 2022-11-28" \
+                "$endpoint" > "$output_path"; then
+                return 0
+              fi
+              if [[ "$fetch_attempt" == "4" ]]; then
+                return 1
+              fi
+              sleep 3
+            done
+          }
+          if [[ "$GITHUB_RUN_ATTEMPT" == "2" ]]; then
+            fetch_github_api \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/1/jobs?per_page=100" \
+              artifacts/lighthouse-rerun/attempt-1-jobs.json
+            prior_lighthouse_job_id="$(
+              node --input-type=module -e "
+                import {readFileSync} from 'node:fs';
+                const envelope = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+                const jobs = envelope.jobs?.filter(job => job?.name === 'lighthouse') ?? [];
+                if (
+                  jobs.length !== 1 ||
+                  !Number.isSafeInteger(jobs[0].id) ||
+                  jobs[0].id <= 0
+                ) process.exit(1);
+                process.stdout.write(String(jobs[0].id));
+              " artifacts/lighthouse-rerun/attempt-1-jobs.json
+            )"
+            fetch_github_api \
+              "repos/$GITHUB_REPOSITORY/actions/jobs/$prior_lighthouse_job_id/logs" \
+              "$prior_job_log_path"
+            for poll_attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              if ! fetch_github_api \
                 "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/2/jobs?per_page=100" \
-                > artifacts/lighthouse-rerun/attempt-2-jobs.json
+                artifacts/lighthouse-rerun/attempt-2-jobs.json; then
+                if [[ "$poll_attempt" == "12" ]]; then
+                  echo "Attempt-two Quality jobs API remained unavailable." >&2
+                  exit 1
+                fi
+                sleep 5
+                continue
+              fi
               if node -e \
-                "const e=require('./artifacts/lighthouse-rerun/attempt-2-jobs.json'); process.exit(e.jobs?.length === 3 && e.jobs.every(j => Number.isFinite(Date.parse(j.started_at))) ? 0 : 1)"; then
+                "const e=require('./artifacts/lighthouse-rerun/attempt-2-jobs.json'); process.exit(e.jobs?.length === 3 ? 0 : 1)"; then
                 break
               fi
-              if [[ "$poll_attempt" == "6" ]]; then
-                echo "All three Quality jobs did not start within the authorization window." >&2
+              if [[ "$poll_attempt" == "12" ]]; then
+                echo "All three Quality jobs did not appear within the authorization window." >&2
                 exit 1
               fi
               sleep 5
@@ -135,7 +167,7 @@ jobs:
           fi
           node scripts/lighthouse-run-policy.mjs authorize-attempt \
             artifacts/lighthouse-rerun \
-            "$prior_capacity_path"
+            "$prior_job_log_path"
       - run: npm run build
       - run: npx playwright install chromium
       - name: Use Playwright Chromium for Lighthouse
@@ -150,10 +182,13 @@ jobs:
       - name: Classify Lighthouse runner capacity
         id: environment
         if: ${{ !cancelled() }}
+        env:
+          QUALITY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/lighthouse-run-policy.mjs classify artifacts/lighthouse-ci
       - name: Enforce eligible Lighthouse verdict
         if: ${{ !cancelled() }}
         env:
+          QUALITY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           RUNNER_ELIGIBLE: ${{ steps.environment.outputs.eligible }}
           LIGHTHOUSE_ASSERTION_OUTCOME: ${{ steps.lighthouse_assertions.outcome }}
         run: node scripts/lighthouse-run-policy.mjs verdict artifacts/lighthouse-ci

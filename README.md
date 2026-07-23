@@ -37,10 +37,21 @@ The Lighthouse job retains three samples for each of five reviewed routes,
 plus versioned capacity and quality verdicts. Every route's median Lighthouse
 benchmark index must be greater than Lighthouse's own slow-host boundary. An
 identity-bound, explicitly ineligible first runner permits exactly one complete
-Quality workflow rerun on a fresh runner. Attempt two verifies the retained
-attempt-one capacity artifact and all three freshly started Quality jobs;
+Quality workflow rerun on a fresh runner. Because GitHub's native full-rerun
+surface does not make the prior attempt's artifact available to attempt two,
+attempt two reconstructs the versioned capacity record from the GitHub-served
+exact-run Lighthouse job log, verifies that record and the required prior
+steps, and verifies all three replacement Quality jobs, including jobs that are
+still queued. For pull requests, the evidence binds both the source-branch SHA
+reported by the Jobs API and the synthetic merge SHA actually checked out by
+Actions;
 focused job retries, attempts after two, and retries of an eligible product
 budget failure are rejected.
+
+This rerun policy establishes lineage for reviewed candidate code; it is not a
+cryptographic attestation against a malicious pull request that rewrites its own
+workflow or policy script. Production evidence independently accepts only a
+reviewed Quality `push` run for the exact `main` commit.
 
 Every external GitHub Action is pinned to a reviewed full commit SHA.
 Dependabot groups proposed GitHub Actions updates into a weekly pull request;
