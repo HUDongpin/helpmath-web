@@ -183,6 +183,10 @@ JavaScript runtime bundles or PNG derivatives from server-only directories.
 The obsolete `/flash-assets/` URLs remain closed.
 Entry, demo, runtime, and asset responses retain private/no-store and
 `noindex`, `nofollow`, `noarchive` boundaries.
+The two HTML entry routes are intentionally crawlable so search engines can
+read those `noindex` directives; `robots.txt` must not block them. This does
+not grant access to either prototype: the session, runtime, asset, and
+server-component checks remain unchanged, and `/api/` remains disallowed.
 
 Sessions last at most 12 hours and never outlive the absolute
 `EXECUTIVE_PREVIEW_EXPIRES_AT` value or the reviewed Production ceiling in

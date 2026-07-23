@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-07-23T14:59:07.744Z",
+  "request": {
+    "method": "GET",
+    "redirect": "manual",
+    "credentialsSubmitted": false,
+    "querySubmitted": false
+  },
+  "scope": {
+    "origins": [
+      "http://helpprogram.net",
+      "https://helpprogram.net",
+      "http://www.helpprogram.net",
+      "https://www.helpprogram.net"
+    ],
+    "paths": [
+      "/student_login.aspx",
+      "/teacher_login.aspx",
+      "/school_login.aspx",
+      "/district_login.aspx",
+      "/Project_Admin_Login.aspx"
+    ]
+  },
+  "summary": {
+    "requests": 20,
+    "status200": 20,
+    "redirects": 0,
+    "pageDirective": 20,
+    "codeFile": 20,
+    "serverControl": 20,
+    "passwordControl": 20
+  },
+  "statusMatrix": [
+    {
+      "origin": "http://helpprogram.net",
+      "statuses": [200, 200, 200, 200, 200],
+      "locations": [null, null, null, null, null],
+      "bodySha256ByPath": [
+        "f5d79f24629db06ad443daeb8e826be45fb22a6c0ba75576a9ede0726f54e8b0",
+        "5c978d44b3a8292d19bc57dd764befae59d7c555535ee0294bf7fbc883c8f288",
+        "f4c3d79adee10e115c1a5bb614fbd2d92e2385aa7f91f0ae4871d9533b8c8b6d",
+        "0e3400274d88da62ccbb83b01929c6f76f9f72138d01fe984290ddbdc855b0ea",
+        "8ddc2d5affc9c85d081667bbd5d421cc43bed69d7cfa23eca6159945701317df"
+      ],
+      "server": "Apache"
+    },
+    {
+      "origin": "https://helpprogram.net",
+      "statuses": [200, 200, 200, 200, 200],
+      "locations": [null, null, null, null, null],
+      "bodySha256ByPath": [
+        "f5d79f24629db06ad443daeb8e826be45fb22a6c0ba75576a9ede0726f54e8b0",
+        "5c978d44b3a8292d19bc57dd764befae59d7c555535ee0294bf7fbc883c8f288",
+        "f4c3d79adee10e115c1a5bb614fbd2d92e2385aa7f91f0ae4871d9533b8c8b6d",
+        "0e3400274d88da62ccbb83b01929c6f76f9f72138d01fe984290ddbdc855b0ea",
+        "8ddc2d5affc9c85d081667bbd5d421cc43bed69d7cfa23eca6159945701317df"
+      ],
+      "server": "Apache"
+    },
+    {
+      "origin": "http://www.helpprogram.net",
+      "statuses": [200, 200, 200, 200, 200],
+      "locations": [null, null, null, null, null],
+      "bodySha256ByPath": [
+        "f5d79f24629db06ad443daeb8e826be45fb22a6c0ba75576a9ede0726f54e8b0",
+        "5c978d44b3a8292d19bc57dd764befae59d7c555535ee0294bf7fbc883c8f288",
+        "f4c3d79adee10e115c1a5bb614fbd2d92e2385aa7f91f0ae4871d9533b8c8b6d",
+        "0e3400274d88da62ccbb83b01929c6f76f9f72138d01fe984290ddbdc855b0ea",
+        "8ddc2d5affc9c85d081667bbd5d421cc43bed69d7cfa23eca6159945701317df"
+      ],
+      "server": "Apache"
+    },
+    {
+      "origin": "https://www.helpprogram.net",
+      "statuses": [200, 200, 200, 200, 200],
+      "locations": [null, null, null, null, null],
+      "bodySha256ByPath": [
+        "f5d79f24629db06ad443daeb8e826be45fb22a6c0ba75576a9ede0726f54e8b0",
+        "5c978d44b3a8292d19bc57dd764befae59d7c555535ee0294bf7fbc883c8f288",
+        "f4c3d79adee10e115c1a5bb614fbd2d92e2385aa7f91f0ae4871d9533b8c8b6d",
+        "0e3400274d88da62ccbb83b01929c6f76f9f72138d01fe984290ddbdc855b0ea",
+        "8ddc2d5affc9c85d081667bbd5d421cc43bed69d7cfa23eca6159945701317df"
+      ],
+      "server": "Apache"
+    }
+  ],
+  "bodiesByPath": [
+    {
+      "path": "/student_login.aspx",
+      "bytes": 1577,
+      "sha256": "f5d79f24629db06ad443daeb8e826be45fb22a6c0ba75576a9ede0726f54e8b0",
+      "markers": {
+        "pageDirective": true,
+        "codeFile": true,
+        "serverControl": true,
+        "passwordControl": true
+      }
+    },
+    {
+      "path": "/teacher_login.aspx",
+      "bytes": 1735,
+      "sha256": "5c978d44b3a8292d19bc57dd764befae59d7c555535ee0294bf7fbc883c8f288",
+      "markers": {
+        "pageDirective": true,
+        "codeFile": true,
+        "serverControl": true,
+        "passwordControl": true
+      }
+    },
+    {
+      "path": "/school_login.aspx",
+      "bytes": 1730,
+      "sha256": "f4c3d79adee10e115c1a5bb614fbd2d92e2385aa7f91f0ae4871d9533b8c8b6d",
+      "markers": {
+        "pageDirective": true,
+        "codeFile": true,
+        "serverControl": true,
+        "passwordControl": true
+      }
+    },
+    {
+      "path": "/district_login.aspx",
+      "bytes": 1732,
+      "sha256": "0e3400274d88da62ccbb83b01929c6f76f9f72138d01fe984290ddbdc855b0ea",
+      "markers": {
+        "pageDirective": true,
+        "codeFile": true,
+        "serverControl": true,
+        "passwordControl": true
+      }
+    },
+    {
+      "path": "/Project_Admin_Login.aspx",
+      "bytes": 1721,
+      "sha256": "8ddc2d5affc9c85d081667bbd5d421cc43bed69d7cfa23eca6159945701317df",
+      "markers": {
+        "pageDirective": true,
+        "codeFile": true,
+        "serverControl": true,
+        "passwordControl": true
+      }
+    }
+  ],
+  "retention": {
+    "responseBodiesRetained": false,
+    "cookiesRetained": false,
+    "headersRetained": ["Location", "Server"],
+    "note": "Each origin row binds the five path-ordered response fingerprints. Identical fingerprints show that all four origins returned the same bytes for each path. Only status, selected non-secret headers, byte counts, SHA-256 fingerprints, and marker booleans are retained."
+  },
+  "limitations": [
+    "This is a point-in-time public-network observation, not proof of legacy-host administrative control.",
+    "The markers describe unprocessed ASP.NET page directives and server-control markup, not code-behind source.",
+    "This baseline does not prove that the prepared containment package has been installed."
+  ]
+}

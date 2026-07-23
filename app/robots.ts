@@ -36,8 +36,6 @@ export function buildDemoLifecycleRobotsRule(
     ],
     disallow: [
       '/api/',
-      '/executive-preview',
-      '/es/executive-preview',
       ...privateIds.flatMap((id) => [
         `/demos/${id}`,
         `/es/demos/${id}`,

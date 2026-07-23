@@ -4,6 +4,13 @@ This directory contains a deterministic, fail-closed Apache 2.4 handoff for
 the retired `helpprogram.net` host. It is prepared for an operations review;
 it does not deploy anything and does not change DNS.
 
+The urgent five-login-path action is deliberately smaller than this full
+cutover. Use
+[`login-containment/README.md`](./login-containment/README.md) to stop only the
+retired credential-entry pages while every other legacy route remains under
+the existing host configuration. Do not deploy this full cutover package as a
+shortcut for that containment action.
+
 ## Authority and behavior
 
 `next.config.ts` exports `legacyRedirects`, the single source of truth for all
@@ -25,9 +32,12 @@ Every redirect is a one-hop `301` to the absolute
 `https://www.helpmath.ai` origin. Exact paths are emitted before directory
 wildcards. `NE` preserves destination fragments such as
 `#help-math-1-catalog`. Ordinary targets inherit the original query by Apache
-default. Fragment targets place `%{QUERY_STRING}` explicitly before the
-fragment so the result keeps the correct `path?query#fragment` order. This
-avoids Apache 2.4.66's fragment-only substitution edge case.
+default. The five retired credential-entry paths are the exception: `QSD`
+discards their complete incoming query and `NC` covers path-case variants,
+matching the emergency containment package. Fragment targets place
+`%{QUERY_STRING}` explicitly before the fragment so the result keeps the
+correct `path?query#fragment` order. This avoids Apache 2.4.66's fragment-only
+substitution edge case.
 
 ## Generate and verify
 
@@ -41,8 +51,10 @@ The contract test starts the local `/usr/sbin/httpd` Apache 2.4.66 on an
 ephemeral non-privileged loopback port. It executes the same request matrix
 against both deployment forms and verifies root, exact, encoded-space,
 fragment, query, wildcard, `Beta`/`beta`, prohibited-file, and unknown-path
-behavior. It also places marker content at the prohibited and unknown paths to
-prove that no retired file body leaks.
+behavior. The same contract proves that all five credential-entry paths
+discard queries and handle case variants in both the emergency and complete
+cutover forms. It also places marker content at the prohibited and unknown
+paths to prove that no retired file body leaks.
 
 The pinned 2.4.66 integration contract is intentionally separate from the
 default cross-platform `npm test`: GitHub Quality still runs the generator's

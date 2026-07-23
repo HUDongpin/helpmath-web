@@ -1,0 +1,22 @@
+# GENERATED FILE. DO NOT EDIT.
+# Emergency containment source: next.config.ts legacyRedirects.
+# Regenerate with: npm run generate:legacy-apache
+# Deploy only through ops/legacy-host/login-containment/README.md.
+# This block intentionally has no root redirect, catch-all, ErrorDocument, or file rule.
+
+RewriteEngine On
+
+# Stop retired credential-entry pages without retiring any other legacy route.
+# QSD discards all incoming query data; NC covers case variants of the retired paths.
+# /student_login.aspx -> /login
+RewriteRule "^/?student_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
+# /teacher_login.aspx -> /login
+RewriteRule "^/?teacher_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
+# /school_login.aspx -> /login
+RewriteRule "^/?school_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
+# /district_login.aspx -> /login
+RewriteRule "^/?district_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
+# /Project_Admin_Login.aspx -> /login
+RewriteRule "^/?Project_Admin_Login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
+
+# End emergency containment. Unmatched legacy requests continue to the existing host.

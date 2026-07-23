@@ -6,10 +6,15 @@ import {legacyRedirects} from '../next.config';
 import {
   LEGACY_APACHE_OUTPUT_PATHS,
   LEGACY_BLOCKED_PATHS,
+  LEGACY_LOGIN_CONTAINMENT_OUTPUT_PATHS,
+  LEGACY_LOGIN_CONTAINMENT_PATHS,
   LEGACY_TARGET_ORIGIN,
+  buildApacheLoginContainmentRules,
   buildApacheLegacyRuleSet,
+  getExpectedApacheLoginContainmentRules,
   getExpectedApacheLegacyRules,
   legacySourceToApachePattern,
+  renderApacheLoginContainmentRules,
   renderApacheLegacyRules,
   type LegacyRedirectRecord,
 } from '../scripts/generate-apache-legacy-redirects';
@@ -30,6 +35,8 @@ describe('generated Apache legacy-host rules', () => {
         target: `${LEGACY_TARGET_ORIGIN}/`,
         wildcard: false,
         operationalOnly: true,
+        discardQuery: false,
+        caseInsensitive: false,
       },
     );
 
@@ -47,6 +54,11 @@ describe('generated Apache legacy-host rules', () => {
         record.source,
       );
       assert.equal(generated.operationalOnly, false, record.source);
+      const credentialEntry = LEGACY_LOGIN_CONTAINMENT_PATHS.includes(
+        record.source as (typeof LEGACY_LOGIN_CONTAINMENT_PATHS)[number],
+      );
+      assert.equal(generated.discardQuery, credentialEntry, record.source);
+      assert.equal(generated.caseInsensitive, credentialEntry, record.source);
     }
 
     assert.ok(generatedBySource.has('/Beta/:path*'));
@@ -114,7 +126,7 @@ describe('generated Apache legacy-host rules', () => {
     assert.match(rendered, /RewriteRule "\^" "-" \[R=404,L\]\n$/);
   });
 
-  it('uses absolute one-hop 301 targets and explicitly preserves fragments and queries', async () => {
+  it('uses one-hop targets, preserving ordinary queries but discarding login queries', async () => {
     const records = (await legacyRedirects()) as LegacyRedirectRecord[];
     const ruleSet = buildApacheLegacyRuleSet(records);
     const rendered = renderApacheLegacyRules(ruleSet);
@@ -126,10 +138,30 @@ describe('generated Apache legacy-host rules', () => {
       redirectLines.length,
       ruleSet.redirects.reduce((count, rule) => count + (rule.queryTarget ? 2 : 1), 0),
     );
-    for (const line of redirectLines) {
+    const containmentLines = redirectLines.filter((line) =>
+      line.endsWith('[R=301,L,NE,QSD,NC]'),
+    );
+    const ordinaryLines = redirectLines.filter((line) =>
+      line.endsWith('[R=301,L,NE]'),
+    );
+    assert.equal(containmentLines.length, LEGACY_LOGIN_CONTAINMENT_PATHS.length);
+    assert.equal(containmentLines.length + ordinaryLines.length, redirectLines.length);
+    for (const line of ordinaryLines) {
       assert.match(line, / "https:\/\/www\.helpmath\.ai\//);
       assert.match(line, / \[R=301,L,NE\]$/);
       assert.doesNotMatch(line, /QSD|QSA/);
+    }
+    for (const source of LEGACY_LOGIN_CONTAINMENT_PATHS) {
+      const pattern = legacySourceToApachePattern(source).pattern.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&',
+      );
+      assert.match(
+        rendered,
+        new RegExp(
+          `RewriteRule "${pattern}" "https:\\/\\/www\\.helpmath\\.ai\\/login" \\[R=301,L,NE,QSD,NC\\]`,
+        ),
+      );
     }
     assert.match(
       rendered,
@@ -147,6 +179,101 @@ describe('generated Apache legacy-host rules', () => {
     for (const outputPath of LEGACY_APACHE_OUTPUT_PATHS) {
       assert.equal(await readFile(outputPath, 'utf8'), expected, outputPath);
     }
+  });
+
+  it('generates a five-path emergency login containment block without broader cutover', async () => {
+    const records = (await legacyRedirects()) as LegacyRedirectRecord[];
+    const rules = buildApacheLoginContainmentRules(records);
+    assert.deepEqual(
+      rules.map((rule) => rule.source),
+      [...LEGACY_LOGIN_CONTAINMENT_PATHS],
+    );
+    assert.ok(
+      rules.every(
+        (rule) =>
+          rule.destination === '/login' &&
+          rule.target === `${LEGACY_TARGET_ORIGIN}/login` &&
+          !rule.pattern.includes('.*'),
+      ),
+    );
+
+    const rendered = renderApacheLoginContainmentRules(rules);
+    const redirectLines = rendered
+      .split('\n')
+      .filter((line) => line.startsWith('RewriteRule '));
+    assert.equal(redirectLines.length, LEGACY_LOGIN_CONTAINMENT_PATHS.length);
+    assert.ok(redirectLines.every((line) => line.endsWith('[R=301,L,NE,QSD,NC]')));
+    assert.doesNotMatch(
+      rendered,
+      /^ErrorDocument |\[R=404|^RewriteRule "\^" "-"|old-host root/m,
+    );
+    assert.match(rendered, /Unmatched legacy requests continue to the existing host/);
+  });
+
+  it('keeps both emergency-containment deployment forms byte-for-byte generated', async () => {
+    const expected = await getExpectedApacheLoginContainmentRules();
+    for (const outputPath of LEGACY_LOGIN_CONTAINMENT_OUTPUT_PATHS) {
+      assert.equal(await readFile(outputPath, 'utf8'), expected, outputPath);
+    }
+  });
+
+  it('fails closed when a required login containment mapping is missing or broadened', async () => {
+    const records = (await legacyRedirects()) as LegacyRedirectRecord[];
+    assert.throws(
+      () =>
+        buildApacheLoginContainmentRules(
+          records.filter((record) => record.source !== LEGACY_LOGIN_CONTAINMENT_PATHS[0]),
+        ),
+      /Missing required legacy login containment source/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLoginContainmentRules(
+          records.map((record) =>
+            record.source === LEGACY_LOGIN_CONTAINMENT_PATHS[0]
+              ? {...record, destination: '/support'}
+              : record,
+          ),
+        ),
+      /must be a permanent \/login redirect/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLoginContainmentRules([
+          ...records,
+          records.find((record) => record.source === LEGACY_LOGIN_CONTAINMENT_PATHS[0])!,
+        ]),
+      /Duplicate legacy login containment source/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLoginContainmentRules([
+          ...records,
+          {source: '/STUDENT_LOGIN.ASPX', destination: '/support', permanent: true},
+        ]),
+      /collides after Apache path normalization/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLoginContainmentRules([
+          ...records,
+          {source: '/%73tudent_login.aspx', destination: '/support', permanent: true},
+        ]),
+      /collides after Apache path normalization/,
+    );
+    assert.throws(
+      () => renderApacheLoginContainmentRules([]),
+      /requires exactly 5 rules/,
+    );
+    assert.throws(
+      () =>
+        renderApacheLoginContainmentRules(
+          buildApacheLoginContainmentRules(records).map((rule, index) =>
+            index === 0 ? {...rule, target: `${LEGACY_TARGET_ORIGIN}/support`} : rule,
+          ),
+        ),
+      /does not match the reviewed exact mapping/,
+    );
   });
 
   it('rejects unsafe or unsupported mappings instead of silently broadening them', () => {
@@ -178,6 +305,73 @@ describe('generated Apache legacy-host rules', () => {
           {source: LEGACY_BLOCKED_PATHS[0], destination: '/resources', permanent: true},
         ]),
       /must remain a 404/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLegacyRuleSet([
+          {
+            source: LEGACY_LOGIN_CONTAINMENT_PATHS[0],
+            destination: '/support',
+            permanent: true,
+          },
+        ]),
+      /credential-entry redirect must keep the reviewed \/login destination/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLegacyRuleSet([
+          {source: '/STUDENT_LOGIN.ASPX', destination: '/support', permanent: true},
+        ]),
+      /collides after Apache path normalization with reviewed credential entry/,
+    );
+    assert.throws(
+      () =>
+        buildApacheLegacyRuleSet([
+          {source: '/%73tudent_login.aspx', destination: '/support', permanent: true},
+        ]),
+      /collides after Apache path normalization with reviewed credential entry/,
+    );
+  });
+
+  it('rejects a contradictory full-cutover rule that preserves and discards a query', () => {
+    assert.throws(
+      () =>
+        renderApacheLegacyRules({
+          blocked: [],
+          redirects: [
+            {
+              source: '/student_login.aspx',
+              destination: '/login#review',
+              pattern: '^/?student_login\\.aspx$',
+              target: `${LEGACY_TARGET_ORIGIN}/login#review`,
+              queryTarget: `${LEGACY_TARGET_ORIGIN}/login?%{QUERY_STRING}#review`,
+              wildcard: false,
+              operationalOnly: false,
+              discardQuery: true,
+              caseInsensitive: true,
+            },
+          ],
+        }),
+      /cannot both preserve and discard a query string/,
+    );
+    assert.throws(
+      () =>
+        renderApacheLegacyRules({
+          blocked: [],
+          redirects: [
+            {
+              source: '/student_login.aspx',
+              destination: '/login',
+              pattern: '^/?student_login\\.aspx$',
+              target: `${LEGACY_TARGET_ORIGIN}/login`,
+              wildcard: false,
+              operationalOnly: false,
+              discardQuery: true,
+              caseInsensitive: false,
+            },
+          ],
+        }),
+      /privacy flags must be enabled together/,
     );
   });
 });

@@ -7,15 +7,22 @@ The modern site is live at `https://www.helpmath.ai`. The historical site at
 domain until the legal review and the selected, deployment-verified contact
 disposition in `DEPLOYMENT.md` are complete.
 
-An additional containment issue was observed on 2026-07-23: the historical
-student, teacher, school, district, and project-administrator `.aspx` login
-paths returned `200` with unprocessed ASP.NET page directives and server-control
-markup. The response exposes legacy filenames and form structure, not the
-code-behind implementation, but it is not a working or trustworthy login
-surface and users must not submit credentials there. The legacy-host owner
-should prioritize replacing those exact paths with the already reviewed
-one-hop `/login` redirects, or an explicitly approved `410` containment, even
-if the broader domain cutover must wait. Preserve mail records and retain the
+An additional containment issue was reconfirmed at
+`2026-07-23T14:59:07.744Z`: all 20 combinations of the historical student,
+teacher, school, district, and project-administrator `.aspx` login paths across
+apex/`www` and HTTP/HTTPS returned `200` with unprocessed ASP.NET page
+directives and server-control markup. The response exposes legacy filenames
+and form structure, not the code-behind implementation, but it is not a
+working or trustworthy login surface and users must not submit credentials
+there. The [sanitized public baseline](./evidence/legacy-login-surface-baseline-2026-07-23.json)
+retains statuses, selected headers, byte counts, body fingerprints, and marker
+booleans without retaining response bodies or credentials. The legacy-host owner
+should prioritize replacing those exact paths with the reviewed emergency
+one-hop `/login` redirects in
+`ops/legacy-host/login-containment/`, or an explicitly approved `410`
+containment, even if the broader domain cutover must wait. That package
+discards incoming queries, matches path-case variants, and deliberately leaves
+all other legacy routes unchanged. Preserve mail records and retain the
 pre-change host configuration and rollback evidence.
 
 The checked-in launch-gate manifest remains schema version 2 with all five
@@ -66,7 +73,17 @@ the generated Apache 2.4 package in `ops/legacy-host/`. It is derived from the
 same `next.config.ts` authority, fails closed for unlisted files, and must pass
 `npm run check:legacy-apache`, `npm run test:legacy-apache`, and the actual
 host's `httpd -t` before installation. Preparing this package does not deploy
-it or authorize a DNS change.
+it or authorize a DNS change. The complete package retains ordinary
+non-credential query strings for canonical continuity, but discards all query
+data and matches case variants for the same five retired credential-entry
+paths as the emergency package.
+
+The smaller `ops/legacy-host/login-containment/` package is the only generated
+Apache artifact suitable for the urgent five-login-path action before the full
+cutover gates resolve. It has no root redirect, catch-all, custom error
+document, blocked-file rule, DNS action, or mail action. Repository and local
+Apache tests prove only the package behavior; live HTTP and HTTPS evidence is
+still required after the legacy-host owner installs it.
 
 `LEGACY_RESOURCE_MAP.md` records the editorial reason, preferred stable source,
 and rights disposition for high-value historical documents. Complete its
@@ -292,12 +309,14 @@ not the repository. There is no force or success-on-`NO_GO` option.
    samples under `/PR/`, the exact document routes in
    `LEGACY_RESOURCE_MAP.md`, wildcard fallbacks under `/DealerDocs/` and
    `/teacher_guide/`, `/shortdemo/`, `/Beta/`, and `/beta/`, the
-   intentionally unavailable SWF, and a true unknown path.
+   intentionally unavailable SWF, all five retired credential-entry paths
+   with a non-sensitive query-discard probe and case variant, and a true
+   unknown path.
 7. Retain status, `Location` headers, redirect-hop count, final canonical URL,
-   query preservation, fragment preservation for deep routes, target-element
-   existence, TLS result, and response body type. There must be no loop,
-   downgrade, raw Flash delivery, missing deep-link target, or unknown-path
-   soft `200`.
+   ordinary-query preservation, credential-entry query discard, fragment
+   preservation for deep routes, target-element existence, TLS result, and
+   response body type. There must be no loop, downgrade, raw Flash delivery,
+   missing deep-link target, or unknown-path soft `200`.
 8. Submit the new sitemap and, when available for the site configuration, the
    domain-move signal in the relevant Search Console properties. Monitor crawl
    errors, indexing, and redirect chains.

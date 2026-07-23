@@ -105,7 +105,10 @@ It is separate from an application rollback.
 5. If the direct Apache mapping was changed, restore its backed-up virtual-host
    configuration, run the actual host's `httpd -t`, reload only after it passes,
    and retain the command result. Do not infer host correctness from the local
-   Apache workbench.
+   Apache workbench. For the five-path emergency action, remove only the
+   reviewed block or include described in
+   `ops/legacy-host/login-containment/README.md`; do not replace unrelated
+   legacy-host configuration with the full cutover package.
 
 ## Closure evidence
 

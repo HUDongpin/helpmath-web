@@ -26,8 +26,8 @@ describe('demo lifecycle robots boundary', () => {
       ...indexableDemoIds.map((id) => `/api/executive-preview/assets/${id}/`),
     ]);
     assert.ok(result.rules.disallow?.includes('/api/'));
-    assert.ok(result.rules.disallow?.includes('/executive-preview'));
-    assert.ok(result.rules.disallow?.includes('/es/executive-preview'));
+    assert.equal(result.rules.disallow?.includes('/executive-preview'), false);
+    assert.equal(result.rules.disallow?.includes('/es/executive-preview'), false);
 
     for (const id of DEMO_CANDIDATE_IDS) {
       const isPublic = demoIds.includes(id);
@@ -71,7 +71,8 @@ describe('demo lifecycle robots boundary', () => {
       '/api/executive-preview/assets/conversion-1-2/',
     ]);
     assert.ok(rule.disallow.includes('/api/'));
-    assert.ok(rule.disallow.includes('/executive-preview'));
+    assert.equal(rule.disallow.includes('/executive-preview'), false);
+    assert.equal(rule.disallow.includes('/es/executive-preview'), false);
     assert.equal(rule.disallow.includes('/demos/conversion-1-2'), false);
     assert.equal(rule.disallow.includes('/es/demos/conversion-1-2'), false);
     assert.ok(rule.disallow.includes('/demos/conversion-1-4'));
@@ -111,6 +112,7 @@ describe('demo lifecycle robots boundary', () => {
       /^Allow: \/api\/executive-preview\/assets\/conversion-1-2\/$/mu,
     );
     assert.match(text, /^Disallow: \/api\/$/mu);
+    assert.doesNotMatch(text, /^Disallow: \/(?:es\/)?executive-preview$/mu);
   });
 
   it('dates the public demo landing as content and indexable demos from lifecycle evidence', () => {
