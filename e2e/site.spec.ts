@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type APIResponse, type Page} from '@playwright/test';
 import {tsImport} from 'tsx/esm/api';
 import {isLaunchGateApproved} from '../lib/launch-gates';
 
@@ -47,6 +47,31 @@ function ownedAssetPaths(ids: readonly DemoCandidateId[]) {
         `/api/executive-preview/assets/${artifactPath.slice('private-demo-assets/'.length)}`
       );
   });
+}
+
+function expectCanonicalRedirectLocation(
+  response: APIResponse,
+  canonical: string,
+  context: string,
+) {
+  const location = response.headers().location;
+  expect(location, context).toBeTruthy();
+  const requestUrl = new URL(response.url());
+  const target = new URL(location!, requestUrl);
+  const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+  const equivalentLocalOrigin =
+    loopbackHosts.has(target.hostname) &&
+    loopbackHosts.has(requestUrl.hostname) &&
+    target.protocol === requestUrl.protocol &&
+    target.port === requestUrl.port;
+  expect(
+    target.origin === requestUrl.origin || equivalentLocalOrigin,
+    context,
+  ).toBe(true);
+  expect(
+    `${target.pathname}${target.search}${target.hash}`,
+    context,
+  ).toBe(canonical);
 }
 
 const privateExecutivePreviewAssets = ownedAssetPaths(nonPublicDemoIds);
@@ -328,7 +353,7 @@ test('English home exposes the primary navigation and the language-rich project 
   expectNoRuntimeIssues(issues);
 });
 
-test('approved Avenir-first typography is used for body and display text', {
+test('the screenshot-matched Nunito Sans typography is bundled and used consistently', {
   tag: ['@cross-browser-smoke', '@production-public-smoke'],
 }, async ({page}) => {
   await expectDocument(page, '/about', 'en');
@@ -336,9 +361,12 @@ test('approved Avenir-first typography is used for body and display text', {
     const fontVariable = getComputedStyle(document.body)
       .getPropertyValue('--font-nunito')
       .trim();
-    const primaryFallbackFamily = fontVariable.split(',')[0]?.trim();
-    const loadedFallback = primaryFallbackFamily
-      ? await document.fonts.load(`400 16px ${primaryFallbackFamily}`)
+    const primaryFamily = fontVariable.split(',')[0]?.trim();
+    const loadedBody = primaryFamily
+      ? await document.fonts.load(`400 16px ${primaryFamily}`)
+      : [];
+    const loadedDisplay = primaryFamily
+      ? await document.fonts.load(`660 64px ${primaryFamily}`)
       : [];
     await document.fonts.ready;
     const bodyFamily = getComputedStyle(document.body).fontFamily;
@@ -349,18 +377,20 @@ test('approved Avenir-first typography is used for body and display text', {
       bodyFamily,
       displayFamily: getComputedStyle(heading).fontFamily,
       fontVariable,
-      loadedFallbackCount: loadedFallback.length,
+      loadedBodyCount: loadedBody.length,
+      loadedDisplayCount: loadedDisplay.length,
       loadedFamilies: [...document.fonts].map((face) => face.family),
       preloadedFonts: [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')]
         .map((link) => link.href),
     };
   });
 
-  expect(typography.bodyFamily).toContain('Avenir Next');
   expect(typography.bodyFamily).toContain('nunitoSans');
+  expect(typography.bodyFamily).not.toContain('Avenir');
   expect(typography.displayFamily).toBe(typography.bodyFamily);
   expect(typography.fontVariable).toContain('nunitoSans');
-  expect(typography.loadedFallbackCount).toBeGreaterThan(0);
+  expect(typography.loadedBodyCount).toBeGreaterThan(0);
+  expect(typography.loadedDisplayCount).toBeGreaterThan(0);
   expect(typography.loadedFamilies.some((family) => family.includes('nunitoSans'))).toBe(true);
   const nunitoPreload = typography.preloadedFonts.find(
     (href) => {
@@ -373,7 +403,6 @@ test('approved Avenir-first typography is used for body and display text', {
   expect(fontResponse.status()).toBe(200);
   expect(fontResponse.headers()['content-type']).toMatch(/^font\/woff2(?:;|$)/u);
   expect(fontResponse.headers()['cache-control']).toContain('immutable');
-  expect(typography.loadedFamilies).not.toContain('Fredoka Variable');
 });
 
 test('Spanish home localizes content and never duplicates the /es route prefix', async ({page}) => {
@@ -1139,8 +1168,8 @@ for (const locale of ['en', 'es'] as const) {
       const actual = await captureRoots(selector);
       expect(actual).toHaveLength(cold.length);
 
-      // Avenir Next and bundled Nunito render the same-width Spanish quality
-      // section about 67px apart, so 72px is the smallest portable budget.
+      // The bundled Nunito Sans type system can still render the Spanish
+      // quality section about 67px apart, so 72px is the smallest portable budget.
       for (let index = 0; index < cold.length; index += 1) {
         expect(
           Math.abs(actual[index].rectHeight - cold[index].rectHeight),
@@ -2509,7 +2538,9 @@ test('executive preview grants a short-lived private session for both JavaScript
   await expect(page.locator('.faithful-stage-wrap')).toHaveAttribute('data-flash-frame', '1');
   await expect(page.locator('.demo-player__controls output')).toHaveText('Frame 1 of 109');
   await expect(restartButton).toBeFocused();
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeRestart);
+  const scrollAfterRestart = await page.evaluate(() => window.scrollY);
+  // Firefox can round the focused control's subpixel position by one CSS pixel.
+  expect(Math.abs(scrollAfterRestart - scrollBeforeRestart)).toBeLessThanOrEqual(1);
   await page.clock.resume();
 
   const authenticatedRequest = page.context().request;
@@ -2796,7 +2827,7 @@ test('audited legacy pages and document directories redirect permanently', async
   ]) {
     const response = await request.get(englishPrefix, {maxRedirects: 0});
     expect(response.status(), englishPrefix).toBe(308);
-    expect(response.headers().location, englishPrefix).toBe(canonical);
+    expectCanonicalRedirectLocation(response, canonical, englishPrefix);
   }
 
   const spoofedInternalHeader = await request.get('/en/about', {
@@ -2804,7 +2835,11 @@ test('audited legacy pages and document directories redirect permanently', async
     maxRedirects: 0,
   });
   expect(spoofedInternalHeader.status()).toBe(308);
-  expect(spoofedInternalHeader.headers().location).toBe('/about');
+  expectCanonicalRedirectLocation(
+    spoofedInternalHeader,
+    '/about',
+    'spoofed internal locale header',
+  );
 
   const favicon = await request.get('/favicon.ico', {maxRedirects: 0});
   expect(favicon.status()).toBe(308);

@@ -68,6 +68,60 @@ describe('public HELP Math resource catalog', () => {
     );
   });
 
+  it('keeps the requested HELP Math lineage and evidence facts explicit and qualified', () => {
+    const englishLineage = siteContent.en.pages.about.lineage.items;
+    const spanishLineage = siteContent.es.pages.about.lineage.items;
+    const englishLegacy = englishLineage.find((item) => item.id === 'help-math-1');
+    const spanishLegacy = spanishLineage.find((item) => item.id === 'help-math-1');
+    const englishBoulder = englishLineage.find((item) => item.id === 'boulder-learning');
+    const spanishBoulder = spanishLineage.find((item) => item.id === 'boulder-learning');
+    const englishAward = siteContent.en.pages.research.entries.find(
+      (entry) => entry.id === 'historical-awards-funding',
+    );
+    const spanishAward = siteContent.es.pages.research.entries.find(
+      (entry) => entry.id === 'historical-awards-funding',
+    );
+    const englishWwc = siteContent.en.pages.research.entries.find(
+      (entry) => entry.id === 'wwc-tran-study',
+    );
+    const spanishWwc = siteContent.es.pages.research.entries.find(
+      (entry) => entry.id === 'wwc-tran-study',
+    );
+
+    assert.ok(englishLegacy);
+    assert.ok(spanishLegacy);
+    assert.ok(englishBoulder);
+    assert.ok(spanishBoulder);
+    assert.ok(englishAward);
+    assert.ok(spanishAward);
+    assert.ok(englishWwc);
+    assert.ok(spanishWwc);
+
+    assert.match(englishLegacy.paragraphs.join(' '), /leading research-proven online math intervention program/u);
+    assert.match(englishLegacy.paragraphs.join(' '), /dated program self-description/u);
+    assert.match(spanishLegacy.paragraphs.join(' '), /programa líder de intervención matemática en línea respaldado por investigación/u);
+    assert.match(spanishLegacy.paragraphs.join(' '), /autodescripción histórica/u);
+
+    assert.match(englishBoulder.paragraphs.join(' '), /student-facing HELP Math experience/u);
+    assert.match(englishBoulder.paragraphs.join(' '), /teacher-facing Teaching with Grace/u);
+    assert.match(englishBoulder.paragraphs.join(' '), /generative AI/u);
+    assert.match(spanishBoulder.paragraphs.join(' '), /orientada al alumnado/u);
+    assert.match(spanishBoulder.paragraphs.join(' '), /orientado a la práctica docente/u);
+    assert.match(spanishBoulder.paragraphs.join(' '), /IA generativa/u);
+
+    assert.match(englishWwc.interpretation, /highest possible rating/u);
+    assert.match(englishWwc.interpretation, /official and more precise WWC wording/u);
+    assert.match(spanishWwc.interpretation, /calificación más alta posible/u);
+    assert.match(spanishWwc.interpretation, /formulación oficial y más precisa de WWC/u);
+
+    assert.match(englishAward.summary, /40% federal share/u);
+    assert.match(englishAward.interpretation, /46% federal share/u);
+    assert.match(englishAward.interpretation, /conflicting/u);
+    assert.match(spanishAward.summary, /participación federal del 40%/u);
+    assert.match(spanishAward.interpretation, /participación federal del 46%/u);
+    assert.match(spanishAward.interpretation, /en conflicto/u);
+  });
+
   it('attributes the Tran evaluation and Colorado funding without overstating the evidence', () => {
     const englishWwc = siteContent.en.pages.research.entries.find(
       (entry) => entry.id === 'wwc-tran-study',

@@ -210,7 +210,7 @@ export const esContent = {
             period: "HELP Math 1.0 · Grados 3–8",
             title: "Una intervención matemática en línea anterior a la pandemia",
             paragraphs: [
-              "El sitio archivado describía HELP Math 1.0 como una intervención en línea basada en investigación y apoyada por el Departamento de Educación de Estados Unidos para estudiantes de inglés, alumnado con necesidades especiales y otras personas con dificultades para dominar las matemáticas.",
+              "Antes de la pandemia, la página principal archivada llamaba a HELP Math 1.0 el «programa líder de intervención matemática en línea respaldado por investigación» para estudiantes de inglés, alumnado con necesidades especiales y otras personas con dificultades para dominar las matemáticas, y describía su desarrollo como parcialmente apoyado por el Departamento de Educación de Estados Unidos. Es una autodescripción histórica del programa, no una clasificación actual del mercado.",
               "Esta redacción ofrece contexto histórico; no afirma que el antiguo servicio basado en Flash ni sus cuentas estudiantiles sigan disponibles. Un estudio aleatorizado de HELP Math 1.0 cumplió las normas de WWC sin reservas; ese dictamen corresponde al estudio revisado y no es una calificación general de ninguna versión de HELP Math.",
             ],
             actions: [
@@ -228,6 +228,7 @@ export const esContent = {
             paragraphs: [
               "Boulder Learning incluye actualmente HELP Math entre sus productos. La empresa se creó en 2017 mediante la fusión de Boulder Language Technologies y Digital Directions International, reuniendo trabajo en habla, lenguaje, inteligencia artificial, investigación, ciencia de datos y tecnología educativa.",
               "Boulder Learning ha descrito públicamente HELP Math 2.0 como una futura fase planificada para actualizar y relanzar la plataforma original, no como un producto terminado que ya esté disponible públicamente.",
+              "Su hoja de ruta pública describe dos módulos conectados y creados para fines específicos: una experiencia HELP Math orientada al alumnado y un entorno Teaching with Grace orientado a la práctica docente. La propuesta explora práctica docente con IA e IA generativa en la plataforma de aprendizaje, en consonancia con líneas actuales de investigación sobre IA y educación; siguen siendo funciones propuestas, no capacidades publicadas.",
             ],
             actions: [
               {label: "Explorar los productos de Boulder Learning", href: "https://www.boulderlearning.com/products"},
@@ -605,7 +606,7 @@ export const esContent = {
           summary:
             "El What Works Clearinghouse (WWC) del Departamento de Educación de Estados Unidos revisó un estudio controlado aleatorizado de 146 estudiantes que aprendían inglés de 6.º a 10.º grado. El registro oficial de WWC enumera al autor como «Tran, Z.»; materiales archivados de HELP Math identifican al investigador como Zung Vu Tran, Ph.D. WWC determinó que el estudio cumplía sus normas de evidencia sin reservas e informó un efecto positivo estadísticamente significativo en el rendimiento matemático.",
           interpretation:
-            "WWC informó un tamaño del efecto de 0,89 y un índice de mejora de +31. Esta es la afirmación verificada más sólida: un estudio bien implementado de HELP Math 1.0 cumplió las normas de WWC sin reservas. No debe presentarse como un premio ni como una calificación general del producto; WWC tampoco validó los porcentajes por grado.",
+            "WWC informó un tamaño del efecto de 0,89 y un índice de mejora de +31. La página histórica Awards de HELP Math lo promocionó como la «calificación más alta posible»; la formulación oficial y más precisa de WWC es que este estudio de HELP Math 1.0 cumplió las normas sin reservas. No debe presentarse como un premio ni como una calificación general del producto; WWC tampoco validó los porcentajes por grado.",
           sourceLabel: "Fuente primaria de la revisión y la calificación: Departamento de Educación de Estados Unidos, Institute of Education Sciences, What Works Clearinghouse; ampliación histórica del nombre: página Awards archivada de HELP Math",
           sourceActions: [
             {label: "Abrir el registro del estudio en WWC", href: "https://ies.ed.gov/ncee/wwc/Study/72999"},
@@ -649,9 +650,9 @@ export const esContent = {
           status: "verified",
           statusLabel: "Fuentes conciliadas",
           summary:
-            "La lista oficial de EdTech Digest identifica a HELP Math como ganador de un Cool Tool Award de 2011 en la categoría de necesidades especiales. El desarrollo de HELP Math también recibió apoyo parcial mediante fondos del Departamento de Educación de Estados Unidos.",
+            "La lista oficial de EdTech Digest identifica a HELP Math como ganador de un Cool Tool Award de 2011 en la categoría de necesidades especiales. El desarrollo de HELP Math también recibió apoyo parcial mediante fondos del Departamento de Educación de Estados Unidos; la página principal archivada de 2013 declara una participación federal del 40%.",
           interpretation:
-            "El sitio antiguo lo denomina «National Award for Excellence in Education», pero ese no es el nombre oficial del premio. Las páginas archivadas también discrepan sobre la participación federal —40% o 46%—, por lo que el sitio moderno no elige ninguno de los porcentajes.",
+            "El sitio antiguo lo denomina «National Award for Excellence in Education», pero ese no es el nombre oficial del premio. Una página Program Information de 2008 declara una participación federal del 46%, en conflicto con el 40% de la página posterior. El sitio moderno conserva ambas cifras como afirmaciones históricas del programa y no presenta ninguna como cifra federal conciliada de forma independiente.",
           sourceLabel: "Contexto primario: lista de ganadores de EdTech Digest y registros de programas y subvenciones del Departamento de Educación",
           sourceActions: [
             {label: "Ver ganadores de EdTech Digest", href: "https://www.edtechdigest.com/winners/"},
