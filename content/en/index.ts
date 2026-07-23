@@ -210,7 +210,7 @@ export const enContent = {
             period: "HELP Math 1.0 · Grades 3–8",
             title: "A pre-pandemic online mathematics intervention",
             paragraphs: [
-              "The archived HELP Math website described HELP Math 1.0 as a U.S. Department of Education-supported, research-based online intervention for English language learners, students with special needs, and other learners struggling with mathematics mastery.",
+              "Before the pandemic, the archived homepage called HELP Math 1.0 the “leading research-proven online math intervention program” for English language learners, students with special needs, and other learners struggling with mathematics mastery, and described its development as partially supported by the U.S. Department of Education. That is a dated program self-description, not a current market ranking.",
               "That wording is historical context, not a claim that the former Flash-based service or its student accounts remain available today. One randomized HELP Math 1.0 study met WWC standards without reservations; that judgment applies to the reviewed study, not as a blanket rating of either HELP Math version.",
             ],
             actions: [
@@ -228,6 +228,7 @@ export const enContent = {
             paragraphs: [
               "Boulder Learning currently lists HELP Math among its products. The company was created in 2017 through the merger of Boulder Language Technologies and Digital Directions International, bringing together work in speech, language, artificial intelligence, research, data science, and education technology.",
               "Boulder Learning has publicly described HELP Math 2.0 as a planned next phase in updating and relaunching the original HELP Math platform—not as a completed product that is publicly available today.",
+              "Its public roadmap describes two connected, purpose-built modules: a student-facing HELP Math experience and a teacher-facing Teaching with Grace practice environment. The proposal explores AI-powered teacher practice and generative AI in the learning platform, reflecting current research directions in AI and education; these remain proposed features, not released capabilities.",
             ],
             actions: [
               {label: "Explore Boulder Learning products", href: "https://www.boulderlearning.com/products"},
@@ -605,7 +606,7 @@ export const enContent = {
           summary:
             "The U.S. Department of Education’s What Works Clearinghouse reviewed a randomized controlled study of 146 English language learners in Grades 6–10. The official WWC record lists the author as “Tran, Z.”; archived HELP Math materials identify the researcher as Zung Vu Tran, Ph.D. WWC found that the study met evidence standards without reservations and reported a statistically significant positive effect on mathematics achievement.",
           interpretation:
-            "WWC reported an effect size of 0.89 and an improvement index of +31. This is the strongest verified statement: one well-implemented HELP Math 1.0 study met WWC standards without reservations. It should not be restated as an award or a blanket product rating, and WWC did not validate the study’s grade-subgroup percentages.",
+            "WWC reported an effect size of 0.89 and an improvement index of +31. The archived HELP Math Awards page promoted this as the “highest possible rating”; the official and more precise WWC wording is that this one HELP Math 1.0 study met standards without reservations. It should not be restated as an award or a blanket product rating, and WWC did not validate the study’s grade-subgroup percentages.",
           sourceLabel: "Primary source for the review and rating: U.S. Department of Education, Institute of Education Sciences, What Works Clearinghouse; historical name expansion: archived HELP Math Awards page",
           sourceActions: [
             {label: "Open the WWC study record", href: "https://ies.ed.gov/ncee/wwc/Study/72999"},
@@ -649,9 +650,9 @@ export const enContent = {
           status: "verified",
           statusLabel: "Sources reconciled",
           summary:
-            "EdTech Digest’s official winners list identifies HELP Math as a 2011 Cool Tool Award winner in the special-needs category. HELP Math development was also supported in part through U.S. Department of Education funding.",
+            "EdTech Digest’s official winners list identifies HELP Math as a 2011 Cool Tool Award winner in the special-needs category. HELP Math development was also supported in part through U.S. Department of Education funding; the archived 2013 homepage states a 40% federal share.",
           interpretation:
-            "The legacy site calls this a “National Award for Excellence in Education,” but that is not the award’s official name. Archived pages also conflict on the federal share—40% versus 46%—so the modern site does not select either percentage.",
+            "The legacy site calls this a “National Award for Excellence in Education,” but that is not the award’s official name. A 2008 Program Information page states a 46% federal share, conflicting with the later homepage’s 40% statement. The modern site preserves both as dated program claims and does not present either percentage as an independently reconciled federal figure.",
           sourceLabel: "Primary context: EdTech Digest winners list and U.S. Department of Education program/grant records",
           sourceActions: [
             {label: "View the EdTech Digest winners", href: "https://www.edtechdigest.com/winners/"},

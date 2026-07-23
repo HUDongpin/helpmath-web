@@ -33,7 +33,7 @@ html {
 }
 
 body {
-  --font-body: "Avenir Next", Avenir, var(--font-nunito), system-ui, sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
   --font-display: var(--font-body);
   background: var(--paper);
   color: var(--ink);
@@ -109,8 +109,8 @@ svg {
 
 /*
  * Keep the first view fully rendered while deferring only large, below-fold
- * regions. The intrinsic sizes are calibrated across English, Spanish,
- * Avenir Next, and the bundled Nunito fallback. Resource cards before the
+ * regions. The intrinsic sizes are calibrated across English and Spanish
+ * using the bundled Nunito Sans type system. Resource cards before the
  * deepest published anchor use their own aggregate calibration so fragment
  * navigation keeps the target below the sticky header.
  */

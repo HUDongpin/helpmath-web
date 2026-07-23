@@ -13,21 +13,24 @@ async function preparePage(
     const fontVariable = getComputedStyle(document.body)
       .getPropertyValue('--font-nunito')
       .trim();
-    const primaryFallbackFamily = fontVariable.split(',')[0]?.trim();
-    if (!primaryFallbackFamily) throw new Error('Nunito font variable is unavailable.');
+    const primaryFamily = fontVariable.split(',')[0]?.trim();
+    if (!primaryFamily) throw new Error('Nunito font variable is unavailable.');
     const loaded = await Promise.all([
-      document.fonts.load(`400 16px ${primaryFallbackFamily}`),
-      document.fonts.load(`700 32px ${primaryFallbackFamily}`),
+      document.fonts.load(`400 16px ${primaryFamily}`),
+      document.fonts.load(`660 32px ${primaryFamily}`),
     ]);
     await document.fonts.ready;
     window.scrollTo(0, 0);
     return {
       bodyFamily: getComputedStyle(document.body).fontFamily,
+      displayFamily: getComputedStyle(document.querySelector('h1')!).fontFamily,
       fontVariable,
       loaded: loaded.map((faces) => faces.length),
     };
   });
-  expect(typography.bodyFamily).toContain('Avenir Next');
+  expect(typography.bodyFamily).toContain('nunitoSans');
+  expect(typography.bodyFamily).not.toContain('Avenir');
+  expect(typography.displayFamily).toBe(typography.bodyFamily);
   expect(typography.fontVariable).toContain('nunitoSans');
   expect(typography.loaded.every((count) => count > 0)).toBe(true);
 }
