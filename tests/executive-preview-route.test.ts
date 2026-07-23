@@ -89,7 +89,7 @@ describe('POST /api/executive-preview/session', () => {
     assert.equal(wrongKey.status, 303);
     assert.equal(
       wrongKey.headers.get('location'),
-      '/executive-preview?error=1&returnTo=%2Fdemos%2Fconversion-1-4',
+      '/executive-preview?error=1',
     );
     assert.equal(wrongKey.headers.get('set-cookie'), null);
 

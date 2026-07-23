@@ -14,23 +14,26 @@ type ExecutivePreviewPageProps = {
   error?: boolean;
   expiresAt?: number;
   locale: Locale;
-  returnTo: string;
   state: ExecutivePreviewState;
 };
 
 const copy = {
   en: {
-    eyebrow: 'Internal executive review',
-    title: 'HELP Math JavaScript demo preview',
-    intro:
-      'A restricted review space for early JavaScript reconstructions of legacy HELP Math animations.',
+    eyebrow: 'Private executive review',
+    title: 'Review two private HELP Math prototypes',
+    loginIntro:
+      'Authorized reviewers start here. Enter the separate review passphrase on this page. After verification, this page displays exactly two private JavaScript prototype cards.',
+    authenticatedIntro:
+      'Your temporary private review session is active. The two assigned JavaScript prototype cards appear below.',
+    unavailableIntro:
+      'This private review entry is currently closed. No prototype has been published or made public.',
     restrictedTitle: 'Private review — not for distribution',
     restrictedBody:
       'These prototypes are not validated as faithful or complete. Audio, technical acceptance, visual validation, and rights review remain pending. Do not forward, record, republish, or present them as finished HELP Math products.',
-    loginTitle: 'Enter the executive preview',
-    loginShortcut: 'Enter private preview',
+    loginTitle: 'Sign in to view the two prototypes',
+    loginShortcut: 'Enter reviewer passphrase',
     loginBody:
-      'Use the high-entropy review passphrase supplied through the approved private channel. Access is temporary and expires automatically.',
+      'Use the separate review passphrase sent through the approved private channel. Do not enter a former HELP Math account password. The site does not publish or reveal the passphrase, and access expires automatically.',
     expiryLabel: 'Review window closes:',
     expiryNote: 'Active sessions cannot continue beyond this time.',
     passphraseLabel: 'Executive preview passphrase',
@@ -40,26 +43,31 @@ const copy = {
     unavailableTitle: 'Executive preview is unavailable',
     unavailableBody:
       'Access is closed because the private preview is not configured or its review window has expired. No demo content has been released publicly.',
-    demosTitle: 'Private JavaScript prototypes',
+    demosTitle: 'Two private JavaScript prototypes',
     demosBody:
-      'Open any assigned prototype below while this short-lived review session is active.',
+      'Your temporary review session is active. Choose either card below. Access closes when the session or review window ends.',
+    prototypeLabel: 'Private prototype',
     noDemos: 'No private prototypes are assigned to this review window.',
     openDemo: 'Open prototype',
     logout: 'End private session',
   },
   es: {
-    eyebrow: 'Revisión ejecutiva interna',
-    title: 'Vista previa de demos JavaScript de HELP Math',
-    intro:
-      'Un espacio restringido para revisar reconstrucciones iniciales en JavaScript de animaciones heredadas de HELP Math.',
+    eyebrow: 'Revisión ejecutiva privada',
+    title: 'Revisa dos prototipos privados de HELP Math',
+    loginIntro:
+      'Los revisores autorizados comienzan aquí. Introduce en esta página la frase de acceso específica para esta revisión, enviada por separado a través del canal privado aprobado. Tras verificarla, esta página muestra exactamente dos tarjetas de prototipos JavaScript privados.',
+    authenticatedIntro:
+      'Tu sesión temporal de revisión privada está activa. Las dos tarjetas de prototipos JavaScript asignadas aparecen más abajo.',
+    unavailableIntro:
+      'Esta entrada de revisión privada está cerrada en este momento. Ningún prototipo se ha publicado ni se ha hecho público.',
     restrictedTitle: 'Revisión privada — no distribuir',
     restrictedBody:
       'Estos prototipos no están validados como fieles ni completos. El audio, la aceptación técnica, la validación visual y la revisión de derechos siguen pendientes. No los reenvíes, grabes, publiques ni presentes como productos terminados de HELP Math.',
-    loginTitle: 'Entrar a la vista previa ejecutiva',
-    loginShortcut: 'Entrar a la vista previa privada',
+    loginTitle: 'Inicia sesión para ver los dos prototipos',
+    loginShortcut: 'Introducir frase de acceso',
     loginBody:
-      'Usa la frase de acceso de alta entropía enviada por el canal privado aprobado. El acceso es temporal y vence automáticamente.',
-    expiryLabel: 'La ventana de revisión cierra:',
+      'Usa la frase de acceso específica para esta revisión, enviada por separado a través del canal privado aprobado. No introduzcas una contraseña antigua de HELP Math. El sitio no publica ni revela la frase de acceso y el acceso vence automáticamente.',
+    expiryLabel: 'La ventana de revisión se cierra:',
     expiryNote: 'Las sesiones activas no pueden continuar después de esta hora.',
     passphraseLabel: 'Frase de acceso para la vista previa ejecutiva',
     submit: 'Abrir vista previa privada',
@@ -68,9 +76,10 @@ const copy = {
     unavailableTitle: 'La vista previa ejecutiva no está disponible',
     unavailableBody:
       'El acceso está cerrado porque la vista previa privada no está configurada o su periodo de revisión ha vencido. Ninguna demo se ha publicado.',
-    demosTitle: 'Prototipos JavaScript privados',
+    demosTitle: 'Dos prototipos JavaScript privados',
     demosBody:
-      'Abre cualquier prototipo asignado mientras esta sesión de revisión de corta duración esté activa.',
+      'Tu sesión temporal de revisión está activa. Elige cualquiera de las dos tarjetas. El acceso finaliza cuando termina la sesión o la ventana de revisión.',
+    prototypeLabel: 'Prototipo privado',
     noDemos: 'No hay prototipos privados asignados a esta ventana de revisión.',
     openDemo: 'Abrir prototipo',
     logout: 'Cerrar sesión privada',
@@ -81,10 +90,14 @@ export function ExecutivePreviewPage({
   error = false,
   expiresAt,
   locale,
-  returnTo,
   state,
 }: ExecutivePreviewPageProps) {
   const text = copy[locale];
+  const intro = state === 'authenticated'
+    ? text.authenticatedIntro
+    : state === 'login'
+      ? text.loginIntro
+      : text.unavailableIntro;
 
   return (
     <MainContent>
@@ -98,7 +111,7 @@ export function ExecutivePreviewPage({
                 {text.title}
               </h1>
               <p className="mt-5 max-w-2xl text-lg text-[var(--ink-soft)] md:text-xl">
-                {text.intro}
+                {intro}
               </p>
               {state === 'login' ? (
                 <a className="action action--primary mt-6 w-fit" href="#executive-preview-login">
@@ -135,7 +148,6 @@ export function ExecutivePreviewPage({
           error={error}
           expiresAt={expiresAt}
           locale={locale}
-          returnTo={returnTo}
           text={text}
         />
       ) : (
@@ -149,13 +161,11 @@ function LoginPanel({
   error,
   expiresAt,
   locale,
-  returnTo,
   text,
 }: {
   error: boolean;
   expiresAt?: number;
   locale: Locale;
-  returnTo: string;
   text: (typeof copy)[Locale];
 }) {
   return (
@@ -187,7 +197,6 @@ function LoginPanel({
 
           <form action="/api/executive-preview/session" className="mt-7 grid gap-5" method="post">
             <input name="locale" type="hidden" value={locale} />
-            <input name="returnTo" type="hidden" value={returnTo} />
             <label className="block font-bold" htmlFor="executive-preview-passphrase">
               {text.passphraseLabel}
               <input
@@ -244,12 +253,12 @@ function AuthenticatedPreview({
         </div>
         {demos.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2">
-            {demos.map((demo) => (
+            {demos.map((demo, index) => (
               <article
                 className="flex flex-col border-2 border-[var(--ink)] bg-white p-6 shadow-[5px_5px_0_var(--ink)]"
                 key={demo.href}
               >
-                <Eyebrow>{demo.href}</Eyebrow>
+                <Eyebrow>{text.prototypeLabel} {index + 1}/{demos.length}</Eyebrow>
                 <h3 className="font-[family-name:var(--font-display)] text-3xl font-bold">
                   {demo.title}
                 </h3>

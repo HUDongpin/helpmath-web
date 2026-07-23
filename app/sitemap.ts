@@ -23,7 +23,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       route: path,
       lastModified: new Date(lastModified),
     })),
-    {route: '/demos', lastModified: demoLastModified},
     ...indexableDemoRoutes.map((route) => ({route, lastModified: demoLastModified})),
   ];
 

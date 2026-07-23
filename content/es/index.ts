@@ -1168,14 +1168,13 @@ export const esContent = {
         title: "Las demostraciones siguen privadas mientras la revisión esté incompleta",
         summary:
           "Los prototipos JavaScript actuales se conservan en el repositorio privado. Ninguna demostración ni imagen extraída está disponible en este sitio público hasta documentar los derechos y aceptar la revisión técnica requerida.",
-        primaryAction: { label: "Leer el enfoque de preservación", href: "/es/about#preservation" },
-        secondaryAction: { label: "Ver el estado del proyecto", href: "/es/about" },
+        primaryAction: { label: "Abrir vista previa ejecutiva privada", href: "/es/executive-preview" },
+        secondaryAction: { label: "Leer el enfoque de preservación", href: "/es/about#preservation" },
       },
       previewNotice: {
         title: "Actualmente no hay demostraciones públicas aprobadas",
         body:
-          "La procedencia de las fuentes no demuestra por sí sola derechos de publicación ni fidelidad. Cada prototipo debe recibir aprobación escrita de derechos, completar la validación requerida y registrar la aceptación técnica antes de abrir su ruta y recursos extraídos. Los revisores autorizados pueden consultar la página de acceso restringido; el acceso solo se abre durante una revisión aprobada y limitada en el tiempo, y no publica ninguna demo.",
-        action: { label: "Acceso de revisores autorizados", href: "/es/executive-preview" },
+          "Ni la procedencia de las fuentes ni el acceso de revisión privada demuestran derechos de publicación o fidelidad. Ambos prototipos JavaScript siguen privados y no están aprobados para publicación. Si recibiste por separado una frase de acceso a través de un canal privado aprobado, abre la Vista previa ejecutiva privada e introdúcela allí. Tras la verificación, esa página muestra exactamente dos tarjetas de prototipos privados. Los enlaces directos siguen inaccesibles antes de iniciar sesión y esta revisión no publica ninguno de los prototipos.",
       },
       listLabel: "Demostraciones aprobadas",
       items: [],

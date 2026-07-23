@@ -1,13 +1,12 @@
 import type {Metadata} from 'next';
 import {cookies} from 'next/headers';
-import {notFound} from 'next/navigation';
+import {notFound, redirect} from 'next/navigation';
 
 import {ExecutivePreviewPage} from '@/components/executive-preview-page';
 import {isLocale} from '@/content';
 import {
   EXECUTIVE_PREVIEW_COOKIE_NAME,
   getExecutivePreviewConfig,
-  getExecutivePreviewReturnTo,
   verifyExecutivePreviewSession,
 } from '@/lib/executive-preview-access';
 
@@ -59,8 +58,13 @@ export default async function ExecutivePreviewRoute({
   ]);
   if (!isLocale(locale)) notFound();
 
+  const error = first(query.error) === '1';
+  if (query.returnTo !== undefined) {
+    const entryPath = locale === 'es' ? '/es/executive-preview' : '/executive-preview';
+    redirect(`${entryPath}${error ? '?error=1' : ''}`);
+  }
+
   const config = getExecutivePreviewConfig();
-  const returnTo = getExecutivePreviewReturnTo(first(query.returnTo), locale);
   const sessionToken = cookieStore.get(EXECUTIVE_PREVIEW_COOKIE_NAME)?.value;
   const authenticated = config
     ? await verifyExecutivePreviewSession(sessionToken, config)
@@ -68,10 +72,9 @@ export default async function ExecutivePreviewRoute({
 
   return (
     <ExecutivePreviewPage
-      error={first(query.error) === '1'}
+      error={error}
       expiresAt={config?.expiresAt}
       locale={locale}
-      returnTo={returnTo}
       state={!config ? 'unavailable' : authenticated ? 'authenticated' : 'login'}
     />
   );
