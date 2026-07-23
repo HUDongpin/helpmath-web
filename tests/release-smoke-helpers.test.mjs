@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   buildDemoLifecycleSmokeModel,
+  evaluateCanonicalRedirect,
   evaluateExecutivePreviewEntries,
   evaluateExecutivePreviewLifecycle,
   inspectExecutivePreviewEntry,
@@ -160,6 +161,94 @@ test('isStrictIsoUtcTimestamp accepts only canonical millisecond UTC timestamps'
     null,
   ]) {
     assert.equal(isStrictIsoUtcTimestamp(value), false, String(value));
+  }
+});
+
+test('evaluateCanonicalRedirect accepts only the exact same-origin canonical target', () => {
+  assert.deepEqual(
+    evaluateCanonicalRedirect(
+      {status: 307, location: '/executive-preview'},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/executive-preview',
+      },
+    ),
+    {
+      location: 'https://www.helpmath.ai/executive-preview',
+      failures: [],
+    },
+  );
+
+  assert.deepEqual(
+    evaluateCanonicalRedirect(
+      {status: 307, location: '/es/executive-preview'},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/es/executive-preview',
+      },
+    ).failures,
+    [],
+  );
+
+  for (const [location, expectedPath] of [
+    ['/executive-preview?error=1', '/executive-preview?error=1'],
+    ['/es/executive-preview?error=1', '/es/executive-preview?error=1'],
+  ]) {
+    assert.deepEqual(
+      evaluateCanonicalRedirect(
+        {status: 307, location},
+        {
+          baseUrl: 'https://www.helpmath.ai',
+          expectedPath,
+        },
+      ).failures,
+      [],
+    );
+  }
+
+  assert.deepEqual(
+    evaluateCanonicalRedirect(
+      {status: 308, location: '/executive-preview'},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/executive-preview',
+        expectedStatus: 308,
+      },
+    ).failures,
+    [],
+  );
+
+  for (const result of [
+    evaluateCanonicalRedirect(
+      {status: 200, location: '/executive-preview'},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/executive-preview',
+      },
+    ),
+    evaluateCanonicalRedirect(
+      {status: 307, location: '/executive-preview?returnTo=/demos/conversion-1-2'},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/executive-preview',
+      },
+    ),
+    evaluateCanonicalRedirect(
+      {status: 307, location: 'https://evil.example/executive-preview'},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/executive-preview',
+      },
+    ),
+    evaluateCanonicalRedirect(
+      {status: 307, location: null},
+      {
+        baseUrl: 'https://www.helpmath.ai',
+        expectedPath: '/executive-preview',
+      },
+    ),
+  ]) {
+    assert.ok(result.failures.length > 0);
   }
 });
 

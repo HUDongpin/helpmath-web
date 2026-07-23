@@ -1,5 +1,29 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
-  "installCommand": "npm ci"
+  "installCommand": "npm ci",
+  "routes": [
+    {
+      "src": "^/(?:/+executive-preview/*|/+en/+executive-preview/*|executive-preview/+|en/+executive-preview/*)$",
+      "dest": "/api/canonical-entry/en",
+      "transforms": [
+        {
+          "type": "request.path",
+          "op": "set",
+          "args": "/api/canonical-entry/en"
+        }
+      ]
+    },
+    {
+      "src": "^/(?:/+es/+executive-preview/*|es//+executive-preview/*|es/executive-preview/+)$",
+      "dest": "/api/canonical-entry/es",
+      "transforms": [
+        {
+          "type": "request.path",
+          "op": "set",
+          "args": "/api/canonical-entry/es"
+        }
+      ]
+    }
+  ]
 }

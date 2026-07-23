@@ -4,6 +4,7 @@ import {tsImport} from 'tsx/esm/api';
 
 import {
   buildDemoLifecycleSmokeModel,
+  evaluateCanonicalRedirect,
   evaluateExecutivePreviewEntries,
   inspectExecutivePreviewEntry,
   isRetryableHttpStatus,
@@ -579,72 +580,374 @@ for (const id of demoCandidateCatalog.DEMO_CANDIDATE_IDS) {
 }
 
 const firstReviewDemoId = reviewDemoIds[0] ?? null;
+const hasPlatformEdgeRouting = !['localhost', '127.0.0.1', '[::1]'].includes(
+  baseUrl.hostname,
+);
+const executivePreviewPrivacyProbeId =
+  firstReviewDemoId ?? 'private-review-sentinel';
+const encodedEnglishPreviewReturnPath = encodeURIComponent(
+  `/demos/${executivePreviewPrivacyProbeId}`,
+);
+const encodedSpanishPreviewReturnPath = encodeURIComponent(
+  `/es/demos/${executivePreviewPrivacyProbeId}`,
+);
 const executivePreviewEntryCases = [
   {
-    path: firstReviewDemoId
-      ? `/executive-preview?returnTo=/demos/${firstReviewDemoId}`
-      : '/executive-preview',
+    canonicalPath: '/executive-preview',
     locale: 'en',
   },
   {
-    path: firstReviewDemoId
-      ? `/es/executive-preview?returnTo=/es/demos/${firstReviewDemoId}`
-      : '/es/executive-preview',
+    canonicalPath: '/es/executive-preview',
     locale: 'es',
   },
 ];
-const executivePreviewEntries = await Promise.all(
-  executivePreviewEntryCases.map(async ({path, locale}) => {
+const executivePreviewRedirectCases = [
+  {
+    path: `/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}&error=1`,
+    expectedPath: '/executive-preview?error=1',
+  },
+  {
+    path: `/es/executive-preview?returnTo=${encodedSpanishPreviewReturnPath}`,
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: `/es/executive-preview?returnTo=${encodedSpanishPreviewReturnPath}&error=1`,
+    expectedPath: '/es/executive-preview?error=1',
+  },
+  {
+    path: `/en/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/en/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}&error=1`,
+    expectedPath: '/executive-preview?error=1',
+  },
+  {
+    path: `/executive-preview/?ReturnTo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/es/executive-preview/?foo=${encodedSpanishPreviewReturnPath}`,
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: `/en/executive-preview/?returnto=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/executive-preview?foo=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: `/es/executive-preview?ReturnTo=${encodedSpanishPreviewReturnPath}`,
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: `/en/executive-preview?returnto=${encodedEnglishPreviewReturnPath}`,
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: '/executive-preview/',
+    expectedPath: '/executive-preview',
+  },
+  {
+    path: '/es/executive-preview/',
+    expectedPath: '/es/executive-preview',
+  },
+  {
+    path: '/en/executive-preview/',
+    expectedPath: '/executive-preview',
+  },
+];
+const executivePreviewCanonicalRedirects = await Promise.all(
+  executivePreviewRedirectCases.map(async ({
+    path,
+    expectedPath,
+    expectedStatus = 307,
+  }) => {
     const response = await get(path);
+    const body = await response.text();
+    const disclosureSurface = [
+      ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+      body,
+    ].join('\n').toLowerCase();
+    const redirectEvaluation = evaluateCanonicalRedirect(
+      {
+        status: response.status,
+        location: response.headers.get('location'),
+      },
+      {
+        baseUrl: origin,
+        expectedPath,
+        expectedStatus,
+      },
+    );
+
+    checkExecutivePreviewHeaders(response, path);
+    const cacheControl = robotsDirectives(response.headers.get('cache-control'));
+    const vary = robotsDirectives(response.headers.get('vary'));
+    check(cacheControl.has('private'), `${path} is missing private cache scope`);
+    check(vary.has('cookie'), `${path} is missing Vary: Cookie`);
+    check(
+      response.headers.get('x-vercel-cache')?.toLowerCase() !== 'hit',
+      `${path} was served as an x-vercel-cache HIT`,
+    );
+    for (const failure of redirectEvaluation.failures) {
+      check(false, `${path} ${failure}`);
+    }
+    if (body !== '') {
+      let bodyTarget = null;
+      try {
+        bodyTarget = new URL(body, origin);
+      } catch {
+        // The disclosure scan below still records the unexpected body safely.
+      }
+      check(
+        bodyTarget?.origin === new URL(origin).origin &&
+          `${bodyTarget.pathname}${bodyTarget.search}${bodyTarget.hash}` === expectedPath,
+        `${path} returned an unexpected redirect response body`,
+      );
+    }
+    for (const forbiddenToken of [
+      'returnto',
+      executivePreviewPrivacyProbeId.toLowerCase(),
+      '/demos/',
+      '/api/executive-preview/',
+    ]) {
+      check(
+        !disclosureSurface.includes(forbiddenToken),
+        `${path} disclosed ${forbiddenToken} in its redirect response`,
+      );
+    }
+
+    return {
+      path,
+      expectedPath,
+      location: redirectEvaluation.location,
+      status: response.status,
+    };
+  }),
+);
+const platformNormalizationProbe = 'platform-normalization-probe';
+const executivePreviewPlatformNormalizationRedirects =
+  hasPlatformEdgeRouting
+    ? await Promise.all([
+        [
+          `//executive-preview?probe=${platformNormalizationProbe}`,
+          `/executive-preview?probe=${platformNormalizationProbe}`,
+          '/executive-preview',
+        ],
+        [
+          `//en/executive-preview?probe=${platformNormalizationProbe}`,
+          `/en/executive-preview?probe=${platformNormalizationProbe}`,
+          '/executive-preview',
+        ],
+        [
+          `/es//executive-preview?probe=${platformNormalizationProbe}`,
+          `/es/executive-preview?probe=${platformNormalizationProbe}`,
+          '/es/executive-preview',
+        ],
+      ].map(async ([path, expectedPath, expectedCanonicalPath]) => {
+        const requestTarget = path.startsWith('//') ? `${origin}${path}` : path;
+        const response = await get(requestTarget);
+        const body = await response.text();
+        check(
+          new URL(response.url).origin === origin,
+          `${path} platform normalization left the deployment origin`,
+        );
+        const redirectEvaluation = evaluateCanonicalRedirect(
+          {
+            status: response.status,
+            location: response.headers.get('location'),
+          },
+          {
+            baseUrl: origin,
+            expectedPath,
+            expectedStatus: 308,
+          },
+        );
+        for (const failure of redirectEvaluation.failures) {
+          check(false, `${path} platform normalization ${failure}`);
+        }
+
+        const disclosureSurface = [
+          ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+          body,
+        ].join('\n').toLowerCase();
+        for (const forbiddenToken of [
+          'returnto',
+          executivePreviewPrivacyProbeId.toLowerCase(),
+          '/demos/',
+          '/api/executive-preview/',
+        ]) {
+          check(
+            !disclosureSurface.includes(forbiddenToken),
+            `${path} platform normalization disclosed ${forbiddenToken}`,
+          );
+        }
+
+        const secondHopTarget = redirectEvaluation.location &&
+          new URL(redirectEvaluation.location).origin === origin
+          ? redirectEvaluation.location
+          : null;
+        check(
+          secondHopTarget !== null,
+          `${path} platform normalization has no safe same-origin second hop`,
+        );
+
+        let secondHopStatus = null;
+        if (secondHopTarget) {
+          const secondHopResponse = await get(secondHopTarget);
+          const secondHopBody = await secondHopResponse.text();
+          const secondHopLabel = `${path} platform normalization second hop`;
+          const secondHopEvaluation = evaluateCanonicalRedirect(
+            {
+              status: secondHopResponse.status,
+              location: secondHopResponse.headers.get('location'),
+            },
+            {
+              baseUrl: origin,
+              expectedPath: expectedCanonicalPath,
+              expectedStatus: 307,
+            },
+          );
+          for (const failure of secondHopEvaluation.failures) {
+            check(false, `${secondHopLabel} ${failure}`);
+          }
+
+          checkExecutivePreviewHeaders(secondHopResponse, secondHopLabel);
+          check(
+            secondHopResponse.headers.get('x-robots-tag') ===
+              'noindex, nofollow, noarchive',
+            `${secondHopLabel} has an unexpected X-Robots-Tag value`,
+          );
+          const secondHopCacheControl = robotsDirectives(
+            secondHopResponse.headers.get('cache-control'),
+          );
+          const secondHopVary = robotsDirectives(
+            secondHopResponse.headers.get('vary'),
+          );
+          check(
+            secondHopCacheControl.has('private'),
+            `${secondHopLabel} is missing private cache scope`,
+          );
+          check(
+            secondHopVary.has('cookie'),
+            `${secondHopLabel} is missing Vary: Cookie`,
+          );
+          check(
+            secondHopResponse.headers.get('x-vercel-cache')?.toLowerCase() !== 'hit',
+            `${secondHopLabel} was served as an x-vercel-cache HIT`,
+          );
+          if (secondHopBody !== '') {
+            let secondHopBodyTarget = null;
+            try {
+              secondHopBodyTarget = new URL(secondHopBody, origin);
+            } catch {
+              // The disclosure scan below still records the unexpected body safely.
+            }
+            check(
+              secondHopBodyTarget?.origin === new URL(origin).origin &&
+                `${secondHopBodyTarget.pathname}${secondHopBodyTarget.search}${secondHopBodyTarget.hash}` ===
+                  expectedCanonicalPath,
+              `${secondHopLabel} returned an unexpected redirect response body`,
+            );
+          }
+
+          const secondHopDisclosureSurface = [
+            ...secondHopResponse.headers.entries().map(
+              ([name, value]) => `${name}: ${value}`,
+            ),
+            secondHopBody,
+          ].join('\n').toLowerCase();
+          for (const forbiddenToken of [
+            platformNormalizationProbe,
+            'returnto',
+            executivePreviewPrivacyProbeId.toLowerCase(),
+            '/demos/',
+            '/api/executive-preview/',
+          ]) {
+            check(
+              !secondHopDisclosureSurface.includes(forbiddenToken),
+              `${secondHopLabel} disclosed ${forbiddenToken}`,
+            );
+          }
+          secondHopStatus = secondHopResponse.status;
+        }
+
+        return {
+          path,
+          expectedPath,
+          expectedCanonicalPath,
+          location: redirectEvaluation.location,
+          secondHopStatus,
+          status: response.status,
+        };
+      }))
+    : [];
+const executivePreviewEntries = await Promise.all(
+  executivePreviewEntryCases.map(async ({canonicalPath, locale}) => {
+    const response = await get(canonicalPath);
     const html = await response.text();
     const inspection = inspectExecutivePreviewEntry(html);
     const language = html.match(/<html[^>]+lang=["']([^"']+)/iu)?.[1] ?? null;
-    check(response.status === 200, `${path} returned ${response.status}`);
-    check(language === locale, `${path} has lang=${language ?? 'missing'}, expected ${locale}`);
-    checkExecutivePreviewHeaders(response, path);
+    check(response.status === 200, `${canonicalPath} returned ${response.status}`);
+    check(
+      language === locale,
+      `${canonicalPath} has lang=${language ?? 'missing'}, expected ${locale}`,
+    );
+    checkExecutivePreviewHeaders(response, canonicalPath);
     check(
       hasRobotsMeta(html, ['noindex', 'nofollow', 'noarchive']),
-      `${path} is missing noindex, nofollow, noarchive robots metadata`,
+      `${canonicalPath} is missing noindex, nofollow, noarchive robots metadata`,
     );
     check(
       inspection.state !== 'unknown',
-      `${path} has an unrecognized or internally inconsistent executive preview state`,
+      `${canonicalPath} has an unrecognized or internally inconsistent executive preview state`,
     );
     if (inspection.state === 'login') {
       check(
         inspection.hasLoginForm,
-        `${path} is missing its same-origin executive preview login form`,
+        `${canonicalPath} is missing its same-origin executive preview login form`,
       );
       check(
         inspection.hasPassphraseField,
-        `${path} is missing its executive preview passphrase field`,
+        `${canonicalPath} is missing its executive preview passphrase field`,
       );
       check(
         inspection.expiryValues.length === 1,
-        `${path} has ${inspection.expiryValues.length} review expiry values, expected 1`,
+        `${canonicalPath} has ${inspection.expiryValues.length} review expiry values, expected 1`,
       );
       const expiresAt = inspection.expiryValues[0];
       check(
         isStrictIsoUtcTimestamp(expiresAt),
-        `${path} has a malformed review expiry ${expiresAt ?? 'missing'}`,
+        `${canonicalPath} has a malformed review expiry ${expiresAt ?? 'missing'}`,
       );
       const expiresAtMs = Date.parse(expiresAt ?? '');
       check(
         Number.isFinite(expiresAtMs) && expiresAtMs > smokeStartedAt,
-        `${path} review expiry is not in the future`,
+        `${canonicalPath} review expiry is not in the future`,
       );
     } else if (inspection.state === 'unavailable') {
       check(
         inspection.unavailableLocales.length === 1 &&
           inspection.unavailableLocales[0] === locale,
-        `${path} does not expose the expected ${locale} unavailable notice`,
+        `${canonicalPath} does not expose the expected ${locale} unavailable notice`,
       );
       check(
         inspection.expiryValues.length === 0,
-        `${path} exposes a review expiry while the preview is unavailable`,
+        `${canonicalPath} exposes a review expiry while the preview is unavailable`,
       );
     }
-    return {path, status: response.status, ...inspection};
+    return {
+      path: canonicalPath,
+      status: response.status,
+      ...inspection,
+    };
   }),
 );
 
@@ -1312,6 +1615,10 @@ const summary = {
   executivePreviewRuntimeProbes: executivePreviewRuntimeProbes.length,
   demoOptimizerProbes: legacyOptimizerProbes.length + lifecycleOptimizerProbes.length,
   executivePreviewEntries: executivePreviewEntries.length,
+  executivePreviewCanonicalRedirects: executivePreviewCanonicalRedirects.length,
+  executivePreviewPlatformEdgeRouting: hasPlatformEdgeRouting,
+  executivePreviewPlatformNormalizationRedirects:
+    executivePreviewPlatformNormalizationRedirects.length,
   executivePreviewExpectedState: expectedExecutivePreviewState,
   executivePreviewExpectedExpiresAt: expectedExecutivePreviewExpiresAt,
   executivePreviewState,

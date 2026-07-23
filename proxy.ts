@@ -19,6 +19,11 @@ const EXECUTIVE_PREVIEW_HEADERS = {
   'Vary': 'Cookie',
   'X-Robots-Tag': 'noindex, nofollow, noarchive',
 } as const;
+const EXECUTIVE_PREVIEW_ENTRY_CANONICAL_PATHS = new Map([
+  ['/executive-preview', '/executive-preview'],
+  ['/es/executive-preview', '/es/executive-preview'],
+  ['/en/executive-preview', '/executive-preview'],
+]);
 
 const publicFilePaths = new Set([
   '/icon.svg',
@@ -47,6 +52,57 @@ function withExecutivePreviewHeaders(response: NextResponse) {
   return response;
 }
 
+function normalizedPathname(pathname: string) {
+  const collapsed = pathname
+    .replace(/\\+/gu, '/')
+    .replace(/\/{2,}/gu, '/');
+  return collapsed.length > 1 ? collapsed.replace(/\/+$/u, '') : collapsed;
+}
+
+function canonicalizeExecutivePreviewEntry(request: NextRequest) {
+  const requestPath = request.nextUrl.pathname;
+  const normalizedRequestPath = normalizedPathname(requestPath);
+  const canonicalPath = EXECUTIVE_PREVIEW_ENTRY_CANONICAL_PATHS.get(
+    normalizedRequestPath,
+  );
+
+  if (!canonicalPath) return null;
+
+  // Canonicalize before the App Router renders the page. A Server Component
+  // redirect serializes the original search params into its RSC response body,
+  // which would disclose a private candidate path even when Location is safe.
+  // Only the exact local error marker is part of the supported entry contract.
+  const canonicalSearch = request.nextUrl.searchParams.get('error') === '1'
+    ? '?error=1'
+    : '';
+  const hasUnsupportedQuery = request.nextUrl.search !== canonicalSearch;
+  const hasNonCanonicalPath = requestPath !== canonicalPath;
+  if (!hasUnsupportedQuery && !hasNonCanonicalPath) return null;
+
+  const canonical = new URL(request.url);
+  canonical.pathname = canonicalPath;
+  canonical.search = canonicalSearch;
+  canonical.hash = '';
+  return new NextResponse(null, {
+    // Never permanently cache a private-entry normalization response.
+    status: 307,
+    headers: {
+      ...EXECUTIVE_PREVIEW_HEADERS,
+      Location: canonical.toString(),
+    },
+  });
+}
+
+function canonicalizePublicPath(request: NextRequest) {
+  const canonicalPath = normalizedPathname(request.nextUrl.pathname);
+  if (canonicalPath === request.nextUrl.pathname) return null;
+
+  const canonical = new URL(request.url);
+  canonical.pathname = canonicalPath;
+  canonical.hash = '';
+  return NextResponse.redirect(canonical, 308);
+}
+
 export default async function proxy(request: NextRequest) {
   const {pathname} = request.nextUrl;
 
@@ -63,6 +119,12 @@ export default async function proxy(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+  const canonicalExecutivePreviewEntry = canonicalizeExecutivePreviewEntry(request);
+  if (canonicalExecutivePreviewEntry) return canonicalExecutivePreviewEntry;
+
+  const canonicalPublicPath = canonicalizePublicPath(request);
+  if (canonicalPublicPath) return canonicalPublicPath;
 
   if (isExecutivePreviewProtectedPath(pathname)) {
     const config = getExecutivePreviewConfig();

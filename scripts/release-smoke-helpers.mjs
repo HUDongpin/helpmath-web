@@ -116,6 +116,56 @@ export function isStrictIsoUtcTimestamp(value) {
   return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
 }
 
+export function evaluateCanonicalRedirect(
+  {status, location},
+  {baseUrl, expectedPath, expectedStatus = 307},
+) {
+  if (!Number.isInteger(status)) throw new TypeError('status must be an integer');
+  if (typeof location !== 'string' && location !== null) {
+    throw new TypeError('location must be a string or null');
+  }
+  if (typeof baseUrl !== 'string' || typeof expectedPath !== 'string') {
+    throw new TypeError('baseUrl and expectedPath must be strings');
+  }
+  if (!Number.isInteger(expectedStatus)) {
+    throw new TypeError('expectedStatus must be an integer');
+  }
+
+  const base = new URL(baseUrl);
+  const expected = new URL(expectedPath, base);
+  const failures = [];
+  let target = null;
+
+  if (status !== expectedStatus) {
+    failures.push(`redirect returned ${status}, expected ${expectedStatus}`);
+  }
+
+  try {
+    target = location ? new URL(location, base) : null;
+  } catch {
+    failures.push(`redirect has malformed location ${location}`);
+  }
+
+  if (!target) {
+    failures.push('redirect is missing its canonical location');
+  } else {
+    if (target.origin !== base.origin) {
+      failures.push(`redirect targets unexpected origin ${target.origin}`);
+    }
+
+    const targetPath = `${target.pathname}${target.search}${target.hash}`;
+    const canonicalPath = `${expected.pathname}${expected.search}${expected.hash}`;
+    if (targetPath !== canonicalPath) {
+      failures.push(`redirect targets ${targetPath}, expected ${canonicalPath}`);
+    }
+  }
+
+  return {
+    location: target?.toString() ?? null,
+    failures,
+  };
+}
+
 export function evaluateExecutivePreviewEntries(
   entries,
   {expectedState = 'any', expectedExpiresAt = null, nowMs = Date.now()} = {},
