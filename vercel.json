@@ -5,11 +5,25 @@
   "routes": [
     {
       "src": "^/(?:/+executive-preview/*|/+en/+executive-preview/*|executive-preview/+|en/+executive-preview/*)$",
-      "dest": "/api/executive-preview/canonicalize/en"
+      "dest": "/api/canonical-entry/en",
+      "transforms": [
+        {
+          "type": "request.path",
+          "op": "set",
+          "args": "/api/canonical-entry/en"
+        }
+      ]
     },
     {
       "src": "^/(?:/+es/+executive-preview/*|es//+executive-preview/*|es/executive-preview/+)$",
-      "dest": "/api/executive-preview/canonicalize/es"
+      "dest": "/api/canonical-entry/es",
+      "transforms": [
+        {
+          "type": "request.path",
+          "op": "set",
+          "args": "/api/canonical-entry/es"
+        }
+      ]
     }
   ]
 }

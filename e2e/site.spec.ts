@@ -2107,6 +2107,7 @@ test('legacy executive preview return paths canonicalize without disclosing priv
     [`/es/executive-preview?ReturnTo=${spanishReturnPath}`, '/es/executive-preview'],
     [`/en/executive-preview?returnto=${englishReturnPath}`, '/executive-preview'],
     ['/executive-preview/', '/executive-preview'],
+    ['/es/executive-preview/', '/es/executive-preview'],
     ['/en/executive-preview/', '/executive-preview'],
   ] as const;
 
@@ -2158,18 +2159,21 @@ test('legacy executive preview return paths canonicalize without disclosing priv
 
   if (hasPlatformEdgeRouting) {
     const platformNormalizationProbe = 'platform-normalization-probe';
-    for (const [path, expectedPath] of [
+    for (const [path, expectedPath, expectedCanonicalPath] of [
       [
         `//executive-preview?probe=${platformNormalizationProbe}`,
         `/executive-preview?probe=${platformNormalizationProbe}`,
+        '/executive-preview',
       ],
       [
         `//en/executive-preview?probe=${platformNormalizationProbe}`,
         `/en/executive-preview?probe=${platformNormalizationProbe}`,
+        '/executive-preview',
       ],
       [
         `/es//executive-preview?probe=${platformNormalizationProbe}`,
         `/es/executive-preview?probe=${platformNormalizationProbe}`,
+        '/es/executive-preview',
       ],
     ] as const) {
       const response = await request.get(`${requestOrigin}${path}`, {maxRedirects: 0});
@@ -2199,6 +2203,63 @@ test('legacy executive preview return paths canonicalize without disclosing priv
         expect(
           disclosureSurface,
           `${path} platform normalization disclosed ${forbiddenToken}`,
+        ).not.toContain(forbiddenToken);
+      }
+
+      const secondHop = await request.get(target.toString(), {maxRedirects: 0});
+      const secondHopHeaders = secondHop.headers();
+      const secondHopBodyText = (await secondHop.body()).toString('utf8');
+      const secondHopLocation = secondHopHeaders.location;
+      const secondHopLabel = `${path} platform normalization second hop`;
+
+      expect(secondHop.status(), secondHopLabel).toBe(307);
+      expect(secondHopLocation, secondHopLabel).toBeDefined();
+      const secondHopTarget = new URL(secondHopLocation!, target);
+      const expectedCanonical = new URL(expectedCanonicalPath, requestOrigin);
+      expect(secondHopTarget.origin, secondHopLabel).toBe(expectedCanonical.origin);
+      expect(
+        `${secondHopTarget.pathname}${secondHopTarget.search}${secondHopTarget.hash}`,
+        secondHopLabel,
+      ).toBe(
+        `${expectedCanonical.pathname}${expectedCanonical.search}${expectedCanonical.hash}`,
+      );
+      expect(secondHopHeaders['cache-control'], secondHopLabel).toContain('private');
+      expect(secondHopHeaders['cache-control'], secondHopLabel).toContain('no-store');
+      expect(secondHopHeaders.vary, secondHopLabel).toMatch(
+        /(?:^|,\s*)cookie(?:,|$)/iu,
+      );
+      expect(secondHopHeaders['x-robots-tag'], secondHopLabel).toBe(
+        'noindex, nofollow, noarchive',
+      );
+      if (secondHopBodyText !== '') {
+        const secondHopBodyTarget = new URL(secondHopBodyText, target);
+        expect(secondHopBodyTarget.origin, secondHopLabel).toBe(
+          expectedCanonical.origin,
+        );
+        expect(
+          `${secondHopBodyTarget.pathname}${secondHopBodyTarget.search}${secondHopBodyTarget.hash}`,
+          secondHopLabel,
+        ).toBe(
+          `${expectedCanonical.pathname}${expectedCanonical.search}${expectedCanonical.hash}`,
+        );
+      }
+
+      const secondHopDisclosureSurface = [
+        ...Object.entries(secondHopHeaders).map(
+          ([name, value]) => `${name}: ${value}`,
+        ),
+        secondHopBodyText,
+      ].join('\n').toLowerCase();
+      for (const forbiddenToken of [
+        platformNormalizationProbe,
+        'returnto',
+        privacyProbeId.toLowerCase(),
+        '/demos/',
+        '/api/executive-preview/',
+      ]) {
+        expect(
+          secondHopDisclosureSurface,
+          `${secondHopLabel} disclosed ${forbiddenToken}`,
         ).not.toContain(forbiddenToken);
       }
     }

@@ -655,6 +655,10 @@ const executivePreviewRedirectCases = [
     expectedPath: '/executive-preview',
   },
   {
+    path: '/es/executive-preview/',
+    expectedPath: '/es/executive-preview',
+  },
+  {
     path: '/en/executive-preview/',
     expectedPath: '/executive-preview',
   },
@@ -735,16 +739,19 @@ const executivePreviewPlatformNormalizationRedirects =
         [
           `//executive-preview?probe=${platformNormalizationProbe}`,
           `/executive-preview?probe=${platformNormalizationProbe}`,
+          '/executive-preview',
         ],
         [
           `//en/executive-preview?probe=${platformNormalizationProbe}`,
           `/en/executive-preview?probe=${platformNormalizationProbe}`,
+          '/executive-preview',
         ],
         [
           `/es//executive-preview?probe=${platformNormalizationProbe}`,
           `/es/executive-preview?probe=${platformNormalizationProbe}`,
+          '/es/executive-preview',
         ],
-      ].map(async ([path, expectedPath]) => {
+      ].map(async ([path, expectedPath, expectedCanonicalPath]) => {
         const requestTarget = path.startsWith('//') ? `${origin}${path}` : path;
         const response = await get(requestTarget);
         const body = await response.text();
@@ -783,10 +790,101 @@ const executivePreviewPlatformNormalizationRedirects =
           );
         }
 
+        const secondHopTarget = redirectEvaluation.location &&
+          new URL(redirectEvaluation.location).origin === origin
+          ? redirectEvaluation.location
+          : null;
+        check(
+          secondHopTarget !== null,
+          `${path} platform normalization has no safe same-origin second hop`,
+        );
+
+        let secondHopStatus = null;
+        if (secondHopTarget) {
+          const secondHopResponse = await get(secondHopTarget);
+          const secondHopBody = await secondHopResponse.text();
+          const secondHopLabel = `${path} platform normalization second hop`;
+          const secondHopEvaluation = evaluateCanonicalRedirect(
+            {
+              status: secondHopResponse.status,
+              location: secondHopResponse.headers.get('location'),
+            },
+            {
+              baseUrl: origin,
+              expectedPath: expectedCanonicalPath,
+              expectedStatus: 307,
+            },
+          );
+          for (const failure of secondHopEvaluation.failures) {
+            check(false, `${secondHopLabel} ${failure}`);
+          }
+
+          checkExecutivePreviewHeaders(secondHopResponse, secondHopLabel);
+          check(
+            secondHopResponse.headers.get('x-robots-tag') ===
+              'noindex, nofollow, noarchive',
+            `${secondHopLabel} has an unexpected X-Robots-Tag value`,
+          );
+          const secondHopCacheControl = robotsDirectives(
+            secondHopResponse.headers.get('cache-control'),
+          );
+          const secondHopVary = robotsDirectives(
+            secondHopResponse.headers.get('vary'),
+          );
+          check(
+            secondHopCacheControl.has('private'),
+            `${secondHopLabel} is missing private cache scope`,
+          );
+          check(
+            secondHopVary.has('cookie'),
+            `${secondHopLabel} is missing Vary: Cookie`,
+          );
+          check(
+            secondHopResponse.headers.get('x-vercel-cache')?.toLowerCase() !== 'hit',
+            `${secondHopLabel} was served as an x-vercel-cache HIT`,
+          );
+          if (secondHopBody !== '') {
+            let secondHopBodyTarget = null;
+            try {
+              secondHopBodyTarget = new URL(secondHopBody, origin);
+            } catch {
+              // The disclosure scan below still records the unexpected body safely.
+            }
+            check(
+              secondHopBodyTarget?.origin === new URL(origin).origin &&
+                `${secondHopBodyTarget.pathname}${secondHopBodyTarget.search}${secondHopBodyTarget.hash}` ===
+                  expectedCanonicalPath,
+              `${secondHopLabel} returned an unexpected redirect response body`,
+            );
+          }
+
+          const secondHopDisclosureSurface = [
+            ...secondHopResponse.headers.entries().map(
+              ([name, value]) => `${name}: ${value}`,
+            ),
+            secondHopBody,
+          ].join('\n').toLowerCase();
+          for (const forbiddenToken of [
+            platformNormalizationProbe,
+            'returnto',
+            executivePreviewPrivacyProbeId.toLowerCase(),
+            '/demos/',
+            '/api/executive-preview/',
+          ]) {
+            check(
+              !secondHopDisclosureSurface.includes(forbiddenToken),
+              `${secondHopLabel} disclosed ${forbiddenToken}`,
+            );
+          }
+          secondHopStatus = secondHopResponse.status;
+        }
+
         return {
           path,
           expectedPath,
+          expectedCanonicalPath,
           location: redirectEvaluation.location,
+          secondHopStatus,
           status: response.status,
         };
       }))

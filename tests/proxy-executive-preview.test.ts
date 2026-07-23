@@ -4,7 +4,15 @@ import {describe, it} from 'node:test';
 
 import {NextRequest} from 'next/server';
 
-import {GET as canonicalizeExecutivePreview} from '../app/api/executive-preview/canonicalize/[locale]/route';
+import {
+  DELETE as rejectCanonicalEntryDelete,
+  GET as canonicalizeExecutivePreview,
+  HEAD as canonicalizeExecutivePreviewHead,
+  OPTIONS as rejectCanonicalEntryOptions,
+  PATCH as rejectCanonicalEntryPatch,
+  POST as rejectCanonicalEntryPost,
+  PUT as rejectCanonicalEntryPut,
+} from '../app/api/canonical-entry/[locale]/route';
 import nextConfig from '../next.config';
 import proxy from '../proxy';
 
@@ -21,6 +29,11 @@ const vercelConfig = JSON.parse(
     headers?: Record<string, string>;
     src?: string;
     status?: number;
+    transforms?: Array<{
+      args?: string;
+      op?: string;
+      type?: string;
+    }>;
   }>;
 };
 
@@ -30,11 +43,14 @@ describe('executive preview entry canonicalization', () => {
     assert.equal(nextConfig.skipTrailingSlashRedirect, true);
   });
 
-  it('rewrites pre-proxy aliases to a query-dropping route handler', () => {
+  it('validates nominal alias-regex syntax and query-dropping request.path transforms', () => {
     const routes = vercelConfig.routes ?? [];
     assert.equal(routes.length, 2);
 
-    for (const [paths, expectedLocation] of [
+    // These assertions validate the route expressions themselves. Vercel's
+    // front door can normalize a raw repeated slash before deployment routing;
+    // release smoke separately validates that platform 308 and its clean second hop.
+    for (const [paths, expectedRuntimePath] of [
       [
         [
           '//executive-preview',
@@ -46,7 +62,7 @@ describe('executive preview entry canonicalization', () => {
           '//en/executive-preview',
           '//en//executive-preview',
         ],
-        '/api/executive-preview/canonicalize/en',
+        '/api/canonical-entry/en',
       ],
       [
         [
@@ -54,7 +70,7 @@ describe('executive preview entry canonicalization', () => {
           '/es//executive-preview',
           '/es/executive-preview/',
         ],
-        '/api/executive-preview/canonicalize/es',
+        '/api/canonical-entry/es',
       ],
     ] as const) {
       for (const path of paths) {
@@ -62,7 +78,16 @@ describe('executive preview entry canonicalization', () => {
           ({src}) => typeof src === 'string' && new RegExp(src, 'u').test(path),
         );
         assert.equal(matchingRoutes.length, 1, path);
-        assert.equal(matchingRoutes[0]?.dest, expectedLocation, path);
+        assert.equal(matchingRoutes[0]?.dest, expectedRuntimePath, path);
+        assert.deepEqual(
+          matchingRoutes[0]?.transforms,
+          [{
+            type: 'request.path',
+            op: 'set',
+            args: expectedRuntimePath,
+          }],
+          path,
+        );
         assert.equal(matchingRoutes[0]?.has, undefined, path);
         assert.equal(matchingRoutes[0]?.headers, undefined, path);
         assert.equal(matchingRoutes[0]?.status, undefined, path);
@@ -100,7 +125,7 @@ describe('executive preview entry canonicalization', () => {
     ] as const) {
       const response = await canonicalizeExecutivePreview(
         new NextRequest(
-          `${origin}/api/executive-preview/canonicalize/${locale}${query}`,
+          `${origin}/api/canonical-entry/${locale}${query}`,
         ),
         {params: Promise.resolve({locale})},
       );
@@ -128,12 +153,68 @@ describe('executive preview entry canonicalization', () => {
 
     const invalidLocale = await canonicalizeExecutivePreview(
       new NextRequest(
-        `${origin}/api/executive-preview/canonicalize/fr?returnTo=${encodedEnglishDemoPath}`,
+        `${origin}/api/canonical-entry/fr?returnTo=${encodedEnglishDemoPath}`,
       ),
       {params: Promise.resolve({locale: 'fr'})},
     );
     assert.equal(invalidLocale.status, 404);
     assert.equal(await invalidLocale.text(), '');
+  });
+
+  it('keeps HEAD canonicalization bodyless and private', async () => {
+    const response = await canonicalizeExecutivePreviewHead(
+      new NextRequest(
+        `${origin}/api/canonical-entry/es?ReturnTo=${encodedSpanishDemoPath}&error=1`,
+        {method: 'HEAD'},
+      ),
+      {params: Promise.resolve({locale: 'es'})},
+    );
+
+    assert.equal(response.status, 307);
+    assert.equal(response.headers.get('location'), '/es/executive-preview?error=1');
+    assert.equal(response.headers.get('cache-control'), 'private, no-store, max-age=0');
+    assert.equal(response.headers.get('vary'), 'Cookie');
+    assert.equal(
+      response.headers.get('x-robots-tag'),
+      'noindex, nofollow, noarchive',
+    );
+    assert.equal(response.body, null);
+    assert.equal(await response.text(), '');
+  });
+
+  it('rejects unsupported methods without reflecting request data', async () => {
+    for (const [method, handler] of [
+      ['DELETE', rejectCanonicalEntryDelete],
+      ['OPTIONS', rejectCanonicalEntryOptions],
+      ['PATCH', rejectCanonicalEntryPatch],
+      ['POST', rejectCanonicalEntryPost],
+      ['PUT', rejectCanonicalEntryPut],
+    ] as const) {
+      const response = handler();
+      const disclosureSurface = [
+        ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+        await response.text(),
+      ].join('\n');
+
+      assert.equal(response.status, 405, method);
+      assert.equal(response.headers.get('allow'), 'GET, HEAD', method);
+      assert.equal(
+        response.headers.get('cache-control'),
+        'private, no-store, max-age=0',
+        method,
+      );
+      assert.equal(response.headers.get('vary'), 'Cookie', method);
+      assert.equal(
+        response.headers.get('x-robots-tag'),
+        'noindex, nofollow, noarchive',
+        method,
+      );
+      assert.equal(response.body, null, method);
+      assert.doesNotMatch(disclosureSurface, /returnto/iu, method);
+      assert.doesNotMatch(disclosureSurface, /conversion-1-2/iu, method);
+      assert.doesNotMatch(disclosureSurface, /\/demos\//iu, method);
+      assert.doesNotMatch(disclosureSurface, /\/api\/executive-preview\//iu, method);
+    }
   });
 
   it('returns private redirects before rendering any unsupported entry query', async () => {
@@ -174,6 +255,8 @@ describe('executive preview entry canonicalization', () => {
         `/en/executive-preview/?returnto=${encodedEnglishDemoPath}`,
         '/executive-preview',
       ],
+      // Function-contract coverage only: Vercel can intercept these repeated
+      // slashes before the proxy. The deployed two-hop behavior is smoke-tested.
       [
         `//executive-preview?returnTo=${encodedEnglishDemoPath}`,
         '/executive-preview',
@@ -241,6 +324,7 @@ describe('executive preview entry canonicalization', () => {
   it('uses private temporary redirects for path-only canonicalization', async () => {
     for (const [path, expectedLocation] of [
       ['/executive-preview/', '/executive-preview'],
+      ['/es/executive-preview/', '/es/executive-preview'],
       ['/es//executive-preview?error=1', '/es/executive-preview?error=1'],
       ['/en/executive-preview/', '/executive-preview'],
     ] as const) {
