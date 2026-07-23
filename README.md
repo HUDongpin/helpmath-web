@@ -33,6 +33,15 @@ container-specific; do not regenerate them from a normal host run.
 `npm run test:e2e:webkit`, `npm run test:e2e:mobile-webkit`, and
 `npm run test:e2e:firefox` are available for focused local diagnostics.
 
+The Lighthouse job retains three samples for each of five reviewed routes,
+plus versioned capacity and quality verdicts. Every route's median Lighthouse
+benchmark index must be greater than Lighthouse's own slow-host boundary. An
+identity-bound, explicitly ineligible first runner permits exactly one complete
+Quality workflow rerun on a fresh runner. Attempt two verifies the retained
+attempt-one capacity artifact and all three freshly started Quality jobs;
+focused job retries, attempts after two, and retries of an eligible product
+budget failure are rejected.
+
 Every external GitHub Action is pinned to a reviewed full commit SHA.
 Dependabot groups proposed GitHub Actions updates into a weekly pull request;
 review the new commit identity and keep the version comment when accepting an

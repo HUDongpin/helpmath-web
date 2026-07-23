@@ -78,10 +78,15 @@ jobs:
     # Private ubuntu-latest runners have two vCPUs, while this strict mobile
     # performance gate was calibrated on four-core hosted hardware. Pin the
     # standard four-core Intel runner so runner capacity does not masquerade
-    # as a product regression; five routes, three samples, and all budgets stay
-    # unchanged.
+    # as a product regression. A runner whose per-route median benchmark falls
+    # at or below Lighthouse's own slow-host boundary is ineligible. The whole
+    # Quality workflow may then be rerun once on a fresh runner; an eligible
+    # product-budget failure is never retried.
     runs-on: macos-15-intel
     timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,6 +97,45 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Authorize Lighthouse workflow attempt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/lighthouse-rerun
+          prior_artifact_dir="$RUNNER_TEMP/lighthouse-attempt-1"
+          prior_capacity_path="$prior_artifact_dir/lighthouse-ci/capacity-verdict.json"
+          if [[ "$GITHUB_RUN_ATTEMPT" == "2" ]]; then
+            gh run download "$GITHUB_RUN_ID" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "lighthouse-$GITHUB_RUN_ID-1" \
+              --dir "$prior_artifact_dir"
+            if [[ ! -f "$prior_capacity_path" ]]; then
+              prior_capacity_path="$prior_artifact_dir/capacity-verdict.json"
+            fi
+            gh api \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/1/jobs?per_page=100" \
+              > artifacts/lighthouse-rerun/attempt-1-jobs.json
+            for poll_attempt in 1 2 3 4 5 6; do
+              gh api \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/2/jobs?per_page=100" \
+                > artifacts/lighthouse-rerun/attempt-2-jobs.json
+              if node -e \
+                "const e=require('./artifacts/lighthouse-rerun/attempt-2-jobs.json'); process.exit(e.jobs?.length === 3 && e.jobs.every(j => Number.isFinite(Date.parse(j.started_at))) ? 0 : 1)"; then
+                break
+              fi
+              if [[ "$poll_attempt" == "6" ]]; then
+                echo "All three Quality jobs did not start within the authorization window." >&2
+                exit 1
+              fi
+              sleep 5
+            done
+          fi
+          node scripts/lighthouse-run-policy.mjs authorize-attempt \
+            artifacts/lighthouse-rerun \
+            "$prior_capacity_path"
       - run: npm run build
       - run: npx playwright install chromium
       - name: Use Playwright Chromium for Lighthouse
@@ -100,12 +144,26 @@ jobs:
           chromium_path="$(node --input-type=module -e "import {chromium} from '@playwright/test'; process.stdout.write(chromium.executablePath())")"
           echo "CHROME_PATH=$chromium_path" >> "$GITHUB_ENV"
       - name: Enforce Lighthouse performance budgets
+        id: lighthouse_assertions
+        continue-on-error: true
         run: npm run test:lighthouse
+      - name: Classify Lighthouse runner capacity
+        id: environment
+        if: ${{ !cancelled() }}
+        run: node scripts/lighthouse-run-policy.mjs classify artifacts/lighthouse-ci
+      - name: Enforce eligible Lighthouse verdict
+        if: ${{ !cancelled() }}
+        env:
+          RUNNER_ELIGIBLE: ${{ steps.environment.outputs.eligible }}
+          LIGHTHOUSE_ASSERTION_OUTCOME: ${{ steps.lighthouse_assertions.outcome }}
+        run: node scripts/lighthouse-run-policy.mjs verdict artifacts/lighthouse-ci
       - name: Retain Lighthouse reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lighthouse-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/lighthouse-ci
+          path: |
+            artifacts/lighthouse-ci
+            artifacts/lighthouse-rerun
           if-no-files-found: warn
           retention-days: 30

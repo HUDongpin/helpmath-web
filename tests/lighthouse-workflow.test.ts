@@ -16,19 +16,77 @@ function workflowJob(source: string, jobName: string) {
 }
 
 describe('Lighthouse quality gate', () => {
-  it('uses the pinned standard four-core runner without weakening mobile budgets', async () => {
-    const [workflow, lighthouseConfig] = await Promise.all([
+  it('classifies runner capacity without changing the three-job Quality contract', async () => {
+    const [workflow, lighthouseConfig, legacyPreflight] = await Promise.all([
       readFile(path.join(repositoryRoot, '.github/workflows/quality.yml'), 'utf8'),
       readFile(path.join(repositoryRoot, 'lighthouserc.cjs'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'lib/legacy-cutover-preflight.ts'),
+        'utf8',
+      ),
     ]);
-    const lighthouse = workflowJob(workflow, 'lighthouse');
+    const verdict = workflowJob(workflow, 'lighthouse');
+    const jobs = workflow.slice(workflow.indexOf('jobs:\n') + 'jobs:\n'.length);
 
-    assert.match(lighthouse, /runs-on: macos-15-intel/u);
-    assert.doesNotMatch(lighthouse, /runs-on: macos-15(?:\s|$)/u);
-    assert.doesNotMatch(lighthouse, /runs-on: ubuntu-latest/u);
-    assert.match(lighthouse, /run: npx playwright install chromium/u);
-    assert.doesNotMatch(lighthouse, /playwright install --with-deps/u);
-    assert.match(lighthouse, /run: npm run test:lighthouse/u);
+    assert.deepEqual(
+      [...jobs.matchAll(/^  ([a-z][a-z0-9-]+):$/gmu)].map(match => match[1]),
+      ['verify', 'browser-quality', 'lighthouse'],
+    );
+    assert.match(workflow, /^permissions:\n  contents: read$/mu);
+    assert.match(
+      verdict,
+      /permissions:\n\s+actions: read\n\s+contents: read/u,
+    );
+    assert.match(verdict, /runs-on: macos-15-intel/u);
+    assert.doesNotMatch(verdict, /runs-on: macos-15(?:\s|$)/u);
+    assert.doesNotMatch(verdict, /runs-on: ubuntu-latest/u);
+    assert.match(verdict, /run: npx playwright install chromium/u);
+    assert.doesNotMatch(verdict, /playwright install --with-deps/u);
+    assert.match(verdict, /id: lighthouse_assertions/u);
+    assert.match(verdict, /continue-on-error: true/u);
+    assert.match(
+      verdict,
+      /name: Authorize Lighthouse workflow attempt[\s\S]*gh run download "\$GITHUB_RUN_ID"[\s\S]*attempts\/1\/jobs\?per_page=100[\s\S]*attempts\/2\/jobs\?per_page=100[\s\S]*authorize-attempt/u,
+    );
+    assert.match(
+      verdict,
+      /for poll_attempt in 1 2 3 4 5 6; do[\s\S]*sleep 5/u,
+    );
+    assert.match(
+      verdict,
+      /name: Classify Lighthouse runner capacity\n\s+id: environment\n\s+if: \$\{\{ !cancelled\(\) \}\}/u,
+    );
+    assert.match(
+      verdict,
+      /name: Enforce eligible Lighthouse verdict\n\s+if: \$\{\{ !cancelled\(\) \}\}/u,
+    );
+    assert.match(verdict, /run: npm run test:lighthouse/u);
+    assert.match(
+      verdict,
+      /run: node scripts\/lighthouse-run-policy\.mjs classify artifacts\/lighthouse-ci/u,
+    );
+    assert.match(
+      verdict,
+      /run: node scripts\/lighthouse-run-policy\.mjs verdict artifacts\/lighthouse-ci/u,
+    );
+    assert.ok(
+      verdict.indexOf('Enforce eligible Lighthouse verdict') <
+        verdict.indexOf('Retain Lighthouse reports'),
+      'The final verdict must be written before the retained artifact is uploaded',
+    );
+    assert.match(
+      verdict,
+      /name: lighthouse-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u,
+    );
+    assert.match(verdict, /artifacts\/lighthouse-rerun/u);
+    assert.doesNotMatch(
+      verdict.slice(verdict.indexOf('Enforce eligible Lighthouse verdict')),
+      /continue-on-error: true/u,
+    );
+    assert.match(
+      legacyPreflight,
+      /LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT = 2 as const/u,
+    );
 
     assert.match(lighthouseConfig, /aggregationMethod: 'median'/u);
     assert.match(lighthouseConfig, /numberOfRuns: 3/u);

@@ -31,6 +31,8 @@ import {
   LEGACY_CUTOVER_PRODUCTION_QUALITY_EVIDENCE_SOURCE,
   LEGACY_CUTOVER_PRODUCTION_QUALITY_EVENT,
   LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS,
+  LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT,
   LEGACY_CUTOVER_PRODUCTION_QUALITY_REF,
   LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY,
   LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
@@ -148,21 +150,27 @@ function productionQualityEvidenceBundle(
       id: 1001,
       started_at: "2026-07-21T17:05:00Z",
       completed_at: "2026-07-21T17:25:00Z",
-      step: LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP,
+      steps: [LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP],
     },
     {
       name: "browser-quality",
       id: 1002,
       started_at: "2026-07-21T17:06:00Z",
       completed_at: "2026-07-21T17:28:00Z",
-      step: "Enforce Chromium, Firefox, and WebKit browser contracts",
+      steps: ["Enforce Chromium, Firefox, and WebKit browser contracts"],
     },
     {
       name: "lighthouse",
       id: 1003,
       started_at: "2026-07-21T17:07:00Z",
       completed_at: "2026-07-21T17:29:00Z",
-      step: "Enforce Lighthouse performance budgets",
+      steps: [
+        LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS[0],
+        "Enforce Lighthouse performance budgets",
+        LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS[1],
+        LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS[2],
+        "Retain Lighthouse reports",
+      ],
     },
   ] as const;
   return {
@@ -219,17 +227,28 @@ function productionQualityEvidenceBundle(
         started_at: job.started_at,
         completed_at: job.completed_at,
         html_url: `${runUrl}/job/${String(job.id)}`,
-        steps: [
-          {
-            number: 1,
-            name: job.step,
-            status: "completed",
-            conclusion: "success",
-          },
-        ],
+        steps: job.steps.map((step, index) => ({
+          number: index + 1,
+          name: step,
+          status: "completed",
+          conclusion: "success",
+        })),
       })),
     },
   };
+}
+
+function setProductionQualityRunAttempt(
+  bundle: LegacyCutoverProductionQualityEvidenceBundle,
+  runAttempt: number,
+): void {
+  bundle.run.run_attempt = runAttempt;
+  bundle.requests.jobs =
+    `https://api.github.com/repos/HUDongpin/helpmath-web/actions/runs/${String(bundle.run.id)}` +
+    `/attempts/${String(runAttempt)}/jobs?per_page=100`;
+  for (const job of bundle.jobs.jobs) {
+    job.run_attempt = runAttempt;
+  }
 }
 
 function evidenceArtifact(
@@ -817,7 +836,7 @@ describe("legacy-domain external evidence", () => {
     );
     assert.match(
       errors,
-      /qualityRun\.runAttempt must be a positive safe integer/u,
+      /qualityRun\.runAttempt must be 1 or 2/u,
     );
     assert.match(
       errors,
@@ -875,6 +894,196 @@ describe("legacy-domain external evidence", () => {
     assert.match(
       errors,
       /qualityRun\.runUrl does not match the retained GitHub API evidence/u,
+    );
+  });
+
+  it("accepts a second-attempt Quality run with matching retained evidence", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-second-attempt-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    setProductionQualityRunAttempt(
+      bundle,
+      LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT,
+    );
+    await writeProductionQualityEvidence(
+      plan,
+      directory,
+      bundle,
+      (artifact) => {
+        assert.ok(artifact.qualityRun);
+        artifact.qualityRun.runAttempt =
+          LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT;
+      },
+    );
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    assert.equal(verification.ok, true);
+    assert.equal(
+      verification.entries.find(
+        (entry) => entry.key === "productionQuality",
+      )?.pass,
+      true,
+    );
+  });
+
+  it("accepts the three required Quality jobs in arbitrary API order", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-unordered-jobs-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    const [verify, browserQuality, lighthouse] = bundle.jobs.jobs;
+    assert.ok(verify);
+    assert.ok(browserQuality);
+    assert.ok(lighthouse);
+    bundle.jobs.jobs = [lighthouse, verify, browserQuality];
+    await writeProductionQualityEvidence(plan, directory, bundle);
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    assert.equal(verification.ok, true);
+    assert.equal(
+      verification.entries.find(
+        (entry) => entry.key === "productionQuality",
+      )?.pass,
+      true,
+    );
+  });
+
+  it("rejects missing or duplicate required Quality job names", async () => {
+    for (const scenario of ["missing", "duplicate"] as const) {
+      const directory = await mkdtemp(
+        path.join(
+          tmpdir(),
+          `helpmath-cutover-quality-${scenario}-job-name-`,
+        ),
+      );
+      const plan = validPlan();
+      await materializeEvidence(plan, directory);
+      const bundle = productionQualityEvidenceBundle(plan);
+      if (scenario === "missing") {
+        bundle.jobs.jobs = bundle.jobs.jobs.filter(
+          (job) => job.name !== "browser-quality",
+        );
+        bundle.jobs.total_count = bundle.jobs.jobs.length;
+      } else {
+        const browserQuality = bundle.jobs.jobs.find(
+          (job) => job.name === "browser-quality",
+        );
+        assert.ok(browserQuality);
+        browserQuality.name = "verify";
+      }
+      await writeProductionQualityEvidence(plan, directory, bundle);
+
+      const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+      const errors =
+        verification.entries
+          .find((entry) => entry.key === "productionQuality")
+          ?.errors.join("\n") ?? "";
+      assert.equal(verification.ok, false);
+      assert.match(
+        errors,
+        /jobs must include exactly one browser-quality job/u,
+      );
+      if (scenario === "missing") {
+        assert.match(errors, /jobs must contain exactly 3 required jobs/u);
+      } else {
+        assert.match(errors, /jobs\[1\]\.name must be unique/u);
+      }
+    }
+  });
+
+  it("rejects missing, duplicate, or failed required Lighthouse authorization steps", async () => {
+    for (const requiredStep of LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS) {
+      for (const scenario of ["missing", "duplicate", "failed"] as const) {
+        const directory = await mkdtemp(
+          path.join(
+            tmpdir(),
+            `helpmath-cutover-quality-${scenario}-lighthouse-step-`,
+          ),
+        );
+        const plan = validPlan();
+        await materializeEvidence(plan, directory);
+        const bundle = productionQualityEvidenceBundle(plan);
+        const lighthouse = bundle.jobs.jobs.find(
+          (job) => job.name === "lighthouse",
+        );
+        assert.ok(lighthouse);
+        const required = lighthouse.steps.find(
+          (step) => step.name === requiredStep,
+        );
+        assert.ok(required);
+        if (scenario === "missing") {
+          lighthouse.steps = lighthouse.steps.filter(
+            (step) => step.name !== requiredStep,
+          );
+          lighthouse.steps.forEach((step, index) => {
+            step.number = index + 1;
+          });
+        } else if (scenario === "duplicate") {
+          lighthouse.steps.push({
+            ...required,
+            number: lighthouse.steps.length + 1,
+          });
+        } else {
+          required.conclusion = "failure";
+        }
+        await writeProductionQualityEvidence(plan, directory, bundle);
+
+        const verification = await verifyLegacyCutoverEvidence(plan, {
+          nowMs,
+        });
+        const errors =
+          verification.entries
+            .find((entry) => entry.key === "productionQuality")
+            ?.errors.join("\n") ?? "";
+        assert.equal(verification.ok, false);
+        assert.equal(
+          errors.includes(
+            `lighthouse steps must include exactly one successful ${requiredStep}`,
+          ),
+          true,
+        );
+        if (scenario === "failed") {
+          assert.match(errors, /\.conclusion must be success/u);
+        }
+      }
+    }
+  });
+
+  it("rejects a Quality run after the second attempt in both retained layers", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "helpmath-cutover-quality-late-attempt-"),
+    );
+    const plan = validPlan();
+    await materializeEvidence(plan, directory);
+    const bundle = productionQualityEvidenceBundle(plan);
+    const rejectedRunAttempt =
+      LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT + 1;
+    setProductionQualityRunAttempt(bundle, rejectedRunAttempt);
+    await writeProductionQualityEvidence(
+      plan,
+      directory,
+      bundle,
+      (artifact) => {
+        assert.ok(artifact.qualityRun);
+        artifact.qualityRun.runAttempt = rejectedRunAttempt;
+      },
+    );
+
+    const verification = await verifyLegacyCutoverEvidence(plan, { nowMs });
+    const errors =
+      verification.entries
+        .find((entry) => entry.key === "productionQuality")
+        ?.errors.join("\n") ?? "";
+    assert.equal(verification.ok, false);
+    assert.match(errors, /qualityRun\.runAttempt must be 1 or 2/u);
+    assert.match(
+      errors,
+      /GitHub API evidence\.run\.run_attempt must be 1 or 2/u,
     );
   });
 

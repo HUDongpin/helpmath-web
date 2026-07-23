@@ -253,10 +253,16 @@ export const LEGACY_CUTOVER_PRODUCTION_QUALITY_API_VERSION =
   "2022-11-28" as const;
 export const LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP =
   "Enforce launch-gate transition history" as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT = 2 as const;
 export const LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS = [
   "verify",
   "browser-quality",
   "lighthouse",
+] as const;
+export const LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS = [
+  "Authorize Lighthouse workflow attempt",
+  "Classify Lighthouse runner capacity",
+  "Enforce eligible Lighthouse verdict",
 ] as const;
 
 export type LegacyCutoverProductionQualityRun = {
@@ -1289,12 +1295,11 @@ function validateProductionQualityRun(
   if (!Number.isSafeInteger(value.runId) || Number(value.runId) < 1) {
     errors.push(`${location}.runId must be a positive safe integer`);
   }
-  if (
-    !Number.isSafeInteger(value.runAttempt) ||
-    Number(value.runAttempt) < 1
-  ) {
-    errors.push(`${location}.runAttempt must be a positive safe integer`);
-  }
+  allowedProductionQualityRunAttempt(
+    value.runAttempt,
+    `${location}.runAttempt`,
+    errors,
+  );
   const expectedRunUrl =
     Number.isSafeInteger(value.runId) && Number(value.runId) >= 1
       ? `https://github.com/${LEGACY_CUTOVER_PRODUCTION_QUALITY_REPOSITORY}/actions/runs/${String(value.runId)}`
@@ -1357,6 +1362,24 @@ function positiveSafeInteger(
 ): value is number {
   if (!Number.isSafeInteger(value) || Number(value) < 1) {
     errors.push(`${location} must be a positive safe integer`);
+    return false;
+  }
+  return true;
+}
+
+function allowedProductionQualityRunAttempt(
+  value: unknown,
+  location: string,
+  errors: string[],
+): value is number {
+  if (
+    !Number.isSafeInteger(value) ||
+    Number(value) < 1 ||
+    Number(value) > LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT
+  ) {
+    errors.push(
+      `${location} must be 1 or ${String(LEGACY_CUTOVER_PRODUCTION_QUALITY_MAX_RUN_ATTEMPT)}`,
+    );
     return false;
   }
   return true;
@@ -1483,7 +1506,7 @@ function validateProductionQualityEvidenceBundle(
     `${runLocation}.id`,
     errors,
   );
-  const runAttemptValid = positiveSafeInteger(
+  const runAttemptValid = allowedProductionQualityRunAttempt(
     run.run_attempt,
     `${runLocation}.run_attempt`,
     errors,
@@ -1745,12 +1768,6 @@ function validateProductionQualityEvidenceBundle(
     } else {
       jobByName.set(jobValue.name, jobValue);
     }
-    const expectedJobName = LEGACY_CUTOVER_PRODUCTION_QUALITY_JOBS[jobIndex];
-    if (jobValue.name !== expectedJobName) {
-      errors.push(
-        `${jobLocation}.name must preserve canonical Quality job order as ${expectedJobName ?? "no additional job"}`,
-      );
-    }
     if (jobValue.run_id !== run.id) {
       errors.push(`${jobLocation}.run_id must match ${runLocation}.id`);
     }
@@ -1883,6 +1900,25 @@ function validateProductionQualityEvidenceBundle(
     errors.push(
       `${jobsLocation}.jobs verify steps must include exactly one ${LEGACY_CUTOVER_PRODUCTION_QUALITY_TRANSITION_STEP}`,
     );
+  }
+  const lighthouseJob = jobByName.get("lighthouse");
+  const lighthouseSteps =
+    lighthouseJob && Array.isArray(lighthouseJob.steps)
+      ? lighthouseJob.steps.filter((step) => isRecord(step))
+      : [];
+  for (const requiredStep of LEGACY_CUTOVER_PRODUCTION_QUALITY_LIGHTHOUSE_STEPS) {
+    const matchingSteps = lighthouseSteps.filter(
+      (step) => step.name === requiredStep,
+    );
+    if (
+      matchingSteps.length !== 1 ||
+      matchingSteps[0]?.status !== "completed" ||
+      matchingSteps[0]?.conclusion !== "success"
+    ) {
+      errors.push(
+        `${jobsLocation}.jobs lighthouse steps must include exactly one successful ${requiredStep}`,
+      );
+    }
   }
 
   if (

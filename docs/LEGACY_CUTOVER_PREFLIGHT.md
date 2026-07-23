@@ -255,9 +255,11 @@ run must be the `push` run for the exact planned commit. A
 `pull_request` run is candidate evidence rather than Production evidence.
 The typed provenance must also identify the fixed
 `HUDongpin/helpmath-web` repository, `.github/workflows/quality.yml`,
-`refs/heads/main` / `main`, a positive GitHub run ID and attempt, and the exact
-canonical run URL. A fork, another workflow or branch, or a URL that does not
-bind that run ID fails closed even when it reports the same commit SHA.
+`refs/heads/main` / `main`, a positive GitHub run ID, run attempt **1 or 2**,
+and the exact canonical run URL. Attempt 3 or later fails closed, so repeated
+reruns cannot be promoted as Production evidence. A fork, another workflow or
+branch, or a URL that does not bind that run ID fails closed even when it
+reports the same commit SHA.
 Missing, skipped, cancelled, or failed transition/job results fail closed; an
 aggregate workflow conclusion cannot replace the required step and all three
 job conclusions.
@@ -284,11 +286,19 @@ every artifact field with the derived values. Both repository identities must
 be `HUDongpin/helpmath-web`; the run workflow ID must equal the retained
 workflow ID; the active workflow name and path must be `Quality` and
 `.github/workflows/quality.yml`; the push must target `main`; and the run and
-each job must bind the exact planned commit. The jobs response must contain
-exactly one successful `verify`, `browser-quality`, and `lighthouse` job for
-the retained run attempt, in that canonical order; steps must be ordered by
-their numeric API field. The successful launch-transition step must occur
-exactly once inside `verify`.
+each job must bind the exact planned commit and the same allowed attempt (1 or
+2). The jobs response must contain exactly one successful `verify`,
+`browser-quality`, and `lighthouse` job for the retained run attempt, in that
+order-independent set. Array order from the GitHub API is not significant;
+each unique job is resolved by name and then checked strictly. Steps within
+each job must remain ordered by their numeric API field. The successful
+launch-transition step must occur exactly once inside `verify`. The
+`lighthouse` job must contain exactly one successful
+`Authorize Lighthouse workflow attempt`,
+`Classify Lighthouse runner capacity`, and
+`Enforce eligible Lighthouse verdict` step. This binds retained Production
+evidence to the bounded, machine-authorized Lighthouse attempt chain; a
+missing, duplicate, skipped, or failed required step fails closed.
 
 `artifact.productionQuality.observedAt` and the plan evidence timestamp must
 represent the same epoch as the raw run `updated_at`; GitHub timestamps without
