@@ -77,9 +77,10 @@ jobs:
   lighthouse:
     # Private ubuntu-latest runners have two vCPUs, while this strict mobile
     # performance gate was calibrated on four-core hosted hardware. Pin the
-    # standard M1 runner so runner capacity does not masquerade as a product
-    # regression; the five routes, three samples, and budgets stay unchanged.
-    runs-on: macos-15
+    # standard four-core Intel runner so runner capacity does not masquerade
+    # as a product regression; five routes, three samples, and all budgets stay
+    # unchanged.
+    runs-on: macos-15-intel
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

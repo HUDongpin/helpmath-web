@@ -16,14 +16,15 @@ function workflowJob(source: string, jobName: string) {
 }
 
 describe('Lighthouse quality gate', () => {
-  it('uses the pinned standard M1 runner without weakening mobile budgets', async () => {
+  it('uses the pinned standard four-core runner without weakening mobile budgets', async () => {
     const [workflow, lighthouseConfig] = await Promise.all([
       readFile(path.join(repositoryRoot, '.github/workflows/quality.yml'), 'utf8'),
       readFile(path.join(repositoryRoot, 'lighthouserc.cjs'), 'utf8'),
     ]);
     const lighthouse = workflowJob(workflow, 'lighthouse');
 
-    assert.match(lighthouse, /runs-on: macos-15/u);
+    assert.match(lighthouse, /runs-on: macos-15-intel/u);
+    assert.doesNotMatch(lighthouse, /runs-on: macos-15(?:\s|$)/u);
     assert.doesNotMatch(lighthouse, /runs-on: ubuntu-latest/u);
     assert.match(lighthouse, /run: npx playwright install chromium/u);
     assert.doesNotMatch(lighthouse, /playwright install --with-deps/u);
