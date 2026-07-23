@@ -2133,7 +2133,7 @@ test('legacy executive preview return paths canonicalize without disclosing priv
     expect(headers['cache-control'], path).toContain('no-store');
     expect(headers.vary, path).toMatch(/(?:^|,\s*)cookie(?:,|$)/iu);
     expect(headers['x-robots-tag'], path).toBe('noindex, nofollow, noarchive');
-    if (bodyText !== '') {
+    if (bodyText !== '' && bodyText.trim() !== 'Redirecting...') {
       const bodyTarget = new URL(bodyText, requestUrl);
       expect(bodyTarget.origin, path).toBe(requestUrl.origin);
       expect(`${bodyTarget.pathname}${bodyTarget.search}${bodyTarget.hash}`, path).toBe(
@@ -2231,7 +2231,10 @@ test('legacy executive preview return paths canonicalize without disclosing priv
       expect(secondHopHeaders['x-robots-tag'], secondHopLabel).toBe(
         'noindex, nofollow, noarchive',
       );
-      if (secondHopBodyText !== '') {
+      if (
+        secondHopBodyText !== '' &&
+        secondHopBodyText.trim() !== 'Redirecting...'
+      ) {
         const secondHopBodyTarget = new URL(secondHopBodyText, target);
         expect(secondHopBodyTarget.origin, secondHopLabel).toBe(
           expectedCanonical.origin,

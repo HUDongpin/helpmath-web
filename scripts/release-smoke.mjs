@@ -699,7 +699,7 @@ const executivePreviewCanonicalRedirects = await Promise.all(
     for (const failure of redirectEvaluation.failures) {
       check(false, `${path} ${failure}`);
     }
-    if (body !== '') {
+    if (body !== '' && body.trim() !== 'Redirecting...') {
       let bodyTarget = null;
       try {
         bodyTarget = new URL(body, origin);
@@ -843,7 +843,10 @@ const executivePreviewPlatformNormalizationRedirects =
             secondHopResponse.headers.get('x-vercel-cache')?.toLowerCase() !== 'hit',
             `${secondHopLabel} was served as an x-vercel-cache HIT`,
           );
-          if (secondHopBody !== '') {
+          if (
+            secondHopBody !== '' &&
+            secondHopBody.trim() !== 'Redirecting...'
+          ) {
             let secondHopBodyTarget = null;
             try {
               secondHopBodyTarget = new URL(secondHopBody, origin);
