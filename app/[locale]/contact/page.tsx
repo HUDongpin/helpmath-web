@@ -39,7 +39,7 @@ export default async function ContactRoute({params}: {params: Promise<{locale: '
 
   return (
     <MainContent>
-      <ContactPage content={content} form={form} />
+      <ContactPage content={content} form={form} locale={locale} />
     </MainContent>
   );
 }

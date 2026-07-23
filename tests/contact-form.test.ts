@@ -5,7 +5,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 
 import {ContactForm} from '../components/contact-form';
 import {getPageContent} from '../content';
-import {LocaleProvider} from '../i18n/navigation';
+import {LocaleProvider} from '../i18n/locale-context';
 
 const originalEnabled = process.env.NEXT_PUBLIC_CONTACT_ENABLED;
 const originalSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;

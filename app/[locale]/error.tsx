@@ -1,7 +1,7 @@
 'use client';
 
 import {ErrorRecovery} from '@/components/error-recovery';
-import {useLocale} from '@/i18n/navigation';
+import {useLocale} from '@/i18n/locale-context';
 
 type ErrorBoundaryProps = {
   error: Error & {digest?: string};

@@ -12,5 +12,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function ApproachRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <MainContent><ApproachPage content={getSiteContent(locale).pages.approach} /></MainContent>;
+  return <MainContent><ApproachPage content={getSiteContent(locale).pages.approach} locale={locale} /></MainContent>;
 }

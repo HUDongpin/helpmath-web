@@ -1,16 +1,18 @@
 import type {ReactNode} from 'react';
 
-import type {HeroContent} from '@/content/types';
+import type {HeroContent, Locale} from '@/content/types';
 
 import {Action, Container, DotPattern, Eyebrow} from './ui';
 import {PageHeroMotif} from './page-hero-motif';
 
 export function PageHero({
   content,
+  locale,
   tone = 'blue',
   children
 }: {
   content: HeroContent;
+  locale: Locale;
   tone?: 'blue' | 'yellow' | 'mint' | 'coral';
   children?: ReactNode;
 }) {
@@ -30,7 +32,11 @@ export function PageHero({
             </div>
           ) : null}
         </div>
-        {children ? <div className="page-hero__visual">{children}</div> : <PageHeroMotif />}
+        {children ? (
+          <div className="page-hero__visual">{children}</div>
+        ) : (
+          <PageHeroMotif locale={locale} />
+        )}
       </Container>
       <DotPattern className="page-hero__dots" />
     </section>

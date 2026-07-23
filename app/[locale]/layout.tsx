@@ -5,7 +5,8 @@ import {SiteFooter} from '@/components/site-footer';
 import {SiteHeader} from '@/components/site-header';
 import {getSiteContent} from '@/content';
 import type {Locale} from '@/content/types';
-import {LocaleProvider} from '@/i18n/navigation';
+import {BROWSER_LOCATION_CHANGE_EVENT} from '@/i18n/browser-location';
+import {LocaleProvider} from '@/i18n/locale-context';
 import {routing} from '@/i18n/routing';
 import {
   getSiteUrl,
@@ -19,6 +20,11 @@ import '../globals.css';
 const RESOURCE_HASH_BOOTSTRAP = `
 (() => {
   try {
+    const locationChangeEvent = ${JSON.stringify(BROWSER_LOCATION_CHANGE_EVENT)};
+    const replaceLocation = (url) => {
+      window.history.replaceState(window.history.state, '', url);
+      window.dispatchEvent(new Event(locationChangeEvent));
+    };
     const resourceHash = window.location.hash;
     const isResourcePath = /^\\/(?:es\\/)?resources\\/?$/u.test(window.location.pathname);
     if (!isResourcePath || !resourceHash) return;
@@ -26,11 +32,7 @@ const RESOURCE_HASH_BOOTSTRAP = `
     window.__helpMathDeferredResourceHash = resourceHash;
     const resourcePath = window.location.pathname;
     const resourceSearch = window.location.search;
-    window.history.replaceState(
-      window.history.state,
-      '',
-      resourcePath + resourceSearch
-    );
+    replaceLocation(resourcePath + resourceSearch);
 
     const isPendingResourceHash = () =>
       window.__helpMathDeferredResourceHash === resourceHash &&
@@ -38,11 +40,7 @@ const RESOURCE_HASH_BOOTSTRAP = `
       (!window.location.hash || window.location.hash === resourceHash);
     const restoreVisibleHash = () => {
       if (!isPendingResourceHash()) return false;
-      window.history.replaceState(
-        window.history.state,
-        '',
-        resourcePath + resourceSearch + resourceHash
-      );
+      replaceLocation(resourcePath + resourceSearch + resourceHash);
       return true;
     };
     const cancelStaleResourceHash = () => {
@@ -161,7 +159,7 @@ export default async function LocaleLayout({
           </a>
           <SiteHeader content={content} locale={appLocale} />
           {children}
-          <SiteFooter content={content} />
+          <SiteFooter content={content} locale={appLocale} />
         </LocaleProvider>
       </body>
     </html>

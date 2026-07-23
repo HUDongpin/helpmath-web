@@ -12,5 +12,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function SupportRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <MainContent><SupportPage content={getSiteContent(locale).pages.support} /></MainContent>;
+  return <MainContent><SupportPage content={getSiteContent(locale).pages.support} locale={locale} /></MainContent>;
 }

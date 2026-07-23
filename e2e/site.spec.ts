@@ -716,15 +716,21 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expect(englishSearch).toBeEnabled();
   await englishSearch.fill('WWC');
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
-  await expect(library.locator('.resource-entry')).toHaveCount(3);
+  await expect(library.locator('.resource-entry:not([hidden])')).toHaveCount(3);
   const englishResearchFilter = library.getByRole('button', {name: /Research/});
   await expect(englishResearchFilter).toBeEnabled();
   await englishResearchFilter.click();
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
   await englishSearch.fill('');
   await expect(library.getByRole('status')).toHaveText('12 resources shown');
-  await expect(library.locator('.resource-entry')).toHaveCount(12);
+  await expect(library.locator('.resource-entry:not([hidden])')).toHaveCount(12);
   await expect(library.getByRole('heading', {name: 'About HELP Math'})).toHaveCount(0);
+  await expect(library.locator('#about-help-math')).toBeHidden();
+
+  await englishSearch.fill('no matching HELP Math resource');
+  await expect(library.getByRole('status')).toHaveText('0 resources shown');
+  await expect(library.locator('.resource-list')).toBeHidden();
+  await expect(library.locator('.resource-empty')).toBeVisible();
 
   await expectDocument(page, '/es/resources', 'es');
   const spanishLibrary = page.locator('#resource-library');
@@ -737,9 +743,31 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expect(spanishModernizationFilter).toBeEnabled();
   await spanishModernizationFilter.click();
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 2 recursos');
-  await expect(spanishLibrary.locator('.resource-entry')).toHaveCount(2);
+  await expect(spanishLibrary.locator('.resource-entry:not([hidden])')).toHaveCount(2);
   await expect(spanishLibrary.getByRole('heading', {name: 'Notas de modernización y recuperación'})).toBeVisible();
   expectNoRuntimeIssues(issues);
+});
+
+test('resource filtering clears a fragment whose target becomes hidden', async ({page}) => {
+  const targetHash = '#technology-innovations-report';
+  await expectDocument(page, `/resources${targetHash}`, 'en');
+  const library = page.locator('#resource-library');
+  const target = page.locator(targetHash);
+  await expect(target).toBeVisible();
+  await expect(page.locator('html')).toHaveClass(/resource-fragment-navigation/u);
+
+  await library.getByRole('searchbox', {name: 'Search resources'}).fill('WWC');
+  await expect(target).toBeHidden();
+  await expect(page).toHaveURL(/\/resources$/u);
+  await expect(page.locator('html')).not.toHaveClass(/resource-fragment-navigation/u);
+  await expect(page.getByRole('link', {name: 'Language: Español'}).first()).toHaveAttribute(
+    'href',
+    '/es/resources',
+  );
+
+  await library.getByRole('searchbox', {name: 'Search resources'}).clear();
+  await expect(target).toBeVisible();
+  await expect(page).toHaveURL(/\/resources$/u);
 });
 
 test('render containment preserves resource geometry, focus, and deep links', {
@@ -782,8 +810,9 @@ test('render containment preserves resource geometry, focus, and deep links', {
   const initialHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
   const search = library.getByRole('searchbox', {name: 'Search resources'});
   await search.fill('WWC');
-  await expect(entries).toHaveCount(3);
-  const filteredGeometry = await entries.evaluateAll((cards) => cards.map((card) => {
+  const visibleEntries = list.locator('.resource-entry:not([hidden])');
+  await expect(visibleEntries).toHaveCount(3);
+  const filteredGeometry = await visibleEntries.evaluateAll((cards) => cards.map((card) => {
     const bounds = card.getBoundingClientRect();
     return {bottom: bounds.bottom, top: bounds.top};
   }));
@@ -920,6 +949,57 @@ test('stale resource fallback cannot override user navigation or browser history
   await page.waitForTimeout(1_200);
   expect(await page.evaluate(() => window.location.hash)).toBe('#resource-library');
   await expect(page.locator('#resource-library')).toBeInViewport();
+
+  await page.goto(`/resources?test=filtered-stale-scroll${targetHash}`, {
+    waitUntil: 'load',
+  });
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
+  const library = page.locator('#resource-library');
+  const search = library.getByRole('searchbox', {name: 'Search resources'});
+  const target = page.locator(targetHash);
+  await expect(search).toBeEnabled();
+  await search.fill('WWC');
+  await expect(target).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('');
+  await search.clear();
+  await expect(target).toBeVisible();
+  await page.evaluate(async () => {
+    window.scrollTo({behavior: 'instant', top: 0});
+    await new Promise<void>((resolve) => requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    }));
+  });
+  const filteredBaseline = await page.evaluate(() => ({
+    fragmentGuard: document.documentElement.classList.contains(
+      'resource-fragment-navigation',
+    ),
+    hash: window.location.hash,
+    scrollY: window.scrollY,
+    targetTop: document.getElementById('technology-innovations-report')
+      ?.getBoundingClientRect().top ?? null,
+  }));
+  expect(filteredBaseline.hash).toBe('');
+  expect(filteredBaseline.fragmentGuard).toBe(false);
+
+  await releaseFontsReady();
+  await page.waitForTimeout(1_200);
+  const filteredSettled = await page.evaluate(() => ({
+    fragmentGuard: document.documentElement.classList.contains(
+      'resource-fragment-navigation',
+    ),
+    hash: window.location.hash,
+    scrollY: window.scrollY,
+    targetTop: document.getElementById('technology-innovations-report')
+      ?.getBoundingClientRect().top ?? null,
+  }));
+  expect(filteredSettled.hash).toBe('');
+  expect(filteredSettled.fragmentGuard).toBe(false);
+  expect(Math.abs(filteredSettled.scrollY - filteredBaseline.scrollY)).toBeLessThanOrEqual(1);
+  expect(filteredBaseline.targetTop).not.toBeNull();
+  expect(filteredSettled.targetTop).not.toBeNull();
+  expect(
+    Math.abs((filteredSettled.targetTop ?? 0) - (filteredBaseline.targetTop ?? 0)),
+  ).toBeLessThanOrEqual(1);
 
   await page.goto(`/resources?test=stale-resource-fallback${targetHash}`, {waitUntil: 'load'});
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
@@ -1336,6 +1416,63 @@ for (const locale of ['en', 'es'] as const) {
 
 test.describe('resource library without JavaScript', () => {
   test.use({javaScriptEnabled: false});
+
+  test('preserves localized current-page semantics in server-rendered navigation', async ({page}) => {
+    const cases = [
+      {path: '/research', locale: 'en', label: 'Research', selector: '.desktop-nav'},
+      {path: '/es/research', locale: 'es', label: 'Investigación', selector: '.desktop-nav'},
+      {path: '/support', locale: 'en', label: 'Get support', selector: '.site-header__actions'},
+      {
+        path: '/es/support',
+        locale: 'es',
+        label: 'Obtener asistencia',
+        selector: '.site-header__actions',
+      },
+    ] as const;
+
+    for (const item of cases) {
+      await expectDocument(page, item.path, item.locale);
+      const currentHeaderLink = page.locator(
+        `${item.selector} a[aria-current="page"]`,
+      );
+      await expect(currentHeaderLink).toHaveCount(1);
+      await expect(currentHeaderLink).toHaveText(item.label);
+
+      const currentFallbackLink = page.locator(
+        '.mobile-nav__fallback a[aria-current="page"]',
+      );
+      await expect(currentFallbackLink).toHaveCount(1);
+      await expect(currentFallbackLink).toHaveText(item.label);
+    }
+  });
+
+  test('preserves query data through the no-JavaScript language gateway', async ({page}) => {
+    await page.setViewportSize({width: 1280, height: 800});
+    const cases = [
+      {
+        expectedHref: '/api/language-switch/en?path=%2Fcontact',
+        expectedUrl: /\/contact\?topic=research$/u,
+        label: 'Idioma: English',
+        path: '/es/contact?topic=research#main-content',
+      },
+      {
+        expectedHref: '/api/language-switch/es?path=%2Fcontact',
+        expectedUrl: /\/es\/contact\?topic=technical$/u,
+        label: 'Language: Español',
+        path: '/contact?topic=technical#main-content',
+      },
+    ] as const;
+
+    for (const item of cases) {
+      await expectDocument(page, item.path, item.path.startsWith('/es/') ? 'es' : 'en');
+      const switcher = page.locator('.site-header__actions').getByRole('link', {
+        name: item.label,
+      });
+      await expect(switcher).toHaveAttribute('href', item.expectedHref);
+      await switcher.click();
+      await expect(page).toHaveURL(item.expectedUrl);
+    }
+  });
 
   test('hides inert filters and explains that every localized resource remains available', {
     tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
@@ -1760,7 +1897,12 @@ test.describe('mobile navigation without JavaScript', () => {
         navigation.getByRole('link', {
           name: `${shared.navigation.languageLabel}: ${shared.navigation.languageNames[locale === 'en' ? 'es' : 'en']}`,
         }),
-      ).toHaveAttribute('href', locale === 'en' ? '/es' : '/');
+      ).toHaveAttribute(
+        'href',
+        locale === 'en'
+          ? '/api/language-switch/es?path=%2F'
+          : '/api/language-switch/en?path=%2F',
+      );
 
       const approachLink = navigation.getByRole('link', {name: approach.label, exact: true});
       await expect(approachLink).toHaveAttribute('href', approachPath);

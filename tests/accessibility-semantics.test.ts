@@ -7,7 +7,7 @@ import {ResearchPage, SupportPage} from '../components/content-pages';
 import {MainContent} from '../components/main-content';
 import {Callout, Section} from '../components/ui';
 import {getSiteContent} from '../content';
-import {LocaleProvider} from '../i18n/navigation';
+import {LocaleProvider} from '../i18n/locale-context';
 
 const TestLocaleProvider = LocaleProvider as ComponentType<{
   locale: 'en' | 'es';
@@ -59,7 +59,7 @@ describe('section and callout semantics', () => {
         createElement(
           TestLocaleProvider,
           {locale},
-          createElement(SupportPage, {content}),
+          createElement(SupportPage, {content, locale}),
         ),
       );
 
@@ -86,7 +86,7 @@ describe('section and callout semantics', () => {
         createElement(
           TestLocaleProvider,
           {locale},
-          createElement(ResearchPage, {content}),
+          createElement(ResearchPage, {content, locale}),
         ),
       );
 

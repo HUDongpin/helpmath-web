@@ -19,22 +19,21 @@ import type {
   EvidenceStatus,
   LegalContent,
   LoginContent,
+  Locale,
   ResearchContent,
-  ResourcesContent,
   SupportContent
 } from '@/content/types';
 import {FeatureGrid} from './feature-grid';
 import {PageHero} from './page-hero';
-import {ResourceLibrary} from './resource-library';
 import {TextSection} from './text-section';
 import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
-export function AboutPage({content}: {content: AboutContent}) {
+export function AboutPage({content, locale}: {content: AboutContent; locale: Locale}) {
   const lineageIcons = [History, Building2, Handshake];
 
   return (
     <>
-      <PageHero content={content.hero} tone="yellow" />
+      <PageHero content={content.hero} locale={locale} tone="yellow" />
       <Section>
         <Container>
           {content.story.map((section) => (
@@ -96,10 +95,10 @@ export function AboutPage({content}: {content: AboutContent}) {
   );
 }
 
-export function ApproachPage({content}: {content: ApproachContent}) {
+export function ApproachPage({content, locale}: {content: ApproachContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="mint" />
+      <PageHero content={content.hero} locale={locale} tone="mint" />
       <Section>
         <Container>
           <SectionHeading
@@ -141,10 +140,10 @@ export function ApproachPage({content}: {content: ApproachContent}) {
   );
 }
 
-export function CurriculumPage({content}: {content: CurriculumContent}) {
+export function CurriculumPage({content, locale}: {content: CurriculumContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="blue" />
+      <PageHero content={content.hero} locale={locale} tone="blue" />
       <Section className="section--compact">
         <Container>
           <Callout {...content.archiveNotice} tone="yellow" />
@@ -208,10 +207,10 @@ const evidenceIcons: Record<EvidenceStatus, typeof Archive> = {
   verified: CheckCircle2
 };
 
-export function ResearchPage({content}: {content: ResearchContent}) {
+export function ResearchPage({content, locale}: {content: ResearchContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="yellow" />
+      <PageHero content={content.hero} locale={locale} tone="yellow" />
       <Section className="section--compact">
         <Container>
           <Callout {...content.evidenceNotice} tone="blue" />
@@ -254,7 +253,12 @@ export function ResearchPage({content}: {content: ResearchContent}) {
                     {entry.sourceActions?.length ? (
                       <div className="evidence-entry__actions">
                         {entry.sourceActions.map((action) => (
-                          <Action action={action} key={action.href} kind="quiet" />
+                          <Action
+                            action={action}
+                            key={action.href}
+                            kind="quiet"
+                            navigation="document"
+                          />
                         ))}
                       </div>
                     ) : null}
@@ -275,33 +279,10 @@ export function ResearchPage({content}: {content: ResearchContent}) {
   );
 }
 
-export function ResourcesPage({content}: {content: ResourcesContent}) {
+export function SupportPage({content, locale}: {content: SupportContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="mint" />
-      <Section className="section--compact">
-        <Container>
-          <Callout {...content.archiveNotice} tone="yellow" />
-        </Container>
-      </Section>
-      <Section>
-        <Container>
-          <ResourceLibrary filters={content.filters} items={content.items} />
-        </Container>
-      </Section>
-      <Section className="section--compact">
-        <Container>
-          <Callout {...content.accessibleCopies} tone="coral" />
-        </Container>
-      </Section>
-    </>
-  );
-}
-
-export function SupportPage({content}: {content: SupportContent}) {
-  return (
-    <>
-      <PageHero content={content.hero} tone="blue" />
+      <PageHero content={content.hero} locale={locale} tone="blue" />
       <Section>
         <Container>
           <SectionHeading
@@ -336,10 +317,10 @@ export function SupportPage({content}: {content: SupportContent}) {
   );
 }
 
-export function LoginPage({content}: {content: LoginContent}) {
+export function LoginPage({content, locale}: {content: LoginContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="coral">
+      <PageHero content={content.hero} locale={locale} tone="coral">
         <div className="login-visual" role="img" aria-label={content.alert.title}>
           <LockKeyhole aria-hidden="true" size={68} strokeWidth={1.7} />
           <span>HELP Math</span>
@@ -379,10 +360,10 @@ export function LoginPage({content}: {content: LoginContent}) {
   );
 }
 
-export function LegalPage({content}: {content: LegalContent}) {
+export function LegalPage({content, locale}: {content: LegalContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="blue" />
+      <PageHero content={content.hero} locale={locale} tone="blue" />
       <Section>
         <Container className="legal-layout">
           <aside className="legal-meta">

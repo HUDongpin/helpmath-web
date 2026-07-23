@@ -17,5 +17,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function TermsRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <MainContent><LegalPage content={getSiteContent(locale).pages.terms} /></MainContent>;
+  return <MainContent><LegalPage content={getSiteContent(locale).pages.terms} locale={locale} /></MainContent>;
 }

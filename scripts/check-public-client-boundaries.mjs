@@ -7,6 +7,14 @@ const repositoryRoot = process.cwd();
 const nextRoot = path.join(repositoryRoot, '.next');
 const appOutputRoot = path.join(nextRoot, 'server/app');
 const turnstileRuntimeMarker = 'challenges.cloudflare.com/turnstile/';
+const resourceControlsMarker = '[project]/components/resource-library-controls.tsx';
+const pageHeroMotifMarker = '[project]/components/page-hero-motif.tsx';
+const siteHeaderMarker = '[project]/components/site-header.tsx';
+const nextLinkMarker = '[project]/node_modules/next/dist/client/app-dir/link.js';
+const clientLinkFreeRouteManifests = new Set([
+  '[locale]/research/page_client-reference-manifest.js',
+  '[locale]/resources/page_client-reference-manifest.js',
+]);
 
 async function htmlFiles(directory) {
   const entries = await readdir(directory, {withFileTypes: true});
@@ -15,6 +23,18 @@ async function htmlFiles(directory) {
       const absolutePath = path.join(directory, entry.name);
       if (entry.isDirectory()) return htmlFiles(absolutePath);
       return entry.isFile() && entry.name.endsWith('.html') ? [absolutePath] : [];
+    }),
+  );
+  return nested.flat();
+}
+
+async function filesNamed(directory, suffix) {
+  const entries = await readdir(directory, {withFileTypes: true});
+  const nested = await Promise.all(
+    entries.map(async (entry) => {
+      const absolutePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) return filesNamed(absolutePath, suffix);
+      return entry.isFile() && entry.name.endsWith(suffix) ? [absolutePath] : [];
     }),
   );
   return nested.flat();
@@ -86,10 +106,54 @@ for (const filename of pages) {
   }
 }
 
+const clientManifests = (
+  await filesNamed(appOutputRoot, '_client-reference-manifest.js')
+).sort();
+const resourceControlsManifests = [];
+const clientLinkFreeManifests = [];
+for (const filename of clientManifests) {
+  const relativePath = path.relative(appOutputRoot, filename);
+  const source = await readFile(filename, 'utf8');
+
+  assert.doesNotMatch(
+    source,
+    new RegExp(pageHeroMotifMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
+    `${relativePath} must render the static page-hero motif on the server.`,
+  );
+  assert.doesNotMatch(
+    source,
+    new RegExp(siteHeaderMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
+    `${relativePath} must render the site-header shell on the server.`,
+  );
+  if (clientLinkFreeRouteManifests.has(relativePath)) {
+    assert.doesNotMatch(
+      source,
+      new RegExp(nextLinkMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
+      `${relativePath} must use document navigation instead of shipping Next Link.`,
+    );
+    clientLinkFreeManifests.push(relativePath);
+  }
+  if (source.includes(resourceControlsMarker)) {
+    resourceControlsManifests.push(relativePath);
+  }
+}
+assert.deepEqual(
+  resourceControlsManifests,
+  ['[locale]/resources/page_client-reference-manifest.js'],
+  'Only the Resources route may load the resource controls client island.',
+);
+assert.deepEqual(
+  clientLinkFreeManifests,
+  [...clientLinkFreeRouteManifests].sort(),
+  'Research and Resources must remain free of the Next Link client runtime.',
+);
+
 console.log(
   JSON.stringify({
     checkedPublicPages: pages.length,
+    clientLinkFreeManifests,
     contactRepositoryGateApproved,
+    resourceControlsManifests,
     turnstilePages,
   }),
 );

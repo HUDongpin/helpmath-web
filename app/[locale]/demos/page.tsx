@@ -20,7 +20,7 @@ export default async function DemosRoute({params}: {params: Promise<{locale: 'en
   const {locale} = await params;
   return (
     <MainContent>
-      <DemosPage content={getRuntimeSiteContent(locale).pages.demos} />
+      <DemosPage content={getRuntimeSiteContent(locale).pages.demos} locale={locale} />
     </MainContent>
   );
 }

@@ -17,5 +17,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function PrivacyRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <MainContent><LegalPage content={getSiteContent(locale).pages.privacy} /></MainContent>;
+  return <MainContent><LegalPage content={getSiteContent(locale).pages.privacy} locale={locale} /></MainContent>;
 }
