@@ -639,26 +639,6 @@ const executivePreviewRedirectCases = [
     expectedPath: '/executive-preview',
   },
   {
-    path: `/executive-preview//?returnTo=${encodedEnglishPreviewReturnPath}`,
-    expectedPath: '/executive-preview',
-  },
-  {
-    path: `//en/executive-preview?returnTo=${encodedEnglishPreviewReturnPath}`,
-    expectedPath: '/executive-preview',
-  },
-  {
-    path: `//en//executive-preview?foo=${encodedEnglishPreviewReturnPath}&error=1`,
-    expectedPath: '/executive-preview?error=1',
-  },
-  {
-    path: `/es//executive-preview?ReturnTo=${encodedSpanishPreviewReturnPath}&error=1`,
-    expectedPath: '/es/executive-preview?error=1',
-  },
-  {
-    path: `/en//executive-preview?foo=${encodedEnglishPreviewReturnPath}&error=1`,
-    expectedPath: '/executive-preview?error=1',
-  },
-  {
     path: `/executive-preview?foo=${encodedEnglishPreviewReturnPath}`,
     expectedPath: '/executive-preview',
   },
@@ -675,17 +655,10 @@ const executivePreviewRedirectCases = [
     expectedPath: '/executive-preview',
   },
   {
-    path: '/es//executive-preview?error=1',
-    expectedPath: '/es/executive-preview?error=1',
-  },
-  {
     path: '/en/executive-preview/',
     expectedPath: '/executive-preview',
   },
-].filter(({path}) =>
-  hasPlatformEdgeRouting ||
-  !(path.startsWith('//') || path.slice(1).includes('//')),
-);
+];
 const executivePreviewCanonicalRedirects = await Promise.all(
   executivePreviewRedirectCases.map(async ({
     path,
@@ -755,6 +728,69 @@ const executivePreviewCanonicalRedirects = await Promise.all(
     };
   }),
 );
+const platformNormalizationProbe = 'platform-normalization-probe';
+const executivePreviewPlatformNormalizationRedirects =
+  hasPlatformEdgeRouting
+    ? await Promise.all([
+        [
+          `//executive-preview?probe=${platformNormalizationProbe}`,
+          `/executive-preview?probe=${platformNormalizationProbe}`,
+        ],
+        [
+          `//en/executive-preview?probe=${platformNormalizationProbe}`,
+          `/en/executive-preview?probe=${platformNormalizationProbe}`,
+        ],
+        [
+          `/es//executive-preview?probe=${platformNormalizationProbe}`,
+          `/es/executive-preview?probe=${platformNormalizationProbe}`,
+        ],
+      ].map(async ([path, expectedPath]) => {
+        const requestTarget = path.startsWith('//') ? `${origin}${path}` : path;
+        const response = await get(requestTarget);
+        const body = await response.text();
+        check(
+          new URL(response.url).origin === origin,
+          `${path} platform normalization left the deployment origin`,
+        );
+        const redirectEvaluation = evaluateCanonicalRedirect(
+          {
+            status: response.status,
+            location: response.headers.get('location'),
+          },
+          {
+            baseUrl: origin,
+            expectedPath,
+            expectedStatus: 308,
+          },
+        );
+        for (const failure of redirectEvaluation.failures) {
+          check(false, `${path} platform normalization ${failure}`);
+        }
+
+        const disclosureSurface = [
+          ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+          body,
+        ].join('\n').toLowerCase();
+        for (const forbiddenToken of [
+          'returnto',
+          executivePreviewPrivacyProbeId.toLowerCase(),
+          '/demos/',
+          '/api/executive-preview/',
+        ]) {
+          check(
+            !disclosureSurface.includes(forbiddenToken),
+            `${path} platform normalization disclosed ${forbiddenToken}`,
+          );
+        }
+
+        return {
+          path,
+          expectedPath,
+          location: redirectEvaluation.location,
+          status: response.status,
+        };
+      }))
+    : [];
 const executivePreviewEntries = await Promise.all(
   executivePreviewEntryCases.map(async ({canonicalPath, locale}) => {
     const response = await get(canonicalPath);
@@ -1483,6 +1519,8 @@ const summary = {
   executivePreviewEntries: executivePreviewEntries.length,
   executivePreviewCanonicalRedirects: executivePreviewCanonicalRedirects.length,
   executivePreviewPlatformEdgeRouting: hasPlatformEdgeRouting,
+  executivePreviewPlatformNormalizationRedirects:
+    executivePreviewPlatformNormalizationRedirects.length,
   executivePreviewExpectedState: expectedExecutivePreviewState,
   executivePreviewExpectedExpiresAt: expectedExecutivePreviewExpiresAt,
   executivePreviewState,

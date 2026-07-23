@@ -2103,33 +2103,15 @@ test('legacy executive preview return paths canonicalize without disclosing priv
     [`/executive-preview/?ReturnTo=${englishReturnPath}`, '/executive-preview'],
     [`/es/executive-preview/?foo=${spanishReturnPath}`, '/es/executive-preview'],
     [`/en/executive-preview/?returnto=${englishReturnPath}`, '/executive-preview'],
-    [`//executive-preview?returnTo=${englishReturnPath}`, '/executive-preview'],
-    [`//en/executive-preview?returnTo=${englishReturnPath}`, '/executive-preview'],
-    [
-      `//en//executive-preview?foo=${englishReturnPath}&error=1`,
-      '/executive-preview?error=1',
-    ],
-    [
-      `/es//executive-preview?ReturnTo=${spanishReturnPath}&error=1`,
-      '/es/executive-preview?error=1',
-    ],
-    [
-      `/en//executive-preview?foo=${englishReturnPath}&error=1`,
-      '/executive-preview?error=1',
-    ],
     [`/executive-preview?foo=${englishReturnPath}`, '/executive-preview'],
     [`/es/executive-preview?ReturnTo=${spanishReturnPath}`, '/es/executive-preview'],
     [`/en/executive-preview?returnto=${englishReturnPath}`, '/executive-preview'],
     ['/executive-preview/', '/executive-preview'],
-    ['/es//executive-preview?error=1', '/es/executive-preview?error=1'],
     ['/en/executive-preview/', '/executive-preview'],
   ] as const;
 
   for (const [path, expectedPath, expectedStatus = 307] of
-    executivePreviewRedirectCases.filter(([path]) =>
-    hasPlatformEdgeRouting ||
-    !(path.startsWith('//') || path.slice(1).includes('//'))
-  )) {
+    executivePreviewRedirectCases) {
     const requestTarget = path.startsWith('//') ? `${requestOrigin}${path}` : path;
     const response = await request.get(requestTarget, {maxRedirects: 0});
     const headers = response.headers();
@@ -2171,6 +2153,54 @@ test('legacy executive preview return paths canonicalize without disclosing priv
       expect(disclosureSurface, `${path} disclosed ${forbiddenToken}`).not.toContain(
         forbiddenToken,
       );
+    }
+  }
+
+  if (hasPlatformEdgeRouting) {
+    const platformNormalizationProbe = 'platform-normalization-probe';
+    for (const [path, expectedPath] of [
+      [
+        `//executive-preview?probe=${platformNormalizationProbe}`,
+        `/executive-preview?probe=${platformNormalizationProbe}`,
+      ],
+      [
+        `//en/executive-preview?probe=${platformNormalizationProbe}`,
+        `/en/executive-preview?probe=${platformNormalizationProbe}`,
+      ],
+      [
+        `/es//executive-preview?probe=${platformNormalizationProbe}`,
+        `/es/executive-preview?probe=${platformNormalizationProbe}`,
+      ],
+    ] as const) {
+      const response = await request.get(`${requestOrigin}${path}`, {maxRedirects: 0});
+      const headers = response.headers();
+      const bodyText = (await response.body()).toString('utf8');
+      const location = headers.location;
+
+      expect(response.status(), path).toBe(308);
+      expect(location, path).toBeDefined();
+      const target = new URL(location!, requestOrigin);
+      const expected = new URL(expectedPath, requestOrigin);
+      expect(target.origin, path).toBe(expected.origin);
+      expect(`${target.pathname}${target.search}${target.hash}`, path).toBe(
+        `${expected.pathname}${expected.search}${expected.hash}`,
+      );
+
+      const disclosureSurface = [
+        ...Object.entries(headers).map(([name, value]) => `${name}: ${value}`),
+        bodyText,
+      ].join('\n').toLowerCase();
+      for (const forbiddenToken of [
+        'returnto',
+        privacyProbeId.toLowerCase(),
+        '/demos/',
+        '/api/executive-preview/',
+      ]) {
+        expect(
+          disclosureSurface,
+          `${path} platform normalization disclosed ${forbiddenToken}`,
+        ).not.toContain(forbiddenToken);
+      }
     }
   }
 

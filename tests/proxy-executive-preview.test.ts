@@ -4,6 +4,7 @@ import {describe, it} from 'node:test';
 
 import {NextRequest} from 'next/server';
 
+import {GET as canonicalizeExecutivePreview} from '../app/api/executive-preview/canonicalize/[locale]/route';
 import nextConfig from '../next.config';
 import proxy from '../proxy';
 
@@ -15,6 +16,7 @@ const vercelConfig = JSON.parse(
   readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'),
 ) as {
   routes?: Array<{
+    dest?: string;
     has?: Array<{key?: string; type?: string; value?: string}>;
     headers?: Record<string, string>;
     src?: string;
@@ -28,16 +30,9 @@ describe('executive preview entry canonicalization', () => {
     assert.equal(nextConfig.skipTrailingSlashRedirect, true);
   });
 
-  it('sanitizes pre-proxy repeated-slash variants at the Vercel edge', () => {
+  it('rewrites pre-proxy aliases to a query-dropping route handler', () => {
     const routes = vercelConfig.routes ?? [];
-    assert.equal(routes.length, 4);
-
-    for (const route of routes) {
-      assert.equal(route.status, 307);
-      assert.equal(route.headers?.['Cache-Control'], 'private, no-store, max-age=0');
-      assert.equal(route.headers?.Vary, 'Cookie');
-      assert.equal(route.headers?.['X-Robots-Tag'], 'noindex, nofollow, noarchive');
-    }
+    assert.equal(routes.length, 2);
 
     for (const [paths, expectedLocation] of [
       [
@@ -51,7 +46,7 @@ describe('executive preview entry canonicalization', () => {
           '//en/executive-preview',
           '//en//executive-preview',
         ],
-        '/executive-preview',
+        '/api/executive-preview/canonicalize/en',
       ],
       [
         [
@@ -59,36 +54,86 @@ describe('executive preview entry canonicalization', () => {
           '/es//executive-preview',
           '/es/executive-preview/',
         ],
-        '/es/executive-preview',
+        '/api/executive-preview/canonicalize/es',
       ],
     ] as const) {
       for (const path of paths) {
         const matchingRoutes = routes.filter(
           ({src}) => typeof src === 'string' && new RegExp(src, 'u').test(path),
         );
-        assert.equal(matchingRoutes.length, 2, path);
-        assert.equal(matchingRoutes[0]?.has?.[0]?.type, 'query', path);
-        assert.equal(matchingRoutes[0]?.has?.[0]?.key, 'error', path);
-        assert.equal(matchingRoutes[0]?.has?.[0]?.value, '1', path);
-        assert.equal(
-          matchingRoutes[0]?.headers?.Location,
-          `${expectedLocation}?error=1`,
-          path,
-        );
-        assert.equal(matchingRoutes[1]?.has, undefined, path);
-        assert.equal(matchingRoutes[1]?.headers?.Location, expectedLocation, path);
+        assert.equal(matchingRoutes.length, 1, path);
+        assert.equal(matchingRoutes[0]?.dest, expectedLocation, path);
+        assert.equal(matchingRoutes[0]?.has, undefined, path);
+        assert.equal(matchingRoutes[0]?.headers, undefined, path);
+        assert.equal(matchingRoutes[0]?.status, undefined, path);
       }
     }
 
-    for (const canonicalPath of ['/executive-preview', '/es/executive-preview']) {
+    for (const path of [
+      '/executive-preview',
+      '/es/executive-preview',
+    ]) {
       assert.equal(
         routes.some(({src}) =>
-          typeof src === 'string' && new RegExp(src, 'u').test(canonicalPath)
+          typeof src === 'string' && new RegExp(src, 'u').test(path)
         ),
         false,
-        canonicalPath,
+        path,
       );
     }
+  });
+
+  it('drops rewritten query data in the route-handler response', async () => {
+    for (const [locale, query, expectedLocation] of [
+      ['en', `?returnTo=${encodedEnglishDemoPath}`, '/executive-preview'],
+      [
+        'en',
+        `?returnTo=${encodedEnglishDemoPath}&error=1`,
+        '/executive-preview?error=1',
+      ],
+      ['es', `?foo=${encodedSpanishDemoPath}`, '/es/executive-preview'],
+      [
+        'es',
+        `?ReturnTo=${encodedSpanishDemoPath}&error=1`,
+        '/es/executive-preview?error=1',
+      ],
+    ] as const) {
+      const response = await canonicalizeExecutivePreview(
+        new NextRequest(
+          `${origin}/api/executive-preview/canonicalize/${locale}${query}`,
+        ),
+        {params: Promise.resolve({locale})},
+      );
+      const disclosureSurface = [
+        ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+        await response.text(),
+      ].join('\n');
+
+      assert.equal(response.status, 307);
+      assert.equal(response.headers.get('location'), expectedLocation);
+      assert.equal(
+        response.headers.get('cache-control'),
+        'private, no-store, max-age=0',
+      );
+      assert.equal(response.headers.get('vary'), 'Cookie');
+      assert.equal(
+        response.headers.get('x-robots-tag'),
+        'noindex, nofollow, noarchive',
+      );
+      assert.equal(response.body, null);
+      assert.doesNotMatch(disclosureSurface, /returnto/iu);
+      assert.doesNotMatch(disclosureSurface, /conversion-1-2/iu);
+      assert.doesNotMatch(disclosureSurface, /\/demos\//iu);
+    }
+
+    const invalidLocale = await canonicalizeExecutivePreview(
+      new NextRequest(
+        `${origin}/api/executive-preview/canonicalize/fr?returnTo=${encodedEnglishDemoPath}`,
+      ),
+      {params: Promise.resolve({locale: 'fr'})},
+    );
+    assert.equal(invalidLocale.status, 404);
+    assert.equal(await invalidLocale.text(), '');
   });
 
   it('returns private redirects before rendering any unsupported entry query', async () => {
