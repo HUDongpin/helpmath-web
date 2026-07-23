@@ -44,4 +44,20 @@ describe('GitHub Actions supply-chain policy', () => {
     assert.match(config, /interval:\s*weekly/u);
     assert.match(config, /timezone:\s*Asia\/Shanghai/u);
   });
+
+  it('checks npm dependencies daily and groups security updates', async () => {
+    const config = await readFile(path.join(repositoryRoot, '.github/dependabot.yml'), 'utf8');
+    const npmBlock = config.match(
+      /package-ecosystem:\s*npm(?<block>[\s\S]*?)(?=\n\s*-\s*package-ecosystem:|\s*$)/u,
+    )?.groups?.block;
+
+    assert.ok(npmBlock, 'Dependabot must monitor the root npm project');
+    assert.match(npmBlock, /directory:\s*\//u);
+    assert.match(npmBlock, /interval:\s*daily/u);
+    assert.match(npmBlock, /timezone:\s*Asia\/Shanghai/u);
+    assert.match(npmBlock, /npm-security:[\s\S]*applies-to:\s*security-updates/u);
+    assert.match(npmBlock, /patterns:[\s\S]*-\s*"\*"/u);
+    assert.match(npmBlock, /npm-production:[\s\S]*dependency-type:\s*production/u);
+    assert.match(npmBlock, /npm-development:[\s\S]*dependency-type:\s*development/u);
+  });
 });
