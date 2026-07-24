@@ -84,7 +84,7 @@ export function DesktopNavigation({
 }: {
   navigation: SharedContent['navigation'];
 }) {
-  const pathname = stripLocalePrefix(useNextPathname());
+  const pathname = stripLocalePrefix(useNextPathname() ?? '/');
 
   return (
     <nav aria-label={navigation.ariaLabel} className="desktop-nav">
@@ -98,7 +98,7 @@ export function HeaderSupportLink({
 }: {
   navigation: SharedContent['navigation'];
 }) {
-  const pathname = stripLocalePrefix(useNextPathname());
+  const pathname = stripLocalePrefix(useNextPathname() ?? '/');
 
   return (
     <a
@@ -167,7 +167,7 @@ export function MobileNavigation({
   locale: Locale;
   navigation: SharedContent['navigation'];
 }) {
-  const pathname = stripLocalePrefix(useNextPathname());
+  const pathname = stripLocalePrefix(useNextPathname() ?? '/');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileMenuMaxHeight, setMobileMenuMaxHeight] = useState<number | null>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);

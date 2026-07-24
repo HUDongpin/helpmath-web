@@ -7,6 +7,7 @@ import {activeClientModuleSource} from './client-reference-manifest.mjs';
 const repositoryRoot = process.cwd();
 const nextRoot = path.join(repositoryRoot, '.next');
 const appOutputRoot = path.join(nextRoot, 'server/app');
+const pagesOutputRoot = path.join(nextRoot, 'server/pages');
 const turnstileRuntimeMarker = 'challenges.cloudflare.com/turnstile/';
 const resourceControlsMarker = '/components/resource-library-controls.tsx';
 const pageHeroMotifMarker = '/components/page-hero-motif.tsx';
@@ -58,6 +59,11 @@ function clientAssetPaths(html) {
       ),
     ),
   ];
+}
+
+function externalScriptPaths(html) {
+  return [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/gu)]
+    .map((match) => match[1]);
 }
 
 async function referencesTurnstile(html) {
@@ -149,6 +155,60 @@ assert.deepEqual(
   'Only the English and Spanish Resources pages may render the resource hash bootstrap.',
 );
 
+const staticMarketingPages = [
+  'static/en/home.html',
+  'static/en/research.html',
+  'static/es/home.html',
+  'static/es/research.html',
+];
+for (const relativePath of staticMarketingPages) {
+  const html = await readFile(path.join(pagesOutputRoot, relativePath), 'utf8');
+  assert.deepEqual(
+    externalScriptPaths(html),
+    ['/static-marketing-navigation.js'],
+    `${relativePath} must load only the framework-independent navigation controller.`,
+  );
+  assert.doesNotMatch(
+    html,
+    /<link\b[^>]*\brel="(?:modulepreload|preload)"[^>]*\bas="script"/u,
+    `${relativePath} must not preload a client runtime.`,
+  );
+}
+
+const pagesErrorRuntimeScripts = {};
+for (const status of ['404', '500']) {
+  const html = await readFile(path.join(pagesOutputRoot, `${status}.html`), 'utf8');
+  const scripts = externalScriptPaths(html);
+  pagesErrorRuntimeScripts[status] = scripts;
+  assert.deepEqual(
+    scripts,
+    [],
+    `The Pages Router ${status} response must not load the Next or React browser runtime.`,
+  );
+  assert.doesNotMatch(
+    html,
+    /<script\b/iu,
+    `The Pages Router ${status} response must remain entirely script-free.`,
+  );
+  assert.doesNotMatch(
+    html,
+    /<link\b[^>]*\brel="(?:modulepreload|preload)"[^>]*\bas="script"/u,
+    `The Pages Router ${status} response must not preload a client runtime.`,
+  );
+  assert.match(html, new RegExp(`data-pages-error="${status}"`, 'u'));
+  assert.match(html, /lang="en"/u);
+  assert.match(html, /lang="es"/u);
+  assert.match(
+    html,
+    /<meta\b(?=[^>]*\bname="robots")(?=[^>]*\bcontent="noindex, nofollow, noarchive")[^>]*>/u,
+  );
+  assert.doesNotMatch(
+    html,
+    /(?:__NEXT_DATA__|Internal Server Error|error\.(?:message|stack|digest)|stack trace)/iu,
+    `The Pages Router ${status} response must not serialize framework or failure details.`,
+  );
+}
+
 const clientManifests = (
   await filesNamed(appOutputRoot, '_client-reference-manifest.js')
 ).sort();
@@ -207,6 +267,8 @@ console.log(
     localeProviderBoundaryPages,
     resourceHashBootstrapPages,
     resourceControlsManifests,
+    pagesErrorRuntimeScripts,
+    staticMarketingPages,
     turnstilePages,
   }),
 );

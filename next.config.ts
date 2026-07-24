@@ -74,6 +74,12 @@ const nonIndexableLegacyHeaders = nonIndexableLegacyPaths.map((source) => ({
   headers: [{key: 'X-Robots-Tag', value: 'noindex, nofollow'}]
 }));
 
+const staticMarketingPages: ReadonlyMap<string, string> = new Map([
+  ['/', 'home'],
+  ['/demos', 'demos'],
+  ['/research', 'research'],
+] as const);
+
 export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () => [
   {source: '/favicon.ico', destination: '/icon.svg', permanent: true},
   {source: '/Home.htm', destination: '/', permanent: true},
@@ -286,10 +292,21 @@ const nextConfig: NextConfig = {
   },
   redirects: legacyRedirects,
   async rewrites() {
-    return routablePagePaths.map((source) => ({
-      source,
-      destination: `/en${source === '/' ? '' : source}`,
-    }));
+    return [
+      ...[...staticMarketingPages].map(([source, page]) => ({
+        source: `/es${source === '/' ? '' : source}`,
+        destination: `/static/es/${page}`,
+      })),
+      ...routablePagePaths.map((source) => {
+        const staticPage = staticMarketingPages.get(source);
+        return {
+          source,
+          destination: staticPage
+            ? `/static/en/${staticPage}`
+            : `/en${source === '/' ? '' : source}`,
+        };
+      }),
+    ];
   },
 };
 

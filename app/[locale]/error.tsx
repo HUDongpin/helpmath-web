@@ -13,7 +13,7 @@ type ErrorBoundaryProps = {
 
 export default function LocalizedError({unstable_retry}: ErrorBoundaryProps) {
   const params = useParams();
-  const locale: Locale = params.locale === 'es' ? 'es' : 'en';
+  const locale: Locale = params?.locale === 'es' ? 'es' : 'en';
 
   return <ErrorRecovery locale={locale} onRetry={unstable_retry} />;
 }

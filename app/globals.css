@@ -1997,6 +1997,17 @@ svg {
   list-style: none;
 }
 
+.mobile-nav__fallback-state {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.mobile-nav__fallback:not([open]) [data-fallback-close-state],
+.mobile-nav__fallback[open] [data-fallback-open-state] {
+  display: none;
+}
+
 .mobile-nav__fallback-trigger::-webkit-details-marker {
   display: none;
 }
@@ -2030,6 +2041,10 @@ svg {
   right: 0;
   top: calc(100% + 1rem);
   z-index: 110;
+}
+
+.mobile-nav__panel[hidden] {
+  display: none;
 }
 
 .mobile-nav__panel > a,

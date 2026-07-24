@@ -28,13 +28,18 @@ const EXECUTIVE_PREVIEW_ENTRY_CANONICAL_PATHS = new Map([
   ['/en/executive-preview', '/executive-preview'],
 ]);
 const GATED_PUBLIC_CACHE_CONTROL = 'private, no-store, max-age=0';
+const BLOCKED_PAGES_DATA_HEADERS = {
+  'Cache-Control': GATED_PUBLIC_CACHE_CONTROL,
+  'X-Robots-Tag': 'noindex, nofollow, noarchive',
+} as const;
 
 const publicFilePaths = new Set([
   '/icon.svg',
   '/manifest.webmanifest',
   '/opengraph-image.png',
   '/robots.txt',
-  '/sitemap.xml'
+  '/sitemap.xml',
+  '/static-marketing-navigation.js'
 ]);
 
 function notFoundRewrite(request: NextRequest, locale: 'en' | 'es') {
@@ -74,6 +79,11 @@ function normalizedPathname(pathname: string) {
     .replace(/\\+/gu, '/')
     .replace(/\/{2,}/gu, '/');
   return collapsed.length > 1 ? collapsed.replace(/\/+$/u, '') : collapsed;
+}
+
+function isPagesDataPath(pathname: string) {
+  const normalized = normalizedPathname(pathname);
+  return normalized === '/_next/data' || normalized.startsWith('/_next/data/');
 }
 
 function canonicalizeExecutivePreviewEntry(request: NextRequest) {
@@ -147,6 +157,18 @@ function gatedPublicResponse(pathname: string) {
 
 export default async function proxy(request: NextRequest) {
   const {pathname} = request.nextUrl;
+  const requestPathname = new URL(request.url).pathname;
+
+  // Every Pages Router entry is server-rendered without the Next browser
+  // runtime. Reject its unused data protocol before any rewrite can proxy an
+  // internal path back into this application. NextRequest intentionally maps
+  // a data URL's nextUrl.pathname to its page pathname, so inspect the raw URL.
+  if (isPagesDataPath(requestPathname)) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: BLOCKED_PAGES_DATA_HEADERS,
+    });
+  }
 
   if (
     pathname === INTERNAL_NOT_FOUND_PATH &&

@@ -85,7 +85,7 @@ function LanguageSwitcherWithLocation({
 }
 
 export function LanguageSwitcher({pathnameOverride, ...props}: LanguageSwitcherProps) {
-  const currentPathname = stripLocalePrefix(usePathname());
+  const currentPathname = stripLocalePrefix(usePathname() ?? '/');
   const pathname = pathnameOverride ?? currentPathname;
 
   return <LanguageSwitcherWithLocation pathname={pathname} {...props} />;

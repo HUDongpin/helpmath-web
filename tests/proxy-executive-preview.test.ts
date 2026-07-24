@@ -363,6 +363,34 @@ describe('executive preview entry canonicalization', () => {
     }
   });
 
+  it('rejects every unused Pages data endpoint before it can enter a rewrite', async () => {
+    for (const path of [
+      '/_next/data/build-id/demos.json',
+      '/_next/data/build-id/es/demos.json',
+      '/_next/data/build-id/static/en/demos.json',
+      '/_next/data/build-id/static/es/demos.json',
+      '/_next/data/build-id/any-other-page.json?candidateId=private-fixture',
+      '/_next//data/build-id/demos.json',
+    ]) {
+      const response = await proxy(new NextRequest(`${origin}${path}`));
+      const disclosureSurface = [
+        ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+        await response.text(),
+      ].join('\n');
+
+      assert.equal(response.status, 404, path);
+      assert.equal(response.headers.get('cache-control'), 'private, no-store, max-age=0', path);
+      assert.equal(
+        response.headers.get('x-robots-tag'),
+        'noindex, nofollow, noarchive',
+        path,
+      );
+      assert.equal(response.headers.get('location'), null, path);
+      assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
+      assert.doesNotMatch(disclosureSurface, /candidateId|private-fixture/u, path);
+    }
+  });
+
   it('keeps time-varying public consumers uncacheable and legal drafts non-indexable', async () => {
     for (const path of ['/contact', '/es/contact', '/demos', '/es/demos']) {
       const response = await proxy(new NextRequest(`${origin}${path}`));

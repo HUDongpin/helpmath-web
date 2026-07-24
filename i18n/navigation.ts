@@ -24,5 +24,5 @@ export function Link({href, locale, prefetch = false, ...props}: LocalizedLinkPr
 }
 
 export function usePathname(): string {
-  return stripLocalePrefix(useNextPathname());
+  return stripLocalePrefix(useNextPathname() ?? '/');
 }

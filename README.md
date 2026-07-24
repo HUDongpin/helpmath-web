@@ -53,6 +53,19 @@ Actions;
 focused job retries, attempts after two, and retries of an eligible product
 budget failure are rejected.
 
+The public home, Research, and Demos routes use server-rendered Pages Router
+shells with the Next/React browser runtime disabled. They retain a native
+`details` navigation fallback and load only the small, self-hosted
+`/static-marketing-navigation.js` progressive-enhancement controller for menu
+focus, short-viewport sizing, and query/fragment-aware language switching.
+The Demos shell remains request-rendered and explicitly non-cacheable so the
+launch-gate state is never frozen into a static build.
+
+If that controller is unavailable, the native navigation and language gateway
+remain usable. The gateway preserves the validated path and same-origin query,
+but cannot preserve a URL fragment because browsers do not send fragments in
+HTTP requests or Referer headers.
+
 This rerun policy establishes lineage for reviewed candidate code; it is not a
 cryptographic attestation against a malicious pull request that rewrites its own
 workflow or policy script. Production evidence independently accepts only a

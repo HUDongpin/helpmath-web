@@ -532,6 +532,89 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
 });
 
+test('static marketing routes do not ship the Next or React client runtime', async ({page}) => {
+  for (const path of [
+    '/',
+    '/es',
+    '/research',
+    '/es/research',
+    '/demos',
+    '/es/demos',
+  ] as const) {
+    const response = await page.goto(path, {waitUntil: 'networkidle'});
+    expect(response?.status(), path).toBe(200);
+    const externalScripts = await page.locator('script[src]').evaluateAll((scripts) =>
+      scripts.map((script) => new URL((script as HTMLScriptElement).src).pathname),
+    );
+    expect(externalScripts, path).toEqual(['/static-marketing-navigation.js']);
+    await expect(page.locator('.mobile-nav')).toHaveAttribute('data-ready', 'true');
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+      'href',
+      '/manifest.webmanifest',
+    );
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/icon.svg');
+
+    const typography = await page.evaluate(() => ({
+      bodyFamily: getComputedStyle(document.body).fontFamily,
+      fontVariable: getComputedStyle(document.body)
+        .getPropertyValue('--font-nunito')
+        .trim(),
+    }));
+    expect(typography.fontVariable, path).toContain('nunitoSans');
+    expect(typography.bodyFamily, path).toContain('nunitoSans');
+
+    const scriptPreloads = await page
+      .locator('link[rel="preload"][as="script"], link[rel="modulepreload"]')
+      .evaluateAll((links) => links.map((link) => (link as HTMLLinkElement).href));
+    expect(scriptPreloads, path).toEqual([]);
+    if (path.endsWith('/demos')) {
+      expect(response?.headers()['cache-control'], path).toContain('private');
+      expect(response?.headers()['cache-control'], path).toContain('no-store');
+    }
+  }
+
+  const controller = await page.request.get('/static-marketing-navigation.js');
+  expect(controller.status()).toBe(200);
+  expect(controller.headers()['content-type']).toMatch(/javascript/u);
+  expect((await controller.body()).byteLength).toBeLessThanOrEqual(9_000);
+});
+
+test('internal static marketing route names remain non-indexable 404s', async ({page}) => {
+  for (const path of [
+    '/static/en/home',
+    '/static/es/home',
+    '/static/en/research',
+    '/static/es/research',
+    '/static/en/demos',
+    '/static/es/demos',
+  ] as const) {
+    const response = await page.goto(path, {waitUntil: 'networkidle'});
+    expect(response?.status(), path).toBe(404);
+    expect(response?.headers()['x-robots-tag'], path).toBe('noindex, nofollow');
+    await expect(page.getByRole('heading', {level: 1})).toContainText('Page not found');
+  }
+});
+
+test('static language controller preserves query and fragment in both directions', async ({page}) => {
+  await expectDocument(page, '/?source=review#strategic-partnership', 'en');
+  const spanish = page.locator('.site-header__actions a.language-switcher');
+  await expect(spanish).toHaveAttribute(
+    'href',
+    '/es?source=review#strategic-partnership',
+  );
+  await page.evaluate(() => {
+    window.history.replaceState(window.history.state, '', '/?source=updated#main-content');
+    window.dispatchEvent(new Event('help-math:location-change'));
+  });
+  await expect(spanish).toHaveAttribute('href', '/es?source=updated#main-content');
+
+  await expectDocument(page, '/es/demos?source=ceo#main-content', 'es');
+  const english = page.locator('.site-header__actions a.language-switcher');
+  await expect(english).toHaveAttribute('href', '/demos?source=ceo#main-content');
+  await english.click();
+  await expect(page).toHaveURL(/\/demos\?source=ceo#main-content$/u);
+});
+
 test('keyboard focus remains visible across the branded surface palette @cross-browser-smoke', async ({page}) => {
   await expectDocument(page, '/research', 'en');
   const target = page.getByRole('link', {name: 'Check source-request status'});
@@ -1890,15 +1973,15 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   expectNoRuntimeIssues(issues);
 });
 
-test('mobile navigation falls back to native links when hydration chunks fail', async ({
+test('mobile navigation falls back to native links when its controller fails', async ({
   browserName,
   page,
 }) => {
-  test.skip(browserName !== 'chromium', 'The blocked-chunk fallback is a Chromium contract.');
+  test.skip(browserName !== 'chromium', 'The blocked-controller fallback is a Chromium contract.');
   await page.setViewportSize({width: 390, height: 844});
-  await page.route('**/_next/static/**/*.js', (route) => route.abort('failed'));
+  await page.route('**/static-marketing-navigation.js', (route) => route.abort('failed'));
 
-  const response = await page.goto('/?test=blocked-mobile-navigation', {waitUntil: 'load'});
+  const response = await page.goto('/?test=blocked-static-navigation', {waitUntil: 'load'});
   expect(response?.status()).toBe(200);
   await expect(page.locator('.desktop-nav')).toBeHidden();
   await expect(page.locator('.mobile-nav__trigger')).toBeHidden();
@@ -1910,6 +1993,7 @@ test('mobile navigation falls back to native links when hydration chunks fail', 
   await expect(fallbackTrigger).toContainText('Open navigation');
   await fallbackTrigger.click();
   await expect(fallback).toHaveAttribute('open', '');
+  await expect(fallbackTrigger).toContainText('Close navigation');
 
   const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
   await expect(navigation).toBeVisible();
@@ -1918,6 +2002,37 @@ test('mobile navigation falls back to native links when hydration chunks fail', 
   await approach.click();
   await expect(page).toHaveURL(/\/approach$/u);
   await expect(page.getByRole('heading', {level: 1})).toContainText('Make the mathematics');
+});
+
+test('delayed static navigation enhancement preserves visible focus', async ({page}) => {
+  await page.setViewportSize({width: 390, height: 844});
+  let releaseController!: () => void;
+  const controllerGate = new Promise<void>((resolve) => {
+    releaseController = resolve;
+  });
+  await page.route('**/static-marketing-navigation.js', async (route) => {
+    await controllerGate;
+    await route.continue();
+  });
+
+  await page.goto('/?test=delayed-static-navigation', {waitUntil: 'commit'});
+  const menu = page.locator('.mobile-nav');
+  const fallback = menu.locator('details.mobile-nav__fallback');
+  const fallbackTrigger = fallback.locator(':scope > .mobile-nav__fallback-trigger');
+  await expect(fallbackTrigger).toBeVisible();
+  await fallbackTrigger.click();
+  const fallbackAbout = fallback.getByRole('link', {name: 'About', exact: true});
+  await fallbackAbout.focus();
+  await expect(fallbackAbout).toBeFocused();
+  expect(await fallback.evaluate((element) => element.matches(':focus-within'))).toBe(true);
+
+  releaseController();
+  await page.waitForLoadState('load');
+  const enhancedTrigger = menu.locator(':scope > .mobile-nav__trigger');
+  await expect(menu).toHaveAttribute('data-ready', 'true');
+  await expect(enhancedTrigger).toBeVisible();
+  await expect(enhancedTrigger).toBeFocused();
+  await expect(fallback).toBeHidden();
 });
 
 test.describe('mobile navigation without JavaScript', () => {
@@ -2071,6 +2186,30 @@ test('mobile navigation closes without obscuring keyboard focus', {
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.site-header .brand')).toBeFocused();
   expectNoRuntimeIssues(issues);
+});
+
+test('mobile navigation closes before the desktop breakpoint hides focused controls', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  await page.setViewportSize({width: 390, height: 844});
+  await expectDocument(page, '/', 'en');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await trigger.click();
+  const language = menu.getByRole('link', {name: 'Language: Español'});
+  await language.focus();
+  await expect(language).toBeFocused();
+
+  await page.setViewportSize({width: 1280, height: 800});
+  await expect(trigger).toBeHidden();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#mobile-navigation-panel')).toBeHidden();
+  await expect(page.locator('.status-strip')).toBeVisible();
+  await expect(page.locator('.site-header .brand')).toBeFocused();
+
+  await page.setViewportSize({width: 390, height: 844});
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('native mobile WebKit handles touch navigation and language switching without overflow', {
