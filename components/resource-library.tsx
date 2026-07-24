@@ -33,6 +33,7 @@ export function ResourceLibrary({
       </noscript>
       <div
         className="resource-list"
+        data-resource-list=""
         dangerouslySetInnerHTML={{__html: resourceEntriesMarkup}}
       />
     </div>

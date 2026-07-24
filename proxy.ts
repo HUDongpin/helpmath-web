@@ -39,7 +39,8 @@ const publicFilePaths = new Set([
   '/opengraph-image.png',
   '/robots.txt',
   '/sitemap.xml',
-  '/static-marketing-navigation.js'
+  '/static-marketing-navigation.js',
+  '/static-resource-library.js'
 ]);
 
 function notFoundRewrite(request: NextRequest, locale: 'en' | 'es') {

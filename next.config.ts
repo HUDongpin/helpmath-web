@@ -78,6 +78,7 @@ const staticMarketingPages: ReadonlyMap<string, string> = new Map([
   ['/', 'home'],
   ['/demos', 'demos'],
   ['/research', 'research'],
+  ['/resources', 'resources'],
 ] as const);
 
 export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () => [

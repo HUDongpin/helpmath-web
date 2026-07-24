@@ -158,16 +158,28 @@ assert.deepEqual(
 const staticMarketingPages = [
   'static/en/home.html',
   'static/en/research.html',
+  'static/en/resources.html',
   'static/es/home.html',
   'static/es/research.html',
+  'static/es/resources.html',
 ];
 for (const relativePath of staticMarketingPages) {
   const html = await readFile(path.join(pagesOutputRoot, relativePath), 'utf8');
+  const expectedScripts = relativePath.endsWith('/resources.html')
+    ? ['/static-marketing-navigation.js', '/static-resource-library.js']
+    : ['/static-marketing-navigation.js'];
   assert.deepEqual(
     externalScriptPaths(html),
-    ['/static-marketing-navigation.js'],
-    `${relativePath} must load only the framework-independent navigation controller.`,
+    expectedScripts,
+    `${relativePath} must load only its framework-independent controllers.`,
   );
+  if (relativePath.endsWith('/resources.html')) {
+    assert.match(
+      html,
+      /<script\b[^>]*\bid="help-math-resource-hash-bootstrap"[^>]*>/u,
+      `${relativePath} must retain its parser-time resource hash fallback.`,
+    );
+  }
   assert.doesNotMatch(
     html,
     /<link\b[^>]*\brel="(?:modulepreload|preload)"[^>]*\bas="script"/u,

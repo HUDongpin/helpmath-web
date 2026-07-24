@@ -3,7 +3,7 @@ import Head from 'next/head';
 import type {Locale, PageMetadata} from '@/content/types';
 import {getSiteUrl, localizedPath, SITE_NAME} from '@/lib/site';
 
-export type StaticMarketingPath = '/' | '/demos' | '/research';
+export type StaticMarketingPath = '/' | '/demos' | '/research' | '/resources';
 
 function metadataUrl(locale: Locale, pathname: StaticMarketingPath, siteUrl: URL): string {
   const value = new URL(localizedPath(locale, pathname), siteUrl);

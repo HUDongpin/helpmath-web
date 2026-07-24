@@ -540,13 +540,17 @@ test('static marketing routes do not ship the Next or React client runtime', asy
     '/es/research',
     '/demos',
     '/es/demos',
+    '/resources',
+    '/es/resources',
   ] as const) {
     const response = await page.goto(path, {waitUntil: 'networkidle'});
     expect(response?.status(), path).toBe(200);
     const externalScripts = await page.locator('script[src]').evaluateAll((scripts) =>
       scripts.map((script) => new URL((script as HTMLScriptElement).src).pathname),
     );
-    expect(externalScripts, path).toEqual(['/static-marketing-navigation.js']);
+    expect(externalScripts, path).toEqual(path.endsWith('/resources')
+      ? ['/static-marketing-navigation.js', '/static-resource-library.js']
+      : ['/static-marketing-navigation.js']);
     await expect(page.locator('.mobile-nav')).toHaveAttribute('data-ready', 'true');
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
       'href',
@@ -587,6 +591,8 @@ test('internal static marketing route names remain non-indexable 404s', async ({
     '/static/es/research',
     '/static/en/demos',
     '/static/es/demos',
+    '/static/en/resources',
+    '/static/es/resources',
   ] as const) {
     const response = await page.goto(path, {waitUntil: 'networkidle'});
     expect(response?.status(), path).toBe(404);
@@ -975,14 +981,14 @@ test('render containment preserves resource geometry, focus, and deep links', {
   }
 });
 
-test('resource fragment fallback survives failed hydration chunks', async ({browserName, page}) => {
+test('resource fragment fallback survives a failed resource controller', async ({browserName, page}) => {
   test.skip(browserName !== 'chromium', 'The parser fallback is a Chromium regression contract.');
   await page.setViewportSize({width: 900, height: 900});
-  await page.route('**/_next/static/**/*.js', (route) => route.abort('failed'));
+  await page.route('**/static-resource-library.js', (route) => route.abort('failed'));
 
   for (const {path, targetHash} of [
-    {path: '/resources?test=blocked-hydration-en', targetHash: '#technology-innovations-report'},
-    {path: '/es/resources?test=blocked-hydration-es', targetHash: '#codie-past-winners'},
+    {path: '/resources?test=blocked-controller-en', targetHash: '#technology-innovations-report'},
+    {path: '/es/resources?test=blocked-controller-es', targetHash: '#codie-past-winners'},
   ]) {
     const response = await page.goto(`${path}${targetHash}`, {waitUntil: 'load'});
     expect(response?.status(), path).toBe(200);
@@ -1001,7 +1007,7 @@ test('resource fragment fallback survives failed hydration chunks', async ({brow
     expect(Math.abs(geometry.top - geometry.scrollMarginTop)).toBeLessThanOrEqual(12);
   }
 
-  await page.goto('/resources?test=blocked-hydration-section#resource-library', {
+  await page.goto('/resources?test=blocked-controller-section#resource-library', {
     waitUntil: 'load',
   });
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#resource-library');

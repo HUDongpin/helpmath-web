@@ -23,7 +23,10 @@ describe('static resource-entry markup', () => {
   it('preserves the resource library contract without creating client-owned cards', () => {
     const html = renderResourceEntriesMarkup([entry]);
 
-    assert.match(html, /<article class="resource-entry" id="reviewed-resource">/u);
+    assert.match(
+      html,
+      /<article class="resource-entry" data-resource-category="research" id="reviewed-resource">/u,
+    );
     assert.match(html, /resource-entry__icon--available/u);
     assert.match(html, /status-badge--available/u);
     assert.match(html, /Evidence &amp; context/u);
@@ -63,6 +66,16 @@ describe('static resource-entry markup', () => {
         status: 'available" onclick="alert(1)' as ResourceEntry['status'],
       }]),
       /Unsafe resource status/u,
+    );
+  });
+
+  it('fails closed when runtime data violates the resource-category enum', () => {
+    assert.throws(
+      () => renderResourceEntriesMarkup([{
+        ...entry,
+        category: 'research" onclick="alert(1)' as ResourceEntry['category'],
+      }]),
+      /Unsafe resource category/u,
     );
   });
 

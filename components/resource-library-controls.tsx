@@ -252,13 +252,14 @@ export function ResourceLibraryControls({
 
   return (
     <>
-      <div className="resource-library__interactive">
+      <div className="resource-library__interactive" data-resource-controls="">
         <div className="resource-search">
           <label htmlFor={searchId}>{filters.searchLabel}</label>
           <div className="resource-search__field">
             <Search aria-hidden="true" size={20} strokeWidth={2.2} />
             <input
               autoComplete="off"
+              data-resource-search=""
               disabled={!isInteractiveReady}
               id={searchId}
               onChange={(event) => {
@@ -290,6 +291,7 @@ export function ResourceLibraryControls({
             return (
               <button
                 aria-pressed={selection === value}
+                data-resource-selection={value}
                 disabled={!isInteractiveReady}
                 key={value}
                 onClick={() => setSelection(value)}
@@ -301,11 +303,18 @@ export function ResourceLibraryControls({
             );
           })}
         </div>
-        <p aria-live="polite" className="resource-results" role="status">
+        <p
+          aria-live="polite"
+          className="resource-results"
+          data-resource-results=""
+          data-result-template={filters.resultTemplate}
+          data-results-template={filters.resultsTemplate}
+          role="status"
+        >
           {resultsTemplate.replace('{count}', String(visibleItems.length))}
         </p>
       </div>
-      <p className="resource-empty" hidden={visibleItems.length > 0}>
+      <p className="resource-empty" data-resource-empty="" hidden={visibleItems.length > 0}>
         {filters.empty}
       </p>
     </>

@@ -8,6 +8,12 @@ const resourceStatuses = new Set<ResourceEntry['status']>([
   'request',
 ]);
 
+const resourceCategories = new Set<ResourceEntry['category']>([
+  'program',
+  'research',
+  'technical',
+]);
+
 function resourceStatus(status: ResourceEntry['status']): ResourceEntry['status'] {
   if (!resourceStatuses.has(status)) {
     throw new Error(`Unsafe resource status: ${status}`);
@@ -15,11 +21,19 @@ function resourceStatus(status: ResourceEntry['status']): ResourceEntry['status'
   return status;
 }
 
+function resourceCategory(category: ResourceEntry['category']): ResourceEntry['category'] {
+  if (!resourceCategories.has(category)) {
+    throw new Error(`Unsafe resource category: ${category}`);
+  }
+  return category;
+}
+
 export function renderResourceEntriesMarkup(items: ResourceEntry[]): string {
   const seenIds = new Set<string>();
 
   return items.map((item) => {
     const status = resourceStatus(item.status);
+    const category = resourceCategory(item.category);
     const id = kebabId(item.id, 'resource id');
     if (seenIds.has(id)) {
       throw new Error(`Duplicate resource id: ${id}`);
@@ -27,7 +41,7 @@ export function renderResourceEntriesMarkup(items: ResourceEntry[]): string {
     seenIds.add(id);
 
     return (
-      `<article class="resource-entry" id="${id}">` +
+      `<article class="resource-entry" data-resource-category="${escapeHtml(category)}" id="${id}">` +
         `<div aria-hidden="true" class="resource-entry__icon resource-entry__icon--${escapeHtml(status)}"></div>` +
         '<div class="resource-entry__body">' +
           '<div class="resource-entry__meta">' +
