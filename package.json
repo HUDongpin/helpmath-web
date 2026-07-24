@@ -41,7 +41,7 @@
     "check:private-demo-leaks": "tsx scripts/check-private-demo-leaks.mjs",
     "check:private-demo-traces": "node scripts/verify-private-demo-traces.mjs",
     "check:stable-links": "node scripts/check-stable-external-links.mjs",
-    "test:lighthouse": "lhci autorun"
+    "test:lighthouse": "node scripts/run-lighthouse-ci.mjs"
   },
   "dependencies": {
     "@fontsource-variable/nunito-sans": "^5.3.0",

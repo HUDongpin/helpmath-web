@@ -19,13 +19,14 @@ function workflowJob(source: string, jobName: string) {
 
 describe('Lighthouse quality gate', () => {
   it('classifies runner capacity without changing the three-job Quality contract', async () => {
-    const [workflow, lighthouseConfig, legacyPreflight] = await Promise.all([
+    const [workflow, lighthouseConfig, legacyPreflight, packageJsonSource] = await Promise.all([
       readFile(path.join(repositoryRoot, '.github/workflows/quality.yml'), 'utf8'),
       readFile(path.join(repositoryRoot, 'lighthouserc.cjs'), 'utf8'),
       readFile(
         path.join(repositoryRoot, 'lib/legacy-cutover-preflight.ts'),
         'utf8',
       ),
+      readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
     ]);
     const verdict = workflowJob(workflow, 'lighthouse');
     const jobs = workflow.slice(workflow.indexOf('jobs:\n') + 'jobs:\n'.length);
@@ -76,6 +77,13 @@ describe('Lighthouse quality gate', () => {
       /name: Enforce eligible Lighthouse verdict\n\s+if: \$\{\{ !cancelled\(\) \}\}/u,
     );
     assert.match(verdict, /run: npm run test:lighthouse/u);
+    const packageJson = JSON.parse(packageJsonSource) as {
+      scripts: Record<string, string>;
+    };
+    assert.equal(
+      packageJson.scripts['test:lighthouse'],
+      'node scripts/run-lighthouse-ci.mjs',
+    );
     assert.match(
       verdict,
       /run: node scripts\/lighthouse-run-policy\.mjs classify artifacts\/lighthouse-ci/u,
