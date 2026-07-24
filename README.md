@@ -4,6 +4,13 @@ Production website for [www.helpmath.ai](https://www.helpmath.ai). This is a
 self-contained Next.js application with English as the unprefixed default
 locale and Spanish under `/es`.
 
+This private repository, `HUDongpin/helpmath-web`, with its repository root as
+the Vercel project root, is the only authorized production source for
+`helpmath.ai`. The separate `HELP MATH_Flash_To_JS/apps/web` application is an
+internal migration workbench: do not connect it to the production Vercel
+project or assign either canonical domain to it. Workbench previews must use a
+separate, protected non-production project with no `helpmath.ai` aliases.
+
 See the authoritative
 [website migration status matrix](docs/WEBSITE_MIGRATION_STATUS.md) for the
 separate public-website and HELP Math 2.0 product scopes, completed work,

@@ -1,5 +1,20 @@
 # Deployment runbook
 
+## Production source boundary
+
+The only authorized deployment source for `helpmath.ai` is the private
+`HUDongpin/helpmath-web` repository with **Root Directory** set to the
+repository root. The separate `HELP MATH_Flash_To_JS/apps/web` application is
+an internal migration workbench, not a second production website. Never attach
+that workbench to the production Vercel project, `www.helpmath.ai`, or
+`helpmath.ai`. If it needs remote review, use a separate protected Preview-only
+project with no canonical-domain aliases.
+
+Before accepting any Preview or Production evidence, confirm both the fixed
+GitHub repository identity and the Vercel project identity. A successful build
+from another repository, root directory, or Vercel project is not release
+evidence and must not be promoted.
+
 ## Release gate
 
 The repository gate manifest is `config/launch-gates.json`. Both `npm test`
