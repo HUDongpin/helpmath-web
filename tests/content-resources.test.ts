@@ -195,4 +195,72 @@ describe('public HELP Math resource catalog', () => {
       /Departamento de Educación de Colorado (?:redactó|realizó|respaldó|determinó|confirmó|validó|informó)/iu,
     );
   });
+
+  it('locks the exact archived pilot figures in both locales', () => {
+    const englishPilot = siteContent.en.pages.research.entries.find(
+      (entry) => entry.id === 'help-math-pilot',
+    );
+    const spanishPilot = siteContent.es.pages.research.entries.find(
+      (entry) => entry.id === 'help-math-pilot',
+    );
+
+    assert.ok(englishPilot);
+    assert.ok(spanishPilot);
+
+    for (const result of [
+      /42\.1% score increase.*4\.6%/u,
+      /Grade 6 gains of 75% versus 13%/u,
+      /Grade 7 gains of 71% versus 3%/u,
+      /averages of 73% versus 8%/u,
+    ]) {
+      assert.match(englishPilot.summary, result);
+    }
+
+    for (const result of [
+      /aumento del 42,1%.*4,6%/u,
+      /aumentos de 75% frente a 13% en sexto grado/u,
+      /71% frente a 3% en séptimo/u,
+      /promedios de 73% frente a 8%/u,
+    ]) {
+      assert.match(spanishPilot.summary, result);
+    }
+  });
+
+  it('locks Boulder Learning history and the confirmed partner destinations', () => {
+    const englishBoulder = siteContent.en.pages.about.lineage.items.find(
+      (item) => item.id === 'boulder-learning',
+    );
+    const spanishBoulder = siteContent.es.pages.about.lineage.items.find(
+      (item) => item.id === 'boulder-learning',
+    );
+
+    assert.ok(englishBoulder);
+    assert.ok(spanishBoulder);
+
+    assert.match(englishBoulder.paragraphs.join(' '), /created in 2017/u);
+    assert.match(englishBoulder.paragraphs.join(' '), /Boulder Language Technologies/u);
+    assert.match(englishBoulder.paragraphs.join(' '), /Digital Directions International/u);
+    assert.match(spanishBoulder.paragraphs.join(' '), /se creó en 2017/u);
+    assert.match(spanishBoulder.paragraphs.join(' '), /Boulder Language Technologies/u);
+    assert.match(spanishBoulder.paragraphs.join(' '), /Digital Directions International/u);
+
+    const expectedPartnerLinks = [
+      'https://www.boulderlearning.com/products',
+      'https://www.pedanova.tech/',
+    ];
+
+    for (const content of [siteContent.en, siteContent.es]) {
+      const boulder = content.pages.about.lineage.items.find(
+        (item) => item.id === 'boulder-learning',
+      );
+      assert.ok(boulder);
+      const boulderLinks = new Set(boulder.actions.map((action) => action.href));
+      assert.ok(boulderLinks.has('https://www.boulderlearning.com/about-us'));
+      assert.ok(boulderLinks.has('https://www.boulderlearning.com/products'));
+      assert.deepEqual(
+        content.pages.home.partnership.actions.map((action) => action.href).sort(),
+        expectedPartnerLinks,
+      );
+    }
+  });
 });
