@@ -298,15 +298,21 @@ const nextConfig: NextConfig = {
         source: `/es${source === '/' ? '' : source}`,
         destination: `/static/es/${page}`,
       })),
-      ...routablePagePaths.map((source) => {
-        const staticPage = staticMarketingPages.get(source);
-        return {
-          source,
-          destination: staticPage
-            ? `/static/en/${staticPage}`
-            : `/en${source === '/' ? '' : source}`,
-        };
-      }),
+      ...routablePagePaths
+        .filter((source) => !source.startsWith('/demos/'))
+        .map((source) => {
+          const staticPage = staticMarketingPages.get(source);
+          return {
+            source,
+            destination: staticPage
+              ? `/static/en/${staticPage}`
+              : `/en${source === '/' ? '' : source}`,
+          };
+        }),
+      {
+        source: '/demos/:id',
+        destination: '/en/demos/:id',
+      },
     ];
   },
 };

@@ -122,17 +122,30 @@ describe('lifecycle-aware demo client leak policy', () => {
   });
 
   it('rejects private runtime text, paths, and exact resource bytes', () => {
-    const {policy} = fixturePolicy('private-preview');
+    const {candidate, policy} = fixturePolicy('private-preview');
     const leaks = findDemoClientLeaks([
       {
         file: '.next/static/chunks/private.js',
-        contents: 'DEMO_A_RUNTIME_TEXT demos/modules/demo-a',
+        contents: [
+          'DEMO_A_RUNTIME_TEXT',
+          'demos/modules/demo-a',
+          '/demos/demo-a',
+          candidate.runtime.globalName,
+          '/api/executive-preview/runtime/demo-a.js',
+        ].join(' '),
       },
       {file: 'public/private-demo-assets/demo-a/picture.png', contents: runtimeBytes},
     ], policy);
 
     assert.ok(leaks.some((leak) => leak.category === 'inactive-runtime-text'));
     assert.ok(leaks.some((leak) => leak.category === 'inactive-runtime-file'));
+    for (const fingerprint of [
+      'candidate route',
+      'runtime global name',
+      'candidate runtime API',
+    ]) {
+      assert.ok(leaks.some((leak) => leak.fingerprint === fingerprint), fingerprint);
+    }
   });
 
   it('allows approved public runtime content but never approval metadata', () => {

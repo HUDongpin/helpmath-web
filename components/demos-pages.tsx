@@ -12,12 +12,17 @@ export function DemoDetailPage({
   locale,
   requestedFrame,
   reviewMode = false,
+  runtime,
 }: {
   content: DemoDetailContent;
   id: DemoId;
   locale: Locale;
   requestedFrame?: number;
   reviewMode?: boolean;
+  runtime: {
+    globalName: string;
+    source: string;
+  };
 }) {
   const reviewNotice = locale === 'es'
     ? 'Revisión ejecutiva interna. Este prototipo heredado no está validado como fiel o completo. El audio, la aceptación técnica y la revisión de derechos siguen pendientes. No se autoriza su distribución ni republicación pública.'
@@ -73,6 +78,8 @@ export function DemoDetailPage({
               demoId={id}
               locale={locale}
               requestedFrame={requestedFrame}
+              runtimeGlobalName={runtime.globalName}
+              runtimeSource={runtime.source}
             />
           </div>
           <p className="demo-reduced-note">{content.reducedMotionNote}</p>

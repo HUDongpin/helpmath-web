@@ -101,9 +101,12 @@ function candidateRuntimeTextFingerprints(candidate, extraRuntimeText) {
   const records = [];
   const add = (value, label) => addFingerprint(records, value, label, candidate.id);
   add(candidate.runtime.entry, 'runtime entry');
+  add(candidate.runtime.globalName, 'runtime global name');
   add('private-demo-runtime', 'private runtime directory');
+  add(`/demos/${candidate.id}`, 'candidate route');
   add(`demos/modules/${candidate.id}`, 'candidate module path');
   add(`/api/executive-preview/assets/${candidate.id}/`, 'candidate asset API prefix');
+  add(`/api/executive-preview/runtime/${candidate.id}.js`, 'candidate runtime API');
 
   for (const artifact of candidate.artifacts) {
     if (

@@ -11,40 +11,40 @@ type RuntimeOptions = {
   requestedFrame?: number;
 };
 
+type RuntimeLoaderOptions = RuntimeOptions & {
+  runtimeGlobalName: string;
+  runtimeSource: string;
+};
+
 type ExecutiveDemoRuntime = {
   mount(host: HTMLElement, options: RuntimeOptions): void;
   unmount(host: HTMLElement): void;
 };
 
-declare global {
-  interface Window {
-    HelpMathExecutiveRuntimeConversion12?: ExecutiveDemoRuntime;
-    HelpMathExecutiveRuntimeConversion14?: ExecutiveDemoRuntime;
-  }
-}
-
-const runtimeConfig = {
-  'conversion-1-2': {
-    globalName: 'HelpMathExecutiveRuntimeConversion12',
-    source: '/api/executive-preview/runtime/conversion-1-2.js',
-  },
-  'conversion-1-4': {
-    globalName: 'HelpMathExecutiveRuntimeConversion14',
-    source: '/api/executive-preview/runtime/conversion-1-4.js',
-  },
-} as const;
 const RUNTIME_LOAD_TIMEOUT_MS = 15_000;
+const RUNTIME_GLOBAL_NAME_PATTERN = /^HelpMathExecutiveRuntime[A-Za-z0-9]+$/u;
 
-function getRuntime(demoId: DemoId): ExecutiveDemoRuntime | undefined {
-  const name = runtimeConfig[demoId].globalName;
-  return window[name];
+function getRuntime(globalName: string): ExecutiveDemoRuntime | undefined {
+  const value = (window as unknown as Record<string, unknown>)[globalName];
+  if (!value || typeof value !== 'object') return undefined;
+  const runtime = value as Partial<ExecutiveDemoRuntime>;
+  return typeof runtime.mount === 'function' && typeof runtime.unmount === 'function'
+    ? (runtime as ExecutiveDemoRuntime)
+    : undefined;
 }
 
-export function ExecutiveDemoRuntimeLoader(options: RuntimeOptions) {
+export function ExecutiveDemoRuntimeLoader(options: RuntimeLoaderOptions) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const {content, demoId, locale, requestedFrame} = options;
+  const {
+    content,
+    demoId,
+    locale,
+    requestedFrame,
+    runtimeGlobalName,
+    runtimeSource,
+  } = options;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -53,7 +53,6 @@ export function ExecutiveDemoRuntimeLoader(options: RuntimeOptions) {
     let active = true;
     let settled = false;
     let mountedRuntime: ExecutiveDemoRuntime | undefined;
-    const config = runtimeConfig[demoId];
 
     const fail = () => {
       if (!active || settled) return;
@@ -64,7 +63,7 @@ export function ExecutiveDemoRuntimeLoader(options: RuntimeOptions) {
 
     const mount = () => {
       if (!active || settled) return;
-      const runtime = getRuntime(demoId);
+      const runtime = getRuntime(runtimeGlobalName);
       if (!runtime) {
         fail();
         return;
@@ -80,16 +79,24 @@ export function ExecutiveDemoRuntimeLoader(options: RuntimeOptions) {
       }
     };
 
+    if (
+      !RUNTIME_GLOBAL_NAME_PATTERN.test(runtimeGlobalName)
+      || runtimeSource !== `/api/executive-preview/runtime/${demoId}.js`
+    ) {
+      fail();
+      return;
+    }
+
     const timeout = window.setTimeout(fail, RUNTIME_LOAD_TIMEOUT_MS);
 
-    const existingRuntime = getRuntime(demoId);
+    const existingRuntime = getRuntime(runtimeGlobalName);
     if (existingRuntime) {
       mount();
     } else {
       const script = document.createElement('script');
       script.async = true;
       script.dataset.executiveDemoRuntime = demoId;
-      script.src = config.source;
+      script.src = runtimeSource;
       script.addEventListener('load', mount, {once: true});
       script.addEventListener('error', fail, {once: true});
       document.head.append(script);
@@ -105,7 +112,7 @@ export function ExecutiveDemoRuntimeLoader(options: RuntimeOptions) {
         // not surface as a user-facing runtime exception.
       }
     };
-  }, [content, demoId, locale, requestedFrame]);
+  }, [content, demoId, locale, requestedFrame, runtimeGlobalName, runtimeSource]);
 
   return (
     <div className="executive-demo-runtime-host">

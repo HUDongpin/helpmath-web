@@ -4,16 +4,12 @@ import {notFound} from 'next/navigation';
 import {DemoDetailPage} from '@/components/demos-pages';
 import {MainContent} from '@/components/main-content';
 import {getRuntimeSiteContent, isLocale} from '@/content';
-import {DEMO_CANDIDATE_IDS, isDemoCandidateId} from '@/demos/candidates';
+import {isDemoCandidateId} from '@/demos/candidates';
 import {getDemoLifecycleState} from '@/lib/demo-lifecycle';
 import {hasExecutivePreviewSession} from '@/lib/executive-preview-server';
 import {createPageMetadata} from '@/lib/metadata';
 
 export const dynamic = 'force-dynamic';
-
-export function generateStaticParams() {
-  return DEMO_CANDIDATE_IDS.map((id) => ({id}));
-}
 
 export async function generateMetadata({
   params
@@ -52,6 +48,8 @@ export default async function DemoPage({
   const lifecycle = getDemoLifecycleState(id);
   if (!lifecycle.public && !lifecycle.privatePreview) notFound();
   if (!lifecycle.public && !(await hasExecutivePreviewSession())) notFound();
+  const candidate = lifecycle.candidate;
+  if (!candidate) notFound();
 
   const rawFrame = Array.isArray(query.frame) ? query.frame[0] : query.frame;
   const parsedFrame = rawFrame && /^\d+$/.test(rawFrame) ? Number(rawFrame) : undefined;
@@ -67,6 +65,10 @@ export default async function DemoPage({
         locale={locale}
         requestedFrame={requestedFrame}
         reviewMode={!lifecycle.public}
+        runtime={{
+          globalName: candidate.runtime.globalName,
+          source: `/api/executive-preview/runtime/${id}.js`,
+        }}
       />
     </MainContent>
   );

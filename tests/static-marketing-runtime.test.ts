@@ -21,6 +21,11 @@ test('static marketing rewrites cover both locales without exposing internal rou
   assert.equal(bySource.get('/es/demos'), '/static/es/demos');
   assert.equal(bySource.get('/resources'), '/static/en/resources');
   assert.equal(bySource.get('/es/resources'), '/static/es/resources');
+  assert.equal(bySource.get('/demos/:id'), '/en/demos/:id');
+  assert.equal(
+    [...bySource.keys()].some((source) => /^\/demos\/conversion-/u.test(source)),
+    false,
+  );
   assert.equal([...bySource.keys()].some((source) => source.startsWith('/static/')), false);
 });
 

@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  production-smoke:
     if: >-
       github.event.deployment.environment == 'Production' &&
       github.event.deployment_status.state == 'success'

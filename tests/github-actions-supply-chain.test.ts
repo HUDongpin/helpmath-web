@@ -36,6 +36,24 @@ describe('GitHub Actions supply-chain policy', () => {
     }
   });
 
+  it('reserves the required Quality check names for the Quality workflow', async () => {
+    const workflowNames = (await readdir(workflowsDirectory)).filter((name) =>
+      /\.ya?ml$/u.test(name),
+    );
+
+    for (const workflowName of workflowNames) {
+      if (workflowName === 'quality.yml') continue;
+      const workflow = await readFile(path.join(workflowsDirectory, workflowName), 'utf8');
+      for (const requiredCheck of ['verify', 'browser-quality', 'lighthouse']) {
+        assert.doesNotMatch(
+          workflow,
+          new RegExp(`^  ${requiredCheck}:`, 'mu'),
+          `${workflowName} must not shadow the required Quality check ${requiredCheck}`,
+        );
+      }
+    }
+  });
+
   it('allows Dependabot to propose reviewed GitHub Actions commit updates', async () => {
     const config = await readFile(path.join(repositoryRoot, '.github/dependabot.yml'), 'utf8');
 
