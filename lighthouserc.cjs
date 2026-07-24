@@ -14,7 +14,9 @@ module.exports = {
         'http://127.0.0.1:3216/resources',
         'http://127.0.0.1:3216/demos',
       ],
-      numberOfRuns: 3,
+      // Five fresh Lighthouse/Chrome processes on the shared runner keep the
+      // strict median budget resilient to one isolated V8 or parser stall.
+      numberOfRuns: 5,
       settings: {
         chromeFlags: '--no-sandbox --disable-dev-shm-usage',
       },

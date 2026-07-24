@@ -13,7 +13,9 @@ export const LIGHTHOUSE_EXPECTED_ROUTES = [
   '/resources',
   '/demos',
 ];
-export const LIGHTHOUSE_RUNS_PER_ROUTE = 3;
+export const LIGHTHOUSE_RUNS_PER_ROUTE = 5;
+export const LIGHTHOUSE_MAX_ROUTE_OUTLIERS = 1;
+export const LIGHTHOUSE_TBT_MAX_NUMERIC_VALUE = 200;
 export const LIGHTHOUSE_MAX_RUN_ATTEMPT = 2;
 export const LIGHTHOUSE_CAPACITY_LOG_MARKER =
   'HELP_MATH_LIGHTHOUSE_CAPACITY_V1=';
@@ -116,6 +118,7 @@ export function classifyLighthouseReports(reports) {
   });
 
   const routeBenchmarkMedians = {};
+  const routeSlowSampleCounts = {};
   const lighthouseVersions = new Set();
   for (const route of LIGHTHOUSE_EXPECTED_ROUTES) {
     const benchmarks = benchmarksByRoute.get(route);
@@ -125,6 +128,9 @@ export function classifyLighthouseReports(reports) {
       );
     }
     routeBenchmarkMedians[route] = median(benchmarks);
+    routeSlowSampleCounts[route] = benchmarks.filter(
+      benchmarkIndex => benchmarkIndex <= LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
+    ).length;
   }
 
   for (const [index, report] of reports.entries()) {
@@ -153,23 +159,88 @@ export function classifyLighthouseReports(reports) {
   const overallBenchmarkMedian = median(
     reports.map(report => report.environment.benchmarkIndex),
   );
-  const eligible = Object.values(routeBenchmarkMedians).every(
-    benchmarkIndex =>
-      benchmarkIndex > LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
-  );
+  const eligible =
+    Object.values(routeBenchmarkMedians).every(
+      benchmarkIndex =>
+        benchmarkIndex > LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
+    ) &&
+    Object.values(routeSlowSampleCounts).every(
+      count => count <= LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
+    );
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     eligible,
     reportCount: reports.length,
     lighthouseVersion: [...lighthouseVersions][0],
     slowCpuBenchmarkIndex: LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
+    maxSlowSamplesPerRoute: LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
     overallBenchmarkMedian,
     routeBenchmarkMedians,
+    routeSlowSampleCounts,
   };
 }
 
-export function evaluateLighthouseVerdict({eligible, assertionOutcome}) {
+export function classifyLighthouseTbtDistribution(reports) {
+  if (!Array.isArray(reports)) {
+    throw new Error('Lighthouse reports must be an array');
+  }
+
+  const tbtValuesByRoute = new Map(
+    LIGHTHOUSE_EXPECTED_ROUTES.map(route => [route, []]),
+  );
+  reports.forEach((report, index) => {
+    const route = reportRoute(report, index);
+    const numericValue = report?.audits?.['total-blocking-time']?.numericValue;
+    if (
+      typeof numericValue !== 'number' ||
+      !Number.isFinite(numericValue) ||
+      numericValue < 0
+    ) {
+      throw new Error(
+        `Lighthouse report ${index} has invalid total blocking time`,
+      );
+    }
+    tbtValuesByRoute.get(route).push(numericValue);
+  });
+
+  const routeOutlierCounts = {};
+  for (const route of LIGHTHOUSE_EXPECTED_ROUTES) {
+    const values = tbtValuesByRoute.get(route);
+    if (values.length !== LIGHTHOUSE_RUNS_PER_ROUTE) {
+      throw new Error(
+        `Lighthouse route ${route} has ${values.length} TBT reports; expected ${LIGHTHOUSE_RUNS_PER_ROUTE}`,
+      );
+    }
+    routeOutlierCounts[route] = values.filter(
+      value => value > LIGHTHOUSE_TBT_MAX_NUMERIC_VALUE,
+    ).length;
+  }
+
+  const expectedReportCount =
+    LIGHTHOUSE_EXPECTED_ROUTES.length * LIGHTHOUSE_RUNS_PER_ROUTE;
+  if (reports.length !== expectedReportCount) {
+    throw new Error(
+      `Lighthouse TBT dataset has ${reports.length} reports; expected ${expectedReportCount}`,
+    );
+  }
+
+  return {
+    schemaVersion: 1,
+    ok: Object.values(routeOutlierCounts).every(
+      count => count <= LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
+    ),
+    maxNumericValue: LIGHTHOUSE_TBT_MAX_NUMERIC_VALUE,
+    maxOutliersPerRoute: LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
+    routeOutlierCounts,
+  };
+}
+
+export function evaluateLighthouseVerdict({
+  eligible,
+  assertionOutcome,
+  tbtDistributionOk,
+}) {
   if (eligible !== true) {
     return {
       ok: false,
@@ -178,6 +249,18 @@ export function evaluateLighthouseVerdict({eligible, assertionOutcome}) {
         eligible === false
           ? 'The runner was below Lighthouse’s slow-host capacity boundary.'
           : 'No complete Lighthouse capacity verdict was produced.',
+    };
+  }
+
+  if (tbtDistributionOk !== true) {
+    return {
+      ok: false,
+      failureKind:
+        tbtDistributionOk === false ? 'product-budget' : 'missing-evidence',
+      reason:
+        tbtDistributionOk === false
+          ? 'More than one run for a reviewed route exceeded the total blocking time budget.'
+          : 'No complete Lighthouse total blocking time distribution verdict was produced.',
     };
   }
 
@@ -193,7 +276,8 @@ export function evaluateLighthouseVerdict({eligible, assertionOutcome}) {
   return {
     ok: true,
     failureKind: null,
-    reason: 'The runner was eligible and all Lighthouse assertions passed.',
+    reason:
+      'The runner was eligible, the TBT distribution was stable, and all Lighthouse assertions passed.',
   };
 }
 
@@ -354,10 +438,12 @@ function validatePriorCapacityEvidence(evidence, current) {
       'reportCount',
       'lighthouseVersion',
       'slowCpuBenchmarkIndex',
+      'maxSlowSamplesPerRoute',
       'overallBenchmarkMedian',
       'routeBenchmarkMedians',
+      'routeSlowSampleCounts',
     ]) ||
-    classification.schemaVersion !== 1 ||
+    classification.schemaVersion !== 2 ||
     classification.eligible !== false ||
     classification.reportCount !==
       LIGHTHOUSE_EXPECTED_ROUTES.length * LIGHTHOUSE_RUNS_PER_ROUTE ||
@@ -365,22 +451,38 @@ function validatePriorCapacityEvidence(evidence, current) {
     classification.lighthouseVersion.length === 0 ||
     classification.slowCpuBenchmarkIndex !==
       LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX ||
+    classification.maxSlowSamplesPerRoute !==
+      LIGHTHOUSE_MAX_ROUTE_OUTLIERS ||
     typeof classification.overallBenchmarkMedian !== 'number' ||
     !Number.isFinite(classification.overallBenchmarkMedian) ||
     !hasExactKeys(
       classification.routeBenchmarkMedians,
+      LIGHTHOUSE_EXPECTED_ROUTES,
+    ) ||
+    !hasExactKeys(
+      classification.routeSlowSampleCounts,
       LIGHTHOUSE_EXPECTED_ROUTES,
     )
   ) {
     throw new Error('Attempt-one capacity classification is invalid');
   }
   const routeMedians = Object.values(classification.routeBenchmarkMedians);
+  const routeSlowCounts = Object.values(classification.routeSlowSampleCounts);
   if (
     !routeMedians.every(
       value => typeof value === 'number' && Number.isFinite(value) && value > 0,
     ) ||
-    routeMedians.every(
-      value => value > LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
+    !routeSlowCounts.every(
+      value => Number.isSafeInteger(value) && value >= 0 &&
+        value <= LIGHTHOUSE_RUNS_PER_ROUTE,
+    ) ||
+    (
+      routeMedians.every(
+        value => value > LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
+      ) &&
+      routeSlowCounts.every(
+        value => value <= LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
+      )
     )
   ) {
     throw new Error('Attempt-one capacity classification is inconsistent');
@@ -596,6 +698,7 @@ async function classifyCommand(reportDirectory) {
   const reports = await loadLighthouseReports(resolvedReportDirectory);
   const result = classifyLighthouseReports(reports);
   const routeMedians = JSON.stringify(result.routeBenchmarkMedians);
+  const routeSlowCounts = JSON.stringify(result.routeSlowSampleCounts);
   const context = readRunContext();
   const evidence = {
     schemaVersion: 3,
@@ -613,6 +716,7 @@ async function classifyCommand(reportDirectory) {
     report_count: result.reportCount,
     overall_benchmark_median: result.overallBenchmarkMedian,
     route_benchmark_medians: routeMedians,
+    route_slow_sample_counts: routeSlowCounts,
   });
 
   console.log(capacityEvidenceLogLine(evidence));
@@ -625,7 +729,9 @@ async function classifyCommand(reportDirectory) {
         '',
         `- Status: ${status}`,
         `- Slow-host boundary: benchmark index must be greater than ${result.slowCpuBenchmarkIndex} for every route median`,
+        `- Maximum slow samples per route: ${result.maxSlowSamplesPerRoute}`,
         `- Route medians: \`${routeMedians}\``,
+        `- Slow-sample counts: \`${routeSlowCounts}\``,
         `- Reports: ${result.reportCount}`,
         '',
       ].join('\n'),
@@ -645,15 +751,22 @@ async function verdictCommand(reportDirectory) {
   const context = readRunContext();
   const eligible = parseEligibility(process.env.RUNNER_ELIGIBLE);
   const assertionOutcome = process.env.LIGHTHOUSE_ASSERTION_OUTCOME ?? '';
+  const tbtDistribution = reportDirectory
+    ? classifyLighthouseTbtDistribution(
+        await loadLighthouseReports(path.resolve(reportDirectory)),
+      )
+    : null;
   const result = evaluateLighthouseVerdict({
     eligible,
     assertionOutcome,
+    tbtDistributionOk: tbtDistribution?.ok ?? null,
   });
   const evidence = {
     schemaVersion: 3,
     ...context,
     eligible,
     assertionOutcome,
+    tbtDistribution,
     ...result,
   };
 

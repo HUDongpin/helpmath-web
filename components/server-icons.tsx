@@ -52,6 +52,124 @@ export function ArrowRight(props: ServerIconProps) {
   );
 }
 
+export function ArrowLeft(props: ServerIconProps) {
+  return (
+    <ServerIcon name="arrow-left" {...iconProps(props)}>
+      <path d="m12 19-7-7 7-7" />
+      <path d="M19 12H5" />
+    </ServerIcon>
+  );
+}
+
+export function BookOpenText(props: ServerIconProps) {
+  return (
+    <ServerIcon name="book-open-text" {...iconProps(props)}>
+      <path d="M12 7v14" />
+      <path d="M16 12h2" />
+      <path d="M16 8h2" />
+      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+      <path d="M6 12h2" />
+      <path d="M6 8h2" />
+    </ServerIcon>
+  );
+}
+
+export function Handshake(props: ServerIconProps) {
+  return (
+    <ServerIcon name="handshake" {...iconProps(props)}>
+      <path d="m11 17 2 2a1 1 0 1 0 3-3" />
+      <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" />
+      <path d="m21 3 1 11h-2" />
+      <path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" />
+      <path d="M3 4h8" />
+    </ServerIcon>
+  );
+}
+
+export function Languages(props: ServerIconProps) {
+  return (
+    <ServerIcon name="languages" {...iconProps(props)}>
+      <path d="m5 8 6 6" />
+      <path d="m4 14 6-6 2-3" />
+      <path d="M2 5h12" />
+      <path d="M7 2h1" />
+      <path d="m22 22-5-10-5 10" />
+      <path d="M14 18h6" />
+    </ServerIcon>
+  );
+}
+
+export function LifeBuoy(props: ServerIconProps) {
+  return (
+    <ServerIcon name="life-buoy" {...iconProps(props)}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m4.93 4.93 4.24 4.24" />
+      <path d="m14.83 9.17 4.24-4.24" />
+      <path d="m14.83 14.83 4.24 4.24" />
+      <path d="m9.17 14.83-4.24 4.24" />
+      <circle cx="12" cy="12" r="4" />
+    </ServerIcon>
+  );
+}
+
+export function Menu(props: ServerIconProps) {
+  return (
+    <ServerIcon name="menu" {...iconProps(props)}>
+      <path d="M4 5h16" />
+      <path d="M4 12h16" />
+      <path d="M4 19h16" />
+    </ServerIcon>
+  );
+}
+
+export function MessageCircleMore(props: ServerIconProps) {
+  return (
+    <ServerIcon name="message-circle-more" {...iconProps(props)}>
+      <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
+      <path d="M8 12h.01" />
+      <path d="M12 12h.01" />
+      <path d="M16 12h.01" />
+    </ServerIcon>
+  );
+}
+
+export function RotateCw(props: ServerIconProps) {
+  return (
+    <ServerIcon name="rotate-cw" {...iconProps(props)}>
+      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+    </ServerIcon>
+  );
+}
+
+export function Shapes(props: ServerIconProps) {
+  return (
+    <ServerIcon name="shapes" {...iconProps(props)}>
+      <path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <circle cx="17.5" cy="17.5" r="3.5" />
+    </ServerIcon>
+  );
+}
+
+export function ShieldCheck(props: ServerIconProps) {
+  return (
+    <ServerIcon name="shield-check" {...iconProps(props)}>
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </ServerIcon>
+  );
+}
+
+export function X(props: ServerIconProps) {
+  return (
+    <ServerIcon name="x" {...iconProps(props)}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </ServerIcon>
+  );
+}
+
 export function Sparkles(props: ServerIconProps) {
   return (
     <ServerIcon name="sparkles" {...iconProps(props)}>

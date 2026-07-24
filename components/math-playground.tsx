@@ -1,4 +1,4 @@
-import {BookOpenText, MessageCircleMore, Shapes} from 'lucide-react';
+import {BookOpenText, MessageCircleMore, Shapes} from './server-icons';
 
 export function MathPlayground({locale}: {locale: 'en' | 'es'}) {
   const copy =

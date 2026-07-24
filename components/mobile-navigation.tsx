@@ -1,6 +1,5 @@
 'use client';
 
-import {Languages, Menu, X} from 'lucide-react';
 import {usePathname as useNextPathname} from 'next/navigation';
 import {
   useEffect,
@@ -15,6 +14,7 @@ import type {Locale, SharedContent} from '@/content/types';
 import {languageSwitchGatewayHref, stripLocalePrefix} from '@/i18n/href';
 
 import {LanguageSwitcher} from './language-switcher';
+import {Languages, Menu, X} from './server-icons';
 
 const keyboardFocusableSelector = [
   'a[href]',

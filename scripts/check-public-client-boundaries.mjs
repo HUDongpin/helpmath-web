@@ -12,12 +12,15 @@ const resourceControlsMarker = '/components/resource-library-controls.tsx';
 const pageHeroMotifMarker = '/components/page-hero-motif.tsx';
 const siteHeaderMarker = '/components/site-header.tsx';
 const nextLinkMarker = '/node_modules/next/dist/client/app-dir/link.js';
+const lucideClientIconMarker = '/node_modules/lucide-react/dist/esm/Icon.mjs';
 const localeProviderBoundaryMarker = ',"LocaleProvider"]';
 const resourceHashBootstrapMarker = 'id="help-math-resource-hash-bootstrap"';
+const homePageRelativePaths = new Set(['en.html', 'es.html']);
 const clientLinkFreeRouteManifests = new Set([
   '[locale]/research/page_client-reference-manifest.js',
   '[locale]/resources/page_client-reference-manifest.js',
 ]);
+const homeRouteManifest = '[locale]/page_client-reference-manifest.js';
 const resourceHashBootstrapExpectedPages = [
   'en/resources.html',
   'es/resources.html',
@@ -98,6 +101,17 @@ for (const filename of pages) {
   const hasTurnstile = await referencesTurnstile(html);
   const isContact = /^(?:en|es)\/contact\.html$/u.test(relativePath);
 
+  if (homePageRelativePaths.has(relativePath)) {
+    assert.equal(
+      clientAssetPaths(html).some(assetPath =>
+        decodeURIComponent(assetPath).startsWith(
+          '/_next/static/chunks/app/[locale]/page-',
+        )),
+      false,
+      `${relativePath} must not load a page-specific client chunk.`,
+    );
+  }
+
   if (hasTurnstile) turnstilePages.push(relativePath);
   if (rsc.includes(localeProviderBoundaryMarker)) {
     localeProviderBoundaryPages.push(relativePath);
@@ -162,6 +176,13 @@ for (const filename of clientManifests) {
       `${relativePath} must use document navigation instead of shipping Next Link.`,
     );
     clientLinkFreeManifests.push(relativePath);
+  }
+  if (relativePath === homeRouteManifest) {
+    assert.doesNotMatch(
+      activeModuleSource,
+      new RegExp(lucideClientIconMarker.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'),
+      `${relativePath} must render decorative icons as static SVG.`,
+    );
   }
   if (activeModuleSource.includes(resourceControlsMarker)) {
     resourceControlsManifests.push(relativePath);

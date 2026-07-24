@@ -1,11 +1,11 @@
 'use client';
 
-import {ArrowLeft, LifeBuoy, RotateCw, ShieldCheck} from 'lucide-react';
 import {useEffect, useRef} from 'react';
 
 import type {Locale} from '@/content/types';
 
 import {MainContent} from './main-content';
+import {ArrowLeft, LifeBuoy, RotateCw, ShieldCheck} from './server-icons';
 
 type ErrorRecoveryCopy = {
   documentTitle: string;

@@ -1,6 +1,5 @@
 'use client';
 
-import {Languages} from 'lucide-react';
 import {usePathname} from 'next/navigation';
 import {useSyncExternalStore} from 'react';
 
@@ -11,6 +10,8 @@ import {
   localizeHref,
   stripLocalePrefix,
 } from '@/i18n/href';
+
+import {Languages} from './server-icons';
 
 type LanguageSwitcherProps = {
   locale: Locale;

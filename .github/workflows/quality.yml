@@ -79,11 +79,12 @@ jobs:
     # performance gate was calibrated on four-core hosted hardware. Pin the
     # standard four-core Intel runner so runner capacity does not masquerade
     # as a product regression. A runner whose per-route median benchmark falls
-    # at or below Lighthouse's own slow-host boundary is ineligible. The whole
-    # Quality workflow may then be rerun once on a fresh runner; an eligible
-    # product-budget failure is never retried.
+    # at or below Lighthouse's own slow-host boundary, or has more than one
+    # slow sample on a route, is ineligible. The whole Quality workflow may
+    # then be rerun once on a fresh runner; an eligible product-budget failure
+    # is never retried.
     runs-on: macos-15-intel
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read

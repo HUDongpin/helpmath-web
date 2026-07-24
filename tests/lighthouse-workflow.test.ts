@@ -102,7 +102,7 @@ describe('Lighthouse quality gate', () => {
     );
 
     assert.match(lighthouseConfig, /aggregationMethod: 'median'/u);
-    assert.match(lighthouseConfig, /numberOfRuns: 3/u);
+    assert.match(lighthouseConfig, /numberOfRuns: 5/u);
     for (const route of ['/', '/es', '/research', '/resources', '/demos']) {
       assert.match(
         lighthouseConfig,

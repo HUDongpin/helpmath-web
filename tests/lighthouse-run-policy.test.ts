@@ -14,11 +14,14 @@ import {
   LIGHTHOUSE_CAPACITY_LOG_MARKER,
   LIGHTHOUSE_EXPECTED_ROUTES,
   LIGHTHOUSE_MAX_RUN_ATTEMPT,
+  LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
   LIGHTHOUSE_RUNS_PER_ROUTE,
   LIGHTHOUSE_SLOW_CPU_BENCHMARK_INDEX,
+  LIGHTHOUSE_TBT_MAX_NUMERIC_VALUE,
   authorizeLighthouseAttempt,
   capacityEvidenceFromJobLog,
   classifyLighthouseReports,
+  classifyLighthouseTbtDistribution,
   evaluateLighthouseVerdict,
 } from '../scripts/lighthouse-run-policy.mjs';
 
@@ -29,15 +32,21 @@ const checkoutSha = 'b'.repeat(40);
 
 function reportsWithBenchmarks(
   overrides: Partial<Record<string, number[]>> = {},
+  tbtOverrides: Partial<Record<string, number[]>> = {},
 ) {
   return LIGHTHOUSE_EXPECTED_ROUTES.flatMap(route => {
-    const benchmarks = overrides[route] ?? [1300, 1400, 1500];
-    return benchmarks.map(benchmarkIndex => ({
+    const benchmarks = overrides[route] ?? [1300, 1350, 1400, 1450, 1500];
+    const tbtValues = tbtOverrides[route] ?? [50, 60, 70, 80, 90];
+    assert.equal(tbtValues.length, benchmarks.length, route);
+    return benchmarks.map((benchmarkIndex, index) => ({
       finalDisplayedUrl: `http://127.0.0.1:3216${route}`,
       finalUrl: `http://127.0.0.1:3216${route}`,
       requestedUrl: `http://127.0.0.1:3216${route}`,
       lighthouseVersion: '12.6.1',
       environment: {benchmarkIndex},
+      audits: {
+        'total-blocking-time': {numericValue: tbtValues[index]},
+      },
     }));
   });
 }
@@ -114,7 +123,7 @@ function slowCapacityEvidence() {
     schemaVersion: 3,
     ...runContext(1),
     classification: classifyLighthouseReports(
-      reportsWithBenchmarks({'/': [800, 900, 1500]}),
+      reportsWithBenchmarks({'/': [800, 850, 900, 1400, 1500]}),
     ),
   };
 }
@@ -136,7 +145,7 @@ describe('Lighthouse runner capacity policy', () => {
     );
   });
 
-  it('accepts exactly three reports per reviewed route above the boundary', () => {
+  it('accepts exactly five reports per reviewed route above the boundary', () => {
     const result = classifyLighthouseReports(reportsWithBenchmarks());
 
     assert.equal(result.eligible, true);
@@ -153,19 +162,57 @@ describe('Lighthouse runner capacity policy', () => {
     });
   });
 
-  it('allows one slow sample but rejects a slow route median', () => {
+  it('allows one slow sample but rejects a slow median or two slow samples', () => {
     assert.equal(
       classifyLighthouseReports(
-        reportsWithBenchmarks({'/research': [900, 1400, 1500]}),
+        reportsWithBenchmarks({'/research': [900, 1300, 1400, 1500, 1600]}),
       ).eligible,
       true,
     );
     assert.equal(
       classifyLighthouseReports(
-        reportsWithBenchmarks({'/research': [900, 1000, 1500]}),
+        reportsWithBenchmarks({'/research': [800, 900, 1000, 1500, 1600]}),
       ).eligible,
       false,
     );
+    const twoSlowSamples = classifyLighthouseReports(
+      reportsWithBenchmarks({'/research': [800, 900, 1300, 1400, 1500]}),
+    );
+    assert.equal(
+      (twoSlowSamples.routeBenchmarkMedians as Record<string, number>)['/research'],
+      1300,
+    );
+    assert.equal(
+      (twoSlowSamples.routeSlowSampleCounts as Record<string, number>)['/research'],
+      2,
+    );
+    assert.equal(twoSlowSamples.eligible, false);
+    assert.equal(
+      twoSlowSamples.maxSlowSamplesPerRoute,
+      LIGHTHOUSE_MAX_ROUTE_OUTLIERS,
+    );
+  });
+
+  it('allows one TBT outlier per route but rejects two', () => {
+    const oneOutlier = classifyLighthouseTbtDistribution(
+      reportsWithBenchmarks({}, {'/es': [50, 60, 70, 80, 500]}),
+    );
+    assert.equal(oneOutlier.ok, true);
+    assert.equal(
+      (oneOutlier.routeOutlierCounts as Record<string, number>)['/es'],
+      1,
+    );
+    assert.equal(oneOutlier.maxNumericValue, LIGHTHOUSE_TBT_MAX_NUMERIC_VALUE);
+
+    const twoOutliers = classifyLighthouseTbtDistribution(
+      reportsWithBenchmarks({}, {'/es': [50, 60, 70, 300, 500]}),
+    );
+    assert.equal(twoOutliers.ok, false);
+    assert.equal(
+      (twoOutliers.routeOutlierCounts as Record<string, number>)['/es'],
+      2,
+    );
+    assert.equal(twoOutliers.maxOutliersPerRoute, LIGHTHOUSE_MAX_ROUTE_OUTLIERS);
   });
 
   it('rejects incomplete, foreign, malformed, and mixed-version report sets', () => {
@@ -173,7 +220,7 @@ describe('Lighthouse runner capacity policy', () => {
     incomplete.pop();
     assert.throws(
       () => classifyLighthouseReports(incomplete),
-      /has 2 reports; expected 3/u,
+      /has 4 reports; expected 5/u,
     );
 
     const foreign = reportsWithBenchmarks();
@@ -188,6 +235,13 @@ describe('Lighthouse runner capacity policy', () => {
     assert.throws(
       () => classifyLighthouseReports(malformed),
       /invalid benchmark index/u,
+    );
+
+    const malformedTbt = reportsWithBenchmarks();
+    malformedTbt[0].audits['total-blocking-time'].numericValue = Number.NaN;
+    assert.throws(
+      () => classifyLighthouseTbtDistribution(malformedTbt),
+      /invalid total blocking time/u,
     );
 
     const mixedVersion = reportsWithBenchmarks();
@@ -277,6 +331,7 @@ describe('Lighthouse runner capacity policy', () => {
       assert.equal(quality.schemaVersion, 3);
       assert.equal(quality.headSha, headSha);
       assert.equal(quality.checkoutSha, checkoutSha);
+      assert.equal(quality.tbtDistribution.ok, true);
       assert.equal(quality.ok, true);
       assert.deepEqual(
         capacityEvidenceFromJobLog(classificationRun.stdout),
@@ -326,11 +381,13 @@ describe('Lighthouse capacity-aware verdict', () => {
       evaluateLighthouseVerdict({
         eligible: true,
         assertionOutcome: 'success',
+        tbtDistributionOk: true,
       }),
       {
         ok: true,
         failureKind: null,
-        reason: 'The runner was eligible and all Lighthouse assertions passed.',
+        reason:
+          'The runner was eligible, the TBT distribution was stable, and all Lighthouse assertions passed.',
       },
     );
   });
@@ -339,6 +396,18 @@ describe('Lighthouse capacity-aware verdict', () => {
     const result = evaluateLighthouseVerdict({
       eligible: true,
       assertionOutcome: 'failure',
+      tbtDistributionOk: true,
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.failureKind, 'product-budget');
+  });
+
+  it('rejects two TBT outliers even when the five-run median passes', () => {
+    const result = evaluateLighthouseVerdict({
+      eligible: true,
+      assertionOutcome: 'success',
+      tbtDistributionOk: false,
     });
 
     assert.equal(result.ok, false);
@@ -350,6 +419,7 @@ describe('Lighthouse capacity-aware verdict', () => {
       evaluateLighthouseVerdict({
         eligible: false,
         assertionOutcome: 'failure',
+        tbtDistributionOk: false,
       }).failureKind,
       'runner-capacity',
     );
@@ -357,6 +427,7 @@ describe('Lighthouse capacity-aware verdict', () => {
       evaluateLighthouseVerdict({
         eligible: null,
         assertionOutcome: '',
+        tbtDistributionOk: null,
       }).failureKind,
       'missing-evidence',
     );

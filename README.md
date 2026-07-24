@@ -33,9 +33,13 @@ container-specific; do not regenerate them from a normal host run.
 `npm run test:e2e:webkit`, `npm run test:e2e:mobile-webkit`, and
 `npm run test:e2e:firefox` are available for focused local diagnostics.
 
-The Lighthouse job retains three samples for each of five reviewed routes,
+The Lighthouse job retains five samples for each of five reviewed routes,
 plus versioned capacity and quality verdicts. Every route's median Lighthouse
-benchmark index must be greater than Lighthouse's own slow-host boundary. An
+benchmark index must be greater than Lighthouse's own slow-host boundary, and
+no route may contain more than one sample at or below that boundary. The
+five-run median keeps the strict product budgets resilient to one isolated
+runtime stall, while a second total-blocking-time result above 200 ms fails the
+distribution guard. An
 identity-bound, explicitly ineligible first runner permits exactly one complete
 Quality workflow rerun on a fresh runner. Because GitHub's native full-rerun
 surface does not make the prior attempt's artifact available to attempt two,

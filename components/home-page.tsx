@@ -1,5 +1,3 @@
-import {BookOpenText, Handshake} from 'lucide-react';
-
 import type {HomeContent, Locale} from '@/content/types';
 
 import {
@@ -7,6 +5,7 @@ import {
   renderHomeAudiencesMarkup,
 } from './home-deferred-markup';
 import {MathPlayground} from './math-playground';
+import {BookOpenText, Handshake} from './server-icons';
 import {Action, Callout, Container, DotPattern, Eyebrow, Section, SectionHeading} from './ui';
 
 export function HomePage({content, locale}: {content: HomeContent; locale: Locale}) {
@@ -52,7 +51,7 @@ export function HomePage({content, locale}: {content: HomeContent; locale: Local
         <Container>
           <article className="partnership-panel">
             <span aria-hidden="true" className="partnership-panel__icon">
-              <Handshake size={34} strokeWidth={1.9} />
+              <Handshake aria-hidden="true" size={34} strokeWidth={1.9} />
             </span>
             <div className="partnership-panel__copy">
               <Eyebrow>{content.partnership.eyebrow}</Eyebrow>
