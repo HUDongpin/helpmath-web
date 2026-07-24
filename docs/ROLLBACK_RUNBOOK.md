@@ -78,7 +78,7 @@ secret by itself.
    complete JSON plus timestamp. Confirm `failures: []`, then verify the
    specific incident path from an independent network. If executive access is
    still approved, test it only through the separate ephemeral-credential
-   procedure in `RELEASE_EVIDENCE.md`.
+   procedure in `EXECUTIVE_PREVIEW_HANDOFF.md`.
 7. If the rollback target fails the contract or preserves the incident, stop
    repeated blind promotions. Restore the last independently verified safe
    deployment or disable the affected feature at its fail-closed control,
@@ -105,7 +105,10 @@ It is separate from an application rollback.
 5. If the direct Apache mapping was changed, restore its backed-up virtual-host
    configuration, run the actual host's `httpd -t`, reload only after it passes,
    and retain the command result. Do not infer host correctness from the local
-   Apache workbench.
+   Apache workbench. For the five-path emergency action, remove only the
+   reviewed block or include described in
+   `ops/legacy-host/login-containment/README.md`; do not replace unrelated
+   legacy-host configuration with the full cutover package.
 
 ## Closure evidence
 

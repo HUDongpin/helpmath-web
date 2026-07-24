@@ -51,49 +51,65 @@ The following facts still require the meeting owner to record in
    UTC close time; never put the passphrase in the URL.
 3. Confirm unauthenticated demo, runtime, and image requests still return
    private, non-indexable `404` responses.
-4. Run one credentialed smoke and the one focused browser test from a private
-   operator shell. Read the passphrase without echoing it, pass it only to the
-   child processes, and remove it immediately afterward:
+4. Run the fail-closed credentialed operator check from a private operator
+   shell only after this check has merged to the current `main` commit. It
+   derives the current canonical Vercel Production identity, binds it to the
+   latest Vercel-bot-authored successful Production deployment from the fixed
+   private GitHub repository, and reads the two candidate identities from that
+   deployed commit. It then runs the credentialed release smoke, requires one
+   non-skipped Chromium result for the complete two-demo playback flow, checks
+   the Production and verifier identities again after playback, and emits only
+   a sanitized JSON result. Read the passphrase without echoing it, reject an
+   empty value, pass it only to the child process, and remove it immediately
+   afterward:
 
    ```zsh
    (
      set -e
      set +x
+     umask 077
      read -rs 'EXEC_KEY?Executive preview key: '; printf '\n'
-     PW_OUTPUT="$(mktemp -d /tmp/helpmath-executive-preview.XXXXXX)"
+     if [[ -z "$EXEC_KEY" ]]; then
+       printf 'Executive preview key is required.\n' >&2
+       exit 1
+     fi
      cleanup_preview_check() {
        unset EXEC_KEY
-       if [[ -n "${PW_OUTPUT:-}" ]]; then
-         rm -rf -- "$PW_OUTPUT"
-         unset PW_OUTPUT
-       fi
      }
      trap cleanup_preview_check EXIT
      trap 'exit 130' HUP INT TERM
 
-     EXPECT_EXECUTIVE_PREVIEW_STATE=login \
-     EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT=2026-07-28T15:59:00.000Z \
      SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
-       npm run smoke:production
-
-     PLAYWRIGHT_BASE_URL="https://www.helpmath.ai" \
-     PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
-       npx playwright test --project=chromium --output="$PW_OUTPUT" --grep \
-       'executive preview grants a short-lived private session'
+       npm run smoke:executive-preview
    )
    ```
 
    The parentheses create a disposable subshell, so the variable is removed
-   as soon as the two checks finish or either check is interrupted. Playwright
-   failures may capture a private demo screenshot; the exact `mktemp`
-   directory is therefore removed by the same trap and must never be uploaded
-   as an artifact.
+   as soon as the check finishes or is interrupted. The command refuses an
+   empty or weak value, a dirty worktree, a verifier commit other than the
+   exact current commit of `HUDongpin/helpmath-web` `main`, a Vercel/GitHub
+   identity mismatch, a deployment change during playback, a skipped browser
+   test, the wrong demo/resource counts, or any retained result containing
+   credential-shaped material.
 
-5. Retain only the non-secret outcome: checked commit, GitHub/Vercel deployment
-   references, UTC time, `executivePreviewState: "login"`, the exact
-   `executivePreviewExpiresAt`, the expected demo/image/runtime counts,
-   browser-test result, and `failures: []`. Do not retain a trace, browser
-   state, cookie, or command output containing credentials.
+   The check places its JUnit output, Playwright output, and child-process
+   temporary files in a private mode-`0700` directory. It terminates the active
+   child process group and removes that directory before emitting a passing
+   result on normal completion, handled failure, `SIGHUP`, `SIGINT`, or
+   `SIGTERM`. No local process can guarantee cleanup after `SIGKILL`, a host
+   crash, or power loss; if one occurs, the operator must remove any
+   `helpmath-executive-preview-*` directory from the system temporary
+   directory before rerunning. CI mode prevents retained Playwright
+   screenshots and traces.
+
+5. Retain only the emitted non-secret JSON outcome. It separately identifies
+   the target Production commit and exact current `main` verifier commit,
+   records the fixed repository and GitHub/Vercel deployment references, UTC
+   times, exact expiry, both deployed candidate identities, four localized
+   demo routes, 12 images, two runtimes, the single non-skipped browser result,
+   artifact-retention state, and `failures: []`. Do not retain a trace, browser
+   state, session value, raw child output, or command output containing private
+   operator input.
 6. Avoid repeated failed logins immediately before the meeting. The application
    and Vercel WAF intentionally rate-limit failures.
 

@@ -1,14 +1,10 @@
 import {
-  Archive,
   Building2,
-  CheckCircle2,
-  FileCheck2,
   Handshake,
   History,
   LifeBuoy,
   LockKeyhole,
   MonitorPlay,
-  SearchCheck,
   ShieldCheck
 } from 'lucide-react';
 
@@ -16,25 +12,24 @@ import type {
   AboutContent,
   ApproachContent,
   CurriculumContent,
-  EvidenceStatus,
   LegalContent,
   LoginContent,
+  Locale,
   ResearchContent,
-  ResourcesContent,
   SupportContent
 } from '@/content/types';
 import {FeatureGrid} from './feature-grid';
 import {PageHero} from './page-hero';
-import {ResourceLibrary} from './resource-library';
+import {renderResearchEvidenceMarkup} from './research-evidence-markup';
 import {TextSection} from './text-section';
 import {Action, Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
-export function AboutPage({content}: {content: AboutContent}) {
+export function AboutPage({content, locale}: {content: AboutContent; locale: Locale}) {
   const lineageIcons = [History, Building2, Handshake];
 
   return (
     <>
-      <PageHero content={content.hero} tone="yellow" />
+      <PageHero content={content.hero} locale={locale} tone="yellow" />
       <Section>
         <Container>
           {content.story.map((section) => (
@@ -96,10 +91,10 @@ export function AboutPage({content}: {content: AboutContent}) {
   );
 }
 
-export function ApproachPage({content}: {content: ApproachContent}) {
+export function ApproachPage({content, locale}: {content: ApproachContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="mint" />
+      <PageHero content={content.hero} locale={locale} tone="mint" />
       <Section>
         <Container>
           <SectionHeading
@@ -141,10 +136,10 @@ export function ApproachPage({content}: {content: ApproachContent}) {
   );
 }
 
-export function CurriculumPage({content}: {content: CurriculumContent}) {
+export function CurriculumPage({content, locale}: {content: CurriculumContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="blue" />
+      <PageHero content={content.hero} locale={locale} tone="blue" />
       <Section className="section--compact">
         <Container>
           <Callout {...content.archiveNotice} tone="yellow" />
@@ -201,17 +196,12 @@ export function CurriculumPage({content}: {content: CurriculumContent}) {
   );
 }
 
-const evidenceIcons: Record<EvidenceStatus, typeof Archive> = {
-  archived: Archive,
-  verification: SearchCheck,
-  context: FileCheck2,
-  verified: CheckCircle2
-};
+export function ResearchPage({content, locale}: {content: ResearchContent; locale: Locale}) {
+  const {entriesMarkup, indexMarkup} = renderResearchEvidenceMarkup(content.entries);
 
-export function ResearchPage({content}: {content: ResearchContent}) {
   return (
     <>
-      <PageHero content={content.hero} tone="yellow" />
+      <PageHero content={content.hero} locale={locale} tone="yellow" />
       <Section className="section--compact">
         <Container>
           <Callout {...content.evidenceNotice} tone="blue" />
@@ -220,49 +210,15 @@ export function ResearchPage({content}: {content: ResearchContent}) {
       <Section>
         <Container>
           <Eyebrow>{content.entriesLabel}</Eyebrow>
-          <nav aria-label={content.entriesLabel} className="evidence-index">
-            <ol>
-              {content.entries.map((entry) => (
-                <li key={entry.id}>
-                  <a href={`#${entry.id}`}>
-                    <span className={`status-badge status-badge--${entry.status}`}>
-                      {entry.statusLabel}
-                    </span>
-                    <span>{entry.title}</span>
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <div className="evidence-list">
-            {content.entries.map((entry) => {
-              const Icon = evidenceIcons[entry.status];
-              return (
-                <article className="evidence-entry" id={entry.id} key={entry.id}>
-                  <div className="evidence-entry__meta">
-                    <Icon aria-hidden="true" size={22} />
-                    <span className={`status-badge status-badge--${entry.status}`}>
-                      {entry.statusLabel}
-                    </span>
-                    <span>{entry.dateLabel}</span>
-                  </div>
-                  <div>
-                    <h2>{entry.title}</h2>
-                    <p>{entry.summary}</p>
-                    <p className="evidence-entry__interpretation">{entry.interpretation}</p>
-                    <p className="evidence-entry__source">{entry.sourceLabel}</p>
-                    {entry.sourceActions?.length ? (
-                      <div className="evidence-entry__actions">
-                        {entry.sourceActions.map((action) => (
-                          <Action action={action} key={action.href} kind="quiet" />
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          <nav
+            aria-label={content.entriesLabel}
+            className="evidence-index"
+            dangerouslySetInnerHTML={{__html: indexMarkup}}
+          />
+          <div
+            className="evidence-list"
+            dangerouslySetInnerHTML={{__html: entriesMarkup}}
+          />
         </Container>
       </Section>
       <Section className="surface-blue">
@@ -275,33 +231,10 @@ export function ResearchPage({content}: {content: ResearchContent}) {
   );
 }
 
-export function ResourcesPage({content}: {content: ResourcesContent}) {
+export function SupportPage({content, locale}: {content: SupportContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="mint" />
-      <Section className="section--compact">
-        <Container>
-          <Callout {...content.archiveNotice} tone="yellow" />
-        </Container>
-      </Section>
-      <Section>
-        <Container>
-          <ResourceLibrary filters={content.filters} items={content.items} />
-        </Container>
-      </Section>
-      <Section className="section--compact">
-        <Container>
-          <Callout {...content.accessibleCopies} tone="coral" />
-        </Container>
-      </Section>
-    </>
-  );
-}
-
-export function SupportPage({content}: {content: SupportContent}) {
-  return (
-    <>
-      <PageHero content={content.hero} tone="blue" />
+      <PageHero content={content.hero} locale={locale} tone="blue" />
       <Section>
         <Container>
           <SectionHeading
@@ -336,10 +269,10 @@ export function SupportPage({content}: {content: SupportContent}) {
   );
 }
 
-export function LoginPage({content}: {content: LoginContent}) {
+export function LoginPage({content, locale}: {content: LoginContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="coral">
+      <PageHero content={content.hero} locale={locale} tone="coral">
         <div className="login-visual" role="img" aria-label={content.alert.title}>
           <LockKeyhole aria-hidden="true" size={68} strokeWidth={1.7} />
           <span>HELP Math</span>
@@ -379,10 +312,10 @@ export function LoginPage({content}: {content: LoginContent}) {
   );
 }
 
-export function LegalPage({content}: {content: LegalContent}) {
+export function LegalPage({content, locale}: {content: LegalContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="blue" />
+      <PageHero content={content.hero} locale={locale} tone="blue" />
       <Section>
         <Container className="legal-layout">
           <aside className="legal-meta">

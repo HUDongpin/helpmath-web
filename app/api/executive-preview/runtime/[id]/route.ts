@@ -11,9 +11,10 @@ import {
   verifyExecutivePreviewSession,
 } from '@/lib/executive-preview-access';
 import {
-  EXECUTIVE_PREVIEW_RUNTIME_FILES,
-  serveExecutivePreviewResource,
+  isExecutivePreviewRuntimePublic,
+  serveExecutivePreviewRuntime,
 } from '@/lib/executive-preview-resources';
+import {getDemoLifecycleCatalog} from '@/lib/demo-lifecycle';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -33,11 +34,15 @@ async function serveRuntime(
   headOnly: boolean,
 ) {
   const {id} = await params;
-  return serveExecutivePreviewResource({
-    authorized: await isAuthorized(request),
-    contentType: 'application/javascript; charset=utf-8',
-    files: EXECUTIVE_PREVIEW_RUNTIME_FILES,
+  const publicDemoIds = getDemoLifecycleCatalog().publicIds;
+  const publiclyAccessible = isExecutivePreviewRuntimePublic(
+    id,
+    publicDemoIds,
+  );
+  return serveExecutivePreviewRuntime({
+    authorized: publiclyAccessible ? false : await isAuthorized(request),
     headOnly,
+    publicDemoIds,
     readFile,
     requestKey: id,
     root: path.join(

@@ -12,5 +12,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function CurriculumRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <MainContent><CurriculumPage content={getSiteContent(locale).pages.curriculum} /></MainContent>;
+  return <MainContent><CurriculumPage content={getSiteContent(locale).pages.curriculum} locale={locale} /></MainContent>;
 }

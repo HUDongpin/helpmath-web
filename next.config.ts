@@ -35,6 +35,10 @@ const draftLegalHeaders = DRAFT_LEGAL_PATHS.map((source) => ({
 }));
 
 const indexableDemoRouteSet = new Set(indexableDemoRoutes);
+const publicDemoRouteSet = new Set(demoRoutes);
+const privateOnlyReviewDemoRoutes = reviewDemoRoutes.filter(
+  (route) => !publicDemoRouteSet.has(route),
+);
 const conditionalDemoHeaders = demoRoutes
   .filter((route) => !indexableDemoRouteSet.has(route))
   .flatMap((route) => [route, `/es${route}`])
@@ -46,8 +50,8 @@ const conditionalDemoHeaders = demoRoutes
 const executivePreviewHeaders = [
   '/executive-preview',
   '/es/executive-preview',
-  ...reviewDemoRoutes,
-  ...reviewDemoRoutes.map((route) => `/es${route}`),
+  ...privateOnlyReviewDemoRoutes,
+  ...privateOnlyReviewDemoRoutes.map((route) => `/es${route}`),
   '/api/executive-preview/session',
   '/api/executive-preview/runtime/:path*',
   '/flash-assets/:path*',
@@ -69,6 +73,13 @@ const nonIndexableLegacyHeaders = nonIndexableLegacyPaths.map((source) => ({
   source,
   headers: [{key: 'X-Robots-Tag', value: 'noindex, nofollow'}]
 }));
+
+const staticMarketingPages: ReadonlyMap<string, string> = new Map([
+  ['/', 'home'],
+  ['/demos', 'demos'],
+  ['/research', 'research'],
+  ['/resources', 'resources'],
+] as const);
 
 export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () => [
   {source: '/favicon.ico', destination: '/icon.svg', permanent: true},
@@ -266,7 +277,7 @@ const nextConfig: NextConfig = {
   skipProxyUrlNormalize: true,
   skipTrailingSlashRedirect: true,
   outputFileTracingIncludes: {
-    '/api/executive-preview/assets/[...asset]': ['./private-demo-assets/**/*'],
+    '/api/executive-preview/assets/[...asset]': ['./private-demo-assets/**/*.png'],
     '/api/executive-preview/runtime/[id]': [
       './.next-private/executive-demo-runtime/*.js',
     ],
@@ -282,10 +293,27 @@ const nextConfig: NextConfig = {
   },
   redirects: legacyRedirects,
   async rewrites() {
-    return routablePagePaths.map((source) => ({
-      source,
-      destination: `/en${source === '/' ? '' : source}`,
-    }));
+    return [
+      ...[...staticMarketingPages].map(([source, page]) => ({
+        source: `/es${source === '/' ? '' : source}`,
+        destination: `/static/es/${page}`,
+      })),
+      ...routablePagePaths
+        .filter((source) => !source.startsWith('/demos/'))
+        .map((source) => {
+          const staticPage = staticMarketingPages.get(source);
+          return {
+            source,
+            destination: staticPage
+              ? `/static/en/${staticPage}`
+              : `/en${source === '/' ? '' : source}`,
+          };
+        }),
+      {
+        source: '/demos/:id',
+        destination: '/en/demos/:id',
+      },
+    ];
   },
 };
 

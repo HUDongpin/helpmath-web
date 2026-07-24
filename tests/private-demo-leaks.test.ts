@@ -7,6 +7,10 @@ import {
   findDemoClientLeaks,
   isPublicClientArtifactPath,
   isValidatedPublicLifecycleState,
+  loadBlockedPublicDemoDataArtifacts,
+  loadPublicDemoResponseArtifacts,
+  PUBLIC_DYNAMIC_DEMO_ROUTES,
+  publicDemoDataRoutes,
 } from '../scripts/check-private-demo-leaks.mjs';
 
 const runtimeBytes = Buffer.from('candidate-runtime-binary');
@@ -118,17 +122,30 @@ describe('lifecycle-aware demo client leak policy', () => {
   });
 
   it('rejects private runtime text, paths, and exact resource bytes', () => {
-    const {policy} = fixturePolicy('private-preview');
+    const {candidate, policy} = fixturePolicy('private-preview');
     const leaks = findDemoClientLeaks([
       {
         file: '.next/static/chunks/private.js',
-        contents: 'DEMO_A_RUNTIME_TEXT demos/modules/demo-a',
+        contents: [
+          'DEMO_A_RUNTIME_TEXT',
+          'demos/modules/demo-a',
+          '/demos/demo-a',
+          candidate.runtime.globalName,
+          '/api/executive-preview/runtime/demo-a.js',
+        ].join(' '),
       },
       {file: 'public/private-demo-assets/demo-a/picture.png', contents: runtimeBytes},
     ], policy);
 
     assert.ok(leaks.some((leak) => leak.category === 'inactive-runtime-text'));
     assert.ok(leaks.some((leak) => leak.category === 'inactive-runtime-file'));
+    for (const fingerprint of [
+      'candidate route',
+      'runtime global name',
+      'candidate runtime API',
+    ]) {
+      assert.ok(leaks.some((leak) => leak.fingerprint === fingerprint), fingerprint);
+    }
   });
 
   it('allows approved public runtime content but never approval metadata', () => {
@@ -214,5 +231,158 @@ describe('lifecycle-aware demo client leak policy', () => {
     assert.equal(isPublicClientArtifactPath('.next/server/app/en/page.js'), false);
     assert.equal(isPublicClientArtifactPath('.next/server/chunks/server-only.js'), false);
     assert.equal(isPublicClientArtifactPath('.next/prerender-manifest.json'), false);
+  });
+
+  it('scans both dynamic public demo HTML responses', async () => {
+    const requested: string[] = [];
+    const artifacts = await loadPublicDemoResponseArtifacts(
+      'http://127.0.0.1:3210',
+      async (input, init) => {
+        requested.push(String(input));
+        assert.equal(init?.redirect, 'manual');
+        assert.deepEqual(init?.headers, {Accept: 'text/html'});
+        assert.ok(init?.signal instanceof AbortSignal);
+        return new Response('<!doctype html><main>Public demo fixture</main>', {
+          headers: {'Content-Type': 'text/html; charset=utf-8'},
+          status: 200,
+        });
+      },
+    );
+
+    assert.deepEqual(PUBLIC_DYNAMIC_DEMO_ROUTES, ['/demos', '/es/demos']);
+    assert.deepEqual(requested, [
+      'http://127.0.0.1:3210/demos',
+      'http://127.0.0.1:3210/es/demos',
+    ]);
+    assert.deepEqual(
+      artifacts.map(({file}) => file),
+      ['http-response:/demos', 'http-response:/es/demos'],
+    );
+  });
+
+  it('fails closed when a dynamic public demo response cannot be scanned as HTML', async () => {
+    for (const response of [
+      new Response(null, {headers: {Location: '/login'}, status: 302}),
+      new Response('{}', {headers: {'Content-Type': 'application/json'}, status: 200}),
+      new Response(null, {headers: {'Content-Type': 'text/html'}, status: 200}),
+    ]) {
+      await assert.rejects(
+        loadPublicDemoResponseArtifacts(
+          'http://127.0.0.1:3210',
+          async () => response.clone(),
+        ),
+        /requires HTTP 200|requires HTML|empty body/u,
+      );
+    }
+
+    await assert.rejects(
+      loadPublicDemoResponseArtifacts(
+        'http://127.0.0.1:3210',
+        async () => {
+          throw new Error('fixture connection failure');
+        },
+      ),
+      /could not complete/u,
+    );
+  });
+
+  it('requires public and internal Pages data paths to return a fast protected 404', async () => {
+    const requested: string[] = [];
+    const artifacts = await loadBlockedPublicDemoDataArtifacts(
+      'http://127.0.0.1:3210',
+      'fixture-build_1',
+      async (input, init) => {
+        requested.push(String(input));
+        assert.equal(init?.redirect, 'manual');
+        assert.deepEqual(init?.headers, {Accept: 'application/json'});
+        assert.ok(init?.signal instanceof AbortSignal);
+        return new Response('blocked fixture', {
+          headers: {
+            'Cache-Control': 'private, no-store, max-age=0',
+            'X-Robots-Tag': 'noindex, nofollow, noarchive',
+          },
+          status: 404,
+        });
+      },
+    );
+
+    const expectedRoutes = [
+      '/_next/data/fixture-build_1/demos.json',
+      '/_next/data/fixture-build_1/es/demos.json',
+      '/_next/data/fixture-build_1/static/en/demos.json',
+      '/_next/data/fixture-build_1/static/es/demos.json',
+    ];
+    assert.deepEqual(publicDemoDataRoutes('fixture-build_1'), expectedRoutes);
+    assert.deepEqual(
+      requested,
+      expectedRoutes.map((route) => `http://127.0.0.1:3210${route}`),
+    );
+    assert.deepEqual(
+      artifacts.map(({file}) => file),
+      expectedRoutes.map((route) => `http-response:${route}`),
+    );
+    assert.throws(() => publicDemoDataRoutes(''), /valid Next\.js build ID/u);
+    assert.throws(() => publicDemoDataRoutes('../foreign'), /valid Next\.js build ID/u);
+  });
+
+  it('fails closed when a Pages data endpoint is reachable or lacks denial headers', async () => {
+    for (const response of [
+      new Response('{}', {status: 200}),
+      new Response(null, {
+        headers: {'X-Robots-Tag': 'noindex, nofollow, noarchive'},
+        status: 404,
+      }),
+      new Response(null, {
+        headers: {'Cache-Control': 'private, no-store, max-age=0'},
+        status: 404,
+      }),
+    ]) {
+      await assert.rejects(
+        loadBlockedPublicDemoDataArtifacts(
+          'http://127.0.0.1:3210',
+          'fixture-build',
+          async () => response.clone(),
+        ),
+        /requires HTTP 404|not private\/no-store|not noindex/u,
+      );
+    }
+
+    await assert.rejects(
+      loadBlockedPublicDemoDataArtifacts(
+        'http://127.0.0.1:3210',
+        'fixture-build',
+        async () => {
+          throw new Error('fixture connection failure');
+        },
+      ),
+      /could not complete/u,
+    );
+  });
+
+  it('detects candidate, approval, and SHA fingerprints in a dynamic demo response', () => {
+    const {candidate, policy} = fixturePolicy('private-preview');
+    const leaks = findDemoClientLeaks([{
+      file: 'http-response:/demos',
+      contents: [
+        candidate.candidateId,
+        candidate.artifactSha256,
+        'approvalRef',
+        'DEMO_A_RUNTIME_TEXT',
+      ].join(' '),
+    }], policy);
+
+    assert.ok(leaks.some((leak) => leak.category === 'inactive-runtime-text'));
+    assert.ok(leaks.some((leak) =>
+      leak.category === 'approval-metadata'
+      && leak.fingerprint === 'immutable candidate identity',
+    ));
+    assert.ok(leaks.some((leak) =>
+      leak.category === 'approval-metadata'
+      && leak.fingerprint === 'candidate aggregate SHA-256',
+    ));
+    assert.ok(leaks.some((leak) =>
+      leak.category === 'approval-metadata'
+      && leak.fingerprint === 'approval metadata field: approvalRef',
+    ));
   });
 });

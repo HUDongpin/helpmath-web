@@ -1,8 +1,14 @@
-import {Brand} from './site-header';
-import type {SharedContent} from '@/content/types';
-import {Link} from '@/i18n/navigation';
+import type {Locale, SharedContent} from '@/content/types';
 
-export function SiteFooter({content}: {content: SharedContent}) {
+import {Brand} from './brand';
+
+export function SiteFooter({
+  content,
+  locale,
+}: {
+  content: SharedContent;
+  locale: Locale;
+}) {
   const {footer, navigation} = content;
   const year = new Date().getUTCFullYear();
 
@@ -10,7 +16,10 @@ export function SiteFooter({content}: {content: SharedContent}) {
     <footer className="site-footer">
       <div className="container site-footer__grid">
         <div className="site-footer__about">
-          <Brand homeLabel={navigation.homeLabel} />
+          <Brand
+            homeHref={locale === 'es' ? '/es' : '/'}
+            homeLabel={navigation.homeLabel}
+          />
           <p>{footer.summary}</p>
           <p className="site-footer__language">{footer.languageNote}</p>
         </div>
@@ -19,7 +28,7 @@ export function SiteFooter({content}: {content: SharedContent}) {
           <ul>
             {footer.exploreLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href}>{link.label}</Link>
+                <a href={link.href}>{link.label}</a>
               </li>
             ))}
           </ul>
@@ -29,7 +38,7 @@ export function SiteFooter({content}: {content: SharedContent}) {
           <ul>
             {footer.helpLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href}>{link.label}</Link>
+                <a href={link.href}>{link.label}</a>
               </li>
             ))}
           </ul>

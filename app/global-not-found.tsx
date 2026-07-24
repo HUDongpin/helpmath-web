@@ -6,7 +6,6 @@ import {SiteFooter} from '@/components/site-footer';
 import {SiteHeader} from '@/components/site-header';
 import {getSiteContent} from '@/content';
 import type {Locale} from '@/content/types';
-import {LocaleProvider} from '@/i18n/navigation';
 
 import {nunitoSans} from './fonts';
 import './globals.css';
@@ -38,14 +37,12 @@ export default async function GlobalNotFound() {
   return (
     <html lang={locale}>
       <body className={nunitoSans.variable}>
-        <LocaleProvider locale={locale}>
-          <a className="skip-link" href="#main-content">
-            {content.skipToContent}
-          </a>
-          <SiteHeader content={content} languageSwitcherPath="/" locale={locale} />
-          <NotFoundPage locale={locale} />
-          <SiteFooter content={content} />
-        </LocaleProvider>
+        <a className="skip-link" href="#main-content">
+          {content.skipToContent}
+        </a>
+        <SiteHeader content={content} languageSwitcherPath="/" locale={locale} />
+        <NotFoundPage locale={locale} />
+        <SiteFooter content={content} locale={locale} />
       </body>
     </html>
   );

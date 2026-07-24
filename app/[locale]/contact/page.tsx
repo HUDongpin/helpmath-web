@@ -9,6 +9,8 @@ import {areContactManifestGatesApproved} from '@/lib/launch-gates';
 import {isLegalCopyReady} from '@/lib/legal-copy-readiness';
 import {createPageMetadata} from '@/lib/metadata';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({params}: {params: Promise<{locale: 'en' | 'es'}>}): Promise<Metadata> {
   const {locale} = await params;
   return createPageMetadata(locale, getSiteContent(locale).pages.contact.metadata, '/contact');
@@ -37,7 +39,7 @@ export default async function ContactRoute({params}: {params: Promise<{locale: '
 
   return (
     <MainContent>
-      <ContactPage content={content} form={form} />
+      <ContactPage content={content} form={form} locale={locale} />
     </MainContent>
   );
 }

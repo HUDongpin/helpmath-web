@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {it} from 'node:test';
 
-it('retains only blocker contracts and direct JSON from the two validated evidence directories', async () => {
+it('retains only blocker contracts and direct JSON from the three validated evidence directories', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'helpmath-vercel-ignore-'));
   try {
     await writeFile(path.join(root, '.gitignore'), await readFile('.vercelignore'));
@@ -19,6 +19,7 @@ it('retains only blocker contracts and direct JSON from the two validated eviden
       'docs/evidence/launch-gates/demo-rights.json',
       'docs/evidence/demo-publication/conversion-1-2-rights.json',
       'docs/evidence/demo-publication/conversion-1-4-product.json',
+      'docs/evidence/github-actions/quality-run-29921608812-attempt-1.json',
     ];
     const ignored = [
       'docs/unrelated.md',
@@ -33,6 +34,9 @@ it('retains only blocker contracts and direct JSON from the two validated eviden
       'docs/evidence/demo-publication/notes.md',
       'docs/evidence/demo-publication/.acceptance.json',
       'docs/evidence/demo-publication/nested/acceptance.json',
+      'docs/evidence/github-actions/notes.md',
+      'docs/evidence/github-actions/.token.json',
+      'docs/evidence/github-actions/nested/quality-run.json',
       'docs/evidence/unrelated/receipt.json',
     ];
     for (const relativePath of [...retained, ...ignored]) {

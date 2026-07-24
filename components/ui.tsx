@@ -1,7 +1,6 @@
 import type {ReactNode} from 'react';
-import {ArrowRight} from 'lucide-react';
 
-import {Link} from '@/i18n/navigation';
+import {ArrowRight} from './server-icons';
 
 type ActionLink = {
   href: string;
@@ -41,18 +40,28 @@ export function Eyebrow({children}: {children: ReactNode}) {
 export function Action({
   action,
   kind = 'primary',
-  className = ''
+  className = '',
+  navigation = 'client',
 }: {
   action: ActionLink;
   kind?: 'primary' | 'secondary' | 'quiet';
   className?: string;
+  navigation?: 'client' | 'document';
 }) {
-  return (
-    <Link className={`action action--${kind} ${className}`.trim()} href={action.href}>
+  const actionClassName = `action action--${kind} ${className}`.trim();
+  const usesDocumentNavigation = navigation === 'document';
+  const children = (
+    <>
       <span>{action.label}</span>
-      <ArrowRight aria-hidden="true" size={18} strokeWidth={2.4} />
-    </Link>
+      {usesDocumentNavigation ? (
+        <span aria-hidden="true" className="action__arrow">→</span>
+      ) : (
+        <ArrowRight aria-hidden="true" size={18} strokeWidth={2.4} />
+      )}
+    </>
   );
+
+  return <a className={actionClassName} href={action.href}>{children}</a>;
 }
 
 export function SectionHeading({

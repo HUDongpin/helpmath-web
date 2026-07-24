@@ -7,12 +7,7 @@ import {ResearchPage, SupportPage} from '../components/content-pages';
 import {MainContent} from '../components/main-content';
 import {Callout, Section} from '../components/ui';
 import {getSiteContent} from '../content';
-import {LocaleProvider} from '../i18n/navigation';
 
-const TestLocaleProvider = LocaleProvider as ComponentType<{
-  locale: 'en' | 'es';
-  children?: ReactNode;
-}>;
 const TestSection = Section as ComponentType<{
   ariaLabelledBy?: string;
   children?: ReactNode;
@@ -56,11 +51,7 @@ describe('section and callout semantics', () => {
     for (const locale of ['en', 'es'] as const) {
       const content = getSiteContent(locale).pages.support;
       const html = renderToStaticMarkup(
-        createElement(
-          TestLocaleProvider,
-          {locale},
-          createElement(SupportPage, {content}),
-        ),
+        createElement(SupportPage, {content, locale}),
       );
 
       assert.match(
@@ -83,11 +74,7 @@ describe('section and callout semantics', () => {
     for (const locale of ['en', 'es'] as const) {
       const content = getSiteContent(locale).pages.research;
       const html = renderToStaticMarkup(
-        createElement(
-          TestLocaleProvider,
-          {locale},
-          createElement(ResearchPage, {content}),
-        ),
+        createElement(ResearchPage, {content, locale}),
       );
 
       assert.match(

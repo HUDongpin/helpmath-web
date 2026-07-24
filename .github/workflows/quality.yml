@@ -24,13 +24,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Enforce launch-gate transition history
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: npm run check:launch-gate-transition
       - run: npm run check:generated
       - run: npm run lint
       - run: npm run typecheck
@@ -72,8 +75,21 @@ jobs:
           retention-days: 30
 
   lighthouse:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Private ubuntu-latest runners have two vCPUs, while this strict mobile
+    # performance gate was calibrated on four-core hosted hardware. Pin the
+    # standard four-core Intel runner so runner capacity does not masquerade
+    # as a product regression. A runner whose per-route median benchmark falls
+    # at or below Lighthouse's own slow-host boundary, or has more than one
+    # slow sample on a route, is ineligible. Five balanced rounds rotate every
+    # route through every temporal position so runner startup and tail windows
+    # cannot be assigned permanently to one page. The whole Quality workflow
+    # may then be rerun once on a fresh runner; an eligible product-budget
+    # failure is never retried.
+    runs-on: macos-15-intel
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -84,20 +100,108 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Authorize Lighthouse workflow attempt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Pull-request jobs report this source SHA through the Jobs API while
+          # GITHUB_SHA identifies the synthetic merge commit being checked out.
+          QUALITY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p artifacts/lighthouse-rerun
+          prior_job_log_path="$RUNNER_TEMP/lighthouse-attempt-1.log"
+          fetch_github_api() {
+            local endpoint="$1"
+            local output_path="$2"
+            local fetch_attempt
+            for fetch_attempt in 1 2 3 4; do
+              if gh api \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "$endpoint" > "$output_path"; then
+                return 0
+              fi
+              if [[ "$fetch_attempt" == "4" ]]; then
+                return 1
+              fi
+              sleep 3
+            done
+          }
+          if [[ "$GITHUB_RUN_ATTEMPT" == "2" ]]; then
+            fetch_github_api \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/1/jobs?per_page=100" \
+              artifacts/lighthouse-rerun/attempt-1-jobs.json
+            prior_lighthouse_job_id="$(
+              node --input-type=module -e "
+                import {readFileSync} from 'node:fs';
+                const envelope = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+                const jobs = envelope.jobs?.filter(job => job?.name === 'lighthouse') ?? [];
+                if (
+                  jobs.length !== 1 ||
+                  !Number.isSafeInteger(jobs[0].id) ||
+                  jobs[0].id <= 0
+                ) process.exit(1);
+                process.stdout.write(String(jobs[0].id));
+              " artifacts/lighthouse-rerun/attempt-1-jobs.json
+            )"
+            fetch_github_api \
+              "repos/$GITHUB_REPOSITORY/actions/jobs/$prior_lighthouse_job_id/logs" \
+              "$prior_job_log_path"
+            for poll_attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              if ! fetch_github_api \
+                "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/2/jobs?per_page=100" \
+                artifacts/lighthouse-rerun/attempt-2-jobs.json; then
+                if [[ "$poll_attempt" == "12" ]]; then
+                  echo "Attempt-two Quality jobs API remained unavailable." >&2
+                  exit 1
+                fi
+                sleep 5
+                continue
+              fi
+              if node -e \
+                "const e=require('./artifacts/lighthouse-rerun/attempt-2-jobs.json'); process.exit(e.jobs?.length === 3 ? 0 : 1)"; then
+                break
+              fi
+              if [[ "$poll_attempt" == "12" ]]; then
+                echo "All three Quality jobs did not appear within the authorization window." >&2
+                exit 1
+              fi
+              sleep 5
+            done
+          fi
+          node scripts/lighthouse-run-policy.mjs authorize-attempt \
+            artifacts/lighthouse-rerun \
+            "$prior_job_log_path"
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Use Playwright Chromium for Lighthouse
         shell: bash
         run: |
           chromium_path="$(node --input-type=module -e "import {chromium} from '@playwright/test'; process.stdout.write(chromium.executablePath())")"
           echo "CHROME_PATH=$chromium_path" >> "$GITHUB_ENV"
       - name: Enforce Lighthouse performance budgets
+        id: lighthouse_assertions
+        continue-on-error: true
         run: npm run test:lighthouse
+      - name: Classify Lighthouse runner capacity
+        id: environment
+        if: ${{ !cancelled() }}
+        env:
+          QUALITY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/lighthouse-run-policy.mjs classify artifacts/lighthouse-ci
+      - name: Enforce eligible Lighthouse verdict
+        if: ${{ !cancelled() }}
+        env:
+          QUALITY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUNNER_ELIGIBLE: ${{ steps.environment.outputs.eligible }}
+          LIGHTHOUSE_ASSERTION_OUTCOME: ${{ steps.lighthouse_assertions.outcome }}
+        run: node scripts/lighthouse-run-policy.mjs verdict artifacts/lighthouse-ci
       - name: Retain Lighthouse reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lighthouse-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/lighthouse-ci
+          path: |
+            artifacts/lighthouse-ci
+            artifacts/lighthouse-rerun
           if-no-files-found: warn
           retention-days: 30

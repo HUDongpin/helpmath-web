@@ -17,8 +17,42 @@ Follow [`LAUNCH_GATE_EVIDENCE.md`](./LAUNCH_GATE_EVIDENCE.md) for the non-secret
 envelope contract and required follow-up lifecycle work. The manifest makes
 unresolved state fail closed; it does not authenticate an approver or replace
 counsel, rights-owner, provider, DNS, mail, or release evidence. Do not change a
-gate away from `holding` until a separate reviewed change removes the code-level
-transition lock and implements every listed intermediate and terminal state.
+schema-v2 gate away from `holding`, and do not replace the manifest with schema
+v3, until a separate reviewed adoption change is authorized.
+
+## Schema status and decision authority
+
+The real checked-in manifest remains schema version 2 with all five gates
+`holding`. Every `Pending` field below is still unresolved. The schema-v3
+implementation supplies a fail-closed mechanism for a later authorized
+workflow; its code, tests, documentation, or deployment do not themselves
+record an owner decision or create approval.
+
+When schema v3 is separately adopted, each gate starts with an append-only
+`holding` event. An operator may append a `candidate` for an exact repository
+commit, exact deployment where required, intended disposition, and window of
+no more than seven days. Only the authority fixed for that gate may append the
+matching `approved`, `disabled`, or `private` decision with the exact fixed-scope
+evidence and dependency decision IDs. Later events may renew a still-valid
+decision with fresh evidence, explicitly revoke it, or reopen an expired or
+revoked gate; prior events and decisions remain immutable.
+
+The optional safe dispositions do not authorize their public features:
+
+- `contactIntake=disabled` keeps the contact page unavailable and API closed.
+  It is an accepted dependency disposition for cutover and release, but each
+  downstream decision additionally requires fresh deployment evidence that
+  intake remains disabled and an alternative support channel works.
+- `demoPublication=private` keeps anonymous demo routes, runtimes, assets, and
+  public activation closed. It may be an accepted dependency disposition for
+  release, but is not rights clearance or product acceptance.
+
+An expired candidate cannot be approved. An expired resolved decision becomes
+ineffective and dependent capabilities fail closed. Renew before expiry with
+fresh evidence; after expiry, append an explicit revocation with containment
+evidence and then reopen a new candidate. Use the same revocation path whenever
+an approved capability must be withdrawn. Never infer, fabricate, or pre-fill
+the identity, authority, decision, evidence, or timestamp.
 
 ## Operational holding state while decisions are open
 
@@ -97,10 +131,12 @@ record only completion and test evidence here, never their values:
 - `SUPPORT_TO_EMAIL`
 - `SUPPORT_FROM_EMAIL`
 
-The sender domain must be verified without replacing existing MX, SPF, DKIM,
-DMARC, or ownership-verification records. Record a real end-to-end delivery
-test, Reply-To test, abuse rejection test, and approver before enabling the
-form.
+The sender domain and complete readiness plan must be verified without replacing
+existing MX, SPF, DKIM, DMARC, or ownership-verification records before
+`contactIntake` is approved. Only after that approval may the exact reviewed
+Production deployment enable the form and run the real end-to-end delivery,
+Reply-To, and abuse-control tests. Record those post-activation results before
+legacy cutover, and disable or roll back intake if any required result fails.
 
 ## 3. Rights and public demo approval
 
@@ -178,7 +214,7 @@ session cookie here.
 | Public discoverability of the restricted review entry | The public Demos status page may link only to the locale-specific bare entry/status route. The route fails closed outside an approved review window and must not expose a passphrase, session value, direct demo route, runtime, asset path, or demo content; it does not change the demos' private publication status. | Engineering implementation under the named-executive review request / 2026-07-22 |
 | Review start and absolute expiry time | Configured for the Production review. Production closes `2026-07-28T15:59:00Z` (`2026-07-28 23:59` China Standard Time). `config/executive-preview-window.json` enforces that timestamp for Production, Preview, missing, and unknown deployment contexts while allowing an earlier safe close; only exact local `development` may use a later test fixture. The credential-free scheduled lifecycle smoke checks the boundary every six hours. | Engineering configuration and repository enforcement / 2026-07-22 |
 | Private channel used to deliver the access passphrase | Pending (channel name only; never the value). Follow `EXECUTIVE_PREVIEW_HANDOFF.md`. | Pending |
-| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented and covered by unit and local browser checks. An earlier credentialed production check validated both entries, 12 private images, and 2 private runtimes, but the current production commit's retained smoke did not request authentication and no raw current-commit credentialed result was retained. Repeat the private check in `EXECUTIVE_PREVIEW_HANDOFF.md` before the CEO review. | Engineering verification and evidence clarification / 2026-07-21 |
+| Confirm session maximum is 12 hours and bounded by the global expiry | Implemented and covered by unit and local browser checks. After rotating both Production credentials and redeploying current `main` on 2026-07-23, a private browser verification used the new access key successfully, confirmed exactly two Executive Preview cards, and opened both `conversion-1-2` and `conversion-1-4` with one Play control each. No credential value, cookie, screenshot, or raw private payload was retained. This is a focused operator observation, not the complete fail-closed credentialed smoke artifact required by `EXECUTIVE_PREVIEW_HANDOFF.md`; run that check after its implementation is merged to the exact current Production commit and before the CEO review. | Engineering Production verification / 2026-07-23 |
 | Vercel WAF rate limit on executive session POST (IP, 15 requests / 10 minutes, default `429`) | Published rule `rule_executive_preview_session_post_limit_e7i95N`: exact path + POST, fixed window, IP, 15 requests / 600 seconds, default rate-limit action. In the production probe, requests 1–7 received the application’s expected `303`, request 8 onward received `429`, request 16 received `429`, and a follow-up edge response included `X-Vercel-Mitigated: deny`. Application defense in depth separately blocks the eighth failed attempt per warm instance. | Engineering configuration and production verification / 2026-07-21 |
 | Post-meeting action: disable access or rotate passphrase and signing secret | Pending. The default close and verification procedure is in `EXECUTIVE_PREVIEW_HANDOFF.md`. | Pending |
 | Confirm no recording, forwarding, republication, or public presentation was authorized | Pending. Obtain and record the recipient's acknowledgement using `EXECUTIVE_PREVIEW_HANDOFF.md`; never store the passphrase or cookie. | Pending |
@@ -202,7 +238,8 @@ file, shell history, retained command output, or this record.
 | GitHub Pro upgrade for required PR checks on the private repository, or documented manual control | Pending | Pending |
 | Release owner and rollback owner | Pending | Pending |
 | Most recent application release baseline (historical evidence gaps disclosed) | Progressive-navigation release commit `f29d7e003811e78b58e482d113bba56fa4f808e1`; GitHub/Vercel Production deployment `5555746655` / `EfquxEu2Y5o8BRYrvzpGJV5WJhmN`; Production Quality run `29921608812` and production smoke run `29921664873` passed; authenticated alias evidence is `docs/evidence/vercel-production-alias-2026-07-22-pr39.json`. `docs/releases/2026-07-22-pr39.md` records the exact candidate, protected Preview, Production, canonical alias binding, 105-case cross-browser matrix (104 passed and one intentional skip), eight visual baselines, five-route Lighthouse budgets, localized no-JavaScript mobile navigation, visible current-page states, private/public demo boundary, and zero-failure public smoke. The Avenir-first and landmark releases remain separately retained in `docs/releases/2026-07-22-pr36.md` and `docs/releases/2026-07-22-pr37.md`. Remaining gaps include protected-Preview semantic smoke, current authenticated playback, a real-device Safari Full Keyboard Access spot check, and off-device archive custody. Each later formal release must retain its own successful PR/Vercel evidence rather than silently overwriting this baseline. | Engineering release / 2026-07-22 |
-| Current deployed application observation (not a formal release baseline) | PR #55 candidate `c079c5464efa04d5aa592054a14fdf9b91f0ddc4`, merged Production commit `a6b8526322a435945e7a15217e88dc0e351542cb`, GitHub deployment/status `5569638089` / `15835250112`, and Vercel Production deployment/build `dpl_BmmGxrLEwrrE9TbCii31Qu2wksU7` / `bld_e9ag27u1c` are current. Owner-authenticated Vercel CLI `56.5.0` inspection resolved `www.helpmath.ai`, `helpmath.ai`, and `helpmath-web.vercel.app` to that exact `READY` deployment at immutable URL `https://helpmath-h81v7wiax-peter-dongpin-hu-s-projects.vercel.app`; the protected Preview `dpl_C3LoK998ohGKCD13bKN33QmejRXo` / `bld_m3stwl9mx` was also `READY` on the exact candidate. This release updates only Resend `6.17.2` to `6.18.0` and its `postal-mime` dependency `2.7.4` to `2.7.5`; React and ReactDOM remain pinned at `19.2.7` so the two immutable Executive Preview bundle digests and candidate identities remain unchanged. Local release validation passed 235 unit/contract tests, 16 release-smoke helper tests, 23 custody checks, the 38-route build, eight visual baselines, 117 browser tests with one intentional skip, all 15 Lighthouse runs across five routes, and the production dependency audit with zero known vulnerabilities. Post-deployment public smoke checked 20 pages, 54 internal links, 11 legacy redirects, eight domain cases, two private demos, 12 private assets, two private runtimes, the login-state Executive Preview closing `2026-07-28T15:59:00.000Z`, and returned `failures: []`. Candidate Quality run `29992984691`, Production Quality run `29993330695`, and automated Production-smoke run `29993394018` failed with `steps: []` because GitHub reported an account billing/spending problem; the authenticated Executive Preview was not requested in the retained public smoke. The observation is therefore not promoted into `docs/releases/`, has no automated Production-smoke artifact, does not prove current credentialed Executive Preview playback, and does not supersede PR #39 as the latest formal retained release baseline. | Engineering deployment observation / 2026-07-23 |
+| Superseded deployed application observation (not a formal release baseline) | PR #55 candidate `c079c5464efa04d5aa592054a14fdf9b91f0ddc4`, merged Production commit `a6b8526322a435945e7a15217e88dc0e351542cb`, GitHub deployment/status `5569638089` / `15835250112`, and Vercel Production deployment/build `dpl_BmmGxrLEwrrE9TbCii31Qu2wksU7` / `bld_e9ag27u1c` were observed before the credential rotation below. Owner-authenticated Vercel CLI `56.5.0` inspection resolved `www.helpmath.ai`, `helpmath.ai`, and `helpmath-web.vercel.app` to that exact `READY` deployment at immutable URL `https://helpmath-h81v7wiax-peter-dongpin-hu-s-projects.vercel.app`; the protected Preview `dpl_C3LoK998ohGKCD13bKN33QmejRXo` / `bld_m3stwl9mx` was also `READY` on the exact candidate. This release updates only Resend `6.17.2` to `6.18.0` and its `postal-mime` dependency `2.7.4` to `2.7.5`; React and ReactDOM remain pinned at `19.2.7` so the two immutable Executive Preview bundle digests and candidate identities remain unchanged. Local release validation passed 235 unit/contract tests, 16 release-smoke helper tests, 23 custody checks, the 38-route build, eight visual baselines, 117 browser tests with one intentional skip, all 15 Lighthouse runs across five routes, and the production dependency audit with zero known vulnerabilities. Post-deployment public smoke checked 20 pages, 54 internal links, 11 legacy redirects, eight domain cases, two private demos, 12 private assets, two private runtimes, the login-state Executive Preview closing `2026-07-28T15:59:00.000Z`, and returned `failures: []`. Candidate Quality run `29992984691`, Production Quality run `29993330695`, and automated Production-smoke run `29993394018` failed with `steps: []` because GitHub reported an account billing/spending problem; the authenticated Executive Preview was not requested in the retained public smoke. The observation was not promoted into `docs/releases/` and does not supersede PR #39 as the latest formal retained release baseline. | Engineering deployment observation / 2026-07-23 |
+| Current Production credential-rotation observation (not a formal release baseline) | At `2026-07-23T14:14:15Z`, the Production `EXECUTIVE_PREVIEW_ACCESS_KEY` and `EXECUTIVE_PREVIEW_SESSION_SECRET` were both rotated without retaining their values, and current `main` commit `237cc0004f18e11931632572a924d7c4a7324bf6` was rebuilt as Vercel deployment `dpl_3So28mxXgSZ4K1dHPej2SBzyEb1D`. Vercel reported `READY`, `Current`, and `www.helpmath.ai` assigned; GitHub deployment/status `5573978170` / `15847790099` recorded Production success at immutable URL `https://helpmath-c3dural3p-peter-dongpin-hu-s-projects.vercel.app`. A private browser check at `2026-07-23T14:16:21Z` authenticated with the new access key, displayed exactly two prototype cards, and opened both assigned demo routes with their Play controls. The access key was delivered only to the local browser clipboard and then removed from the automation process; no value, cookie, screenshot, or private payload was retained. Automated Production-smoke run `30014871064` failed before executing any step (`steps: []`) under the existing GitHub account billing/spending block, so this focused check is not a replacement for the complete retained operator smoke, does not authorize public demos, and does not promote this deployment to a formal release baseline. | Engineering credential rotation and Production verification / 2026-07-23 |
 
 Until private-repository branch protection is available, every production
 change should still use a PR, wait for the complete `Quality` workflow, and
@@ -220,7 +257,7 @@ Complete the operational details in `LEGACY_CUTOVER.md` and record:
 | MX/SPF/DKIM/DMARC and mailbox continuity owner | Pending | Pending |
 | Cutover window, timezone, monitoring window, and rollback threshold | Pending | Pending |
 | Google Search Console owners for both domains | Pending | Pending |
-| Whether `/Sales.htm` should end at `/contact` or `/resources` | Pending | Pending |
+| Whether `/Sales.htm` should end at `/contact` or `/resources` (`/resources` is mandatory when contact is disabled) | Pending | Pending |
 | Final destination for the broken historical partnership PDF | Pending | Pending |
 
 Do not call the domain migration complete until old apex and `www`, HTTP and
@@ -238,8 +275,8 @@ mail continuity, and Search Console checks all have retained evidence.
 | Production release | Pending | Pending | Pending |
 
 Completing a row records an external decision but does not unlock the current
-manifest. Only after a separate reviewed lifecycle implementation removes the
-holding-only transition lock may a later change update the matching gate. Do
-not delete `Pending` text or set a gate to `approved` in anticipation of
-evidence. `productionLaunch` remains `holding` while the lock is active or any
-required decision is unresolved.
+schema-v2 manifest. Only a separately reviewed adoption of a valid schema-v3
+append-only history may later record the matching gate candidate and decision.
+Do not delete `Pending` text, append a candidate, or set a gate to `approved`
+in anticipation of evidence. `productionLaunch` remains `holding` while the
+current manifest is schema v2 or any required decision is unresolved.

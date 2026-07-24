@@ -8,6 +8,7 @@ import {
 } from './launch-gate-policy';
 import {inspectForSensitiveContent} from './sensitive-content';
 import {validateHoldingOnlyLaunchGateManifest} from './launch-gate-transition-lock.js';
+import {validateLaunchGateLifecycleManifestV3} from './launch-gate-lifecycle-v3';
 
 type JsonObject = Record<string, unknown>;
 
@@ -149,6 +150,10 @@ export function validateLaunchGateManifest(
   value: unknown,
   options: LaunchGateManifestValidationOptions = {},
 ): string[] {
+  if (isObject(value) && value.schemaVersion === 3) {
+    return validateLaunchGateLifecycleManifestV3(value, options);
+  }
+
   const errors: string[] = [];
   const nowMs = options.nowMs ?? Date.now();
   if (!isObject(value)) return ['manifest must be an object'];

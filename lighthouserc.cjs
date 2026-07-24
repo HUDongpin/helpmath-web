@@ -1,4 +1,16 @@
 const kilobytes = value => value * 1024;
+const lighthouseOrigin = 'http://127.0.0.1:3216';
+const reviewedRoutes = ['/', '/es', '/research', '/resources', '/demos'];
+
+// Rotate the first route once per round so every route occupies every temporal
+// position exactly once. LHCI still launches a fresh Lighthouse/Chrome process
+// for each sample, but no route is permanently assigned to the runner's cold
+// start or final measurement window.
+const collectionOrder = reviewedRoutes.flatMap((_, round) =>
+  reviewedRoutes.map(
+    (_, offset) => reviewedRoutes[(round + offset) % reviewedRoutes.length],
+  ),
+);
 
 module.exports = {
   ci: {
@@ -7,14 +19,10 @@ module.exports = {
         'npm run start -- --hostname 127.0.0.1 --port 3216',
       startServerReadyPattern: 'Ready in',
       startServerReadyTimeout: 30_000,
-      url: [
-        'http://127.0.0.1:3216/',
-        'http://127.0.0.1:3216/es',
-        'http://127.0.0.1:3216/research',
-        'http://127.0.0.1:3216/resources',
-        'http://127.0.0.1:3216/demos',
-      ],
-      numberOfRuns: 3,
+      url: collectionOrder.map(route => `${lighthouseOrigin}${route}`),
+      // The URL list contains five balanced rounds, so one LHCI run per entry
+      // still produces exactly five fresh samples for every reviewed route.
+      numberOfRuns: 1,
       settings: {
         chromeFlags: '--no-sandbox --disable-dev-shm-usage',
       },

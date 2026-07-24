@@ -1,17 +1,74 @@
 # Deployment runbook
 
+## Production source boundary
+
+The only authorized deployment source for `helpmath.ai` is the private
+`HUDongpin/helpmath-web` repository with **Root Directory** set to the
+repository root. The separate `HELP MATH_Flash_To_JS/apps/web` application is
+an internal migration workbench, not a second production website. Never attach
+that workbench to the production Vercel project, `www.helpmath.ai`, or
+`helpmath.ai`. If it needs remote review, use a separate protected Preview-only
+project with no canonical-domain aliases.
+
+Before accepting any Preview or Production evidence, confirm both the fixed
+GitHub repository identity and the Vercel project identity. A successful build
+from another repository, root directory, or Vercel project is not release
+evidence and must not be promoted.
+
 ## Release gate
 
 The repository gate manifest is `config/launch-gates.json`. Both `npm test`
-and `npm run build` validate it before continuing. This revision has a
-code-level holding-only transition lock: all five gates must remain exactly
-`holding`, and neither manifest edits nor environment variables can unlock
-them. The validator also enforces canonical manifest bytes and rejects future
-or inconsistent approval data, arbitrary Markdown evidence, unsafe paths,
-symbolic files, credential-shaped content, and a build with
-`NEXT_PUBLIC_CONTACT_ENABLED=true`. The typed evidence shapes in
+and `npm run build` validate it before continuing. The checked-in manifest is
+schema version 2, whose code-level contract is holding-only: all five gates
+must remain exactly `holding`, and neither manifest edits nor environment
+variables can unlock them. The validator also enforces canonical manifest
+bytes and rejects future or inconsistent approval data, arbitrary Markdown
+evidence, unsafe paths, symbolic files, credential-shaped content, and a build
+with `NEXT_PUBLIC_CONTACT_ENABLED=true`. The typed evidence shapes in
 [`LAUNCH_GATE_EVIDENCE.md`](./LAUNCH_GATE_EVIDENCE.md) are preparatory and do
 not authorize a status change. Record the manifest SHA-256 in release evidence.
+
+### Schema-v3 operator workflow
+
+The schema-v3 lifecycle is available only after a separately authorized,
+reviewed manifest-adoption change. Adding lifecycle code does not migrate the
+current schema-v2 manifest and does not create an approval. For an adopted
+schema-v3 release:
+
+1. Preserve the complete event history. Append a `candidate` naming its allowed
+   target disposition and binding the exact release commit and Vercel
+   deployment where required. Its window may not exceed seven days.
+2. Generate only the evidence kinds fixed for that gate and disposition. Each
+   envelope must cover its code-defined subject scope, exact digest, dependency
+   decision IDs, authority, checks, commit, deployment, and validity window.
+3. Have the actual named authority append the matching decision while the
+   candidate and every evidence item are valid. CI can reject bad structure; it
+   cannot make the decision.
+4. Treat `contactIntake=disabled` and `demoPublication=private` as safe
+   dependency dispositions only. The former keeps contact intake off and
+   requires a working alternative support channel and `/Sales.htm` cutover to
+   `/resources`; the latter keeps anonymous demo routes and assets closed.
+   Neither disposition enables its public capability.
+5. Promote or execute a change only when the resolved runtime capabilities,
+   dependency chain, candidate identity, and Production checks all pass. A
+   resolved label without an active decision is insufficient.
+6. Renew before expiry by appending a superseding decision backed by fresh
+   evidence. On expiry, fail closed, append an explicit revocation with
+   containment evidence, and then reopen a new candidate. Use the same
+   revocation path on incident or withdrawal of authority. Never edit or delete
+   an earlier event.
+
+CI enforces the append-only history range. Pull requests compare merge base to
+`HEAD`; pushes must supply the exact nonzero GitHub event `before` SHA and are
+checked across the full push range. A schema-v3 change may append at most one
+event to one gate per comparison. Missing or invalid baselines, multiple
+appended events, edits to prior events, backdated events, and decisions
+recorded at or after the previous expiry all fail closed.
+`workflow_dispatch` has no trusted transition range, so it skips only this
+history comparison and still runs all other validation, tests, and builds.
+
+The current real manifest and decision record remain schema v2, all
+`holding`/`Pending`; this workflow is not a release authorization.
 
 1. Require the GitHub `Quality` workflow on `main`.
 2. Review Privacy and Terms with the project owner or qualified counsel.
@@ -31,11 +88,11 @@ not authorize a status change. Record the manifest SHA-256 in release evidence.
    navigation, private-demo route/asset boundary, metadata, accessibility, and
    raw-Flash 404 probes pass.
 
-Changing a launch-gate status is currently forbidden. Demo candidates and
-inactive activation records are modeled separately, but a later reviewed
-transition-lock change must keep legal publishing, contact intake, demos,
-cutover, and release consumers fail closed throughout each approval and
-activation transition.
+Changing a gate in the current schema-v2 manifest is forbidden. Demo candidates
+and inactive activation records are modeled separately. Any reviewed schema-v3
+adoption and later activation must keep legal publishing, contact intake,
+demos, cutover, and release consumers fail closed throughout each candidate,
+decision, expiry, renewal, revocation, and activation transition.
 
 After promotion, run `npm run smoke:production` against the canonical domain.
 This checks the exact sitemap set, metadata and reciprocal language alternates,
@@ -141,6 +198,10 @@ JavaScript runtime bundles or PNG derivatives from server-only directories.
 The obsolete `/flash-assets/` URLs remain closed.
 Entry, demo, runtime, and asset responses retain private/no-store and
 `noindex`, `nofollow`, `noarchive` boundaries.
+The two HTML entry routes are intentionally crawlable so search engines can
+read those `noindex` directives; `robots.txt` must not block them. This does
+not grant access to either prototype: the session, runtime, asset, and
+server-component checks remain unchanged, and `/api/` remains disallowed.
 
 Sessions last at most 12 hours and never outlive the absolute
 `EXECUTIVE_PREVIEW_EXPIRES_AT` value or the reviewed Production ceiling in

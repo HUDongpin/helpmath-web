@@ -1,7 +1,8 @@
 import path from 'node:path';
 
 import {demoIds, reviewDemoIds, type DemoId} from '@/demos/catalog';
-import {demoCandidates} from '@/demos/candidates';
+import {DEMO_CANDIDATE_IDS, demoCandidates} from '@/demos/candidates';
+import {getDemoLifecycleCatalog} from '@/lib/demo-lifecycle';
 
 export const EXECUTIVE_PREVIEW_PRIVATE_HEADERS = {
   'Cache-Control': 'private, no-store, max-age=0',
@@ -11,15 +12,22 @@ export const EXECUTIVE_PREVIEW_PRIVATE_HEADERS = {
   'X-Robots-Tag': 'noindex, nofollow, noarchive',
 } as const;
 
-export const PUBLIC_DEMO_ASSET_HEADERS = {
-  'Cache-Control': 'public, max-age=0, must-revalidate',
+export const PUBLIC_DEMO_RESOURCE_HEADERS = {
+  'Cache-Control': 'private, no-store, max-age=0',
   'Cross-Origin-Resource-Policy': 'same-origin',
   'X-Content-Type-Options': 'nosniff',
 } as const;
 
+export const PUBLIC_DEMO_ASSET_HEADERS = PUBLIC_DEMO_RESOURCE_HEADERS;
+
 export const EXECUTIVE_PREVIEW_RUNTIME_FILES: Readonly<Record<string, string>> =
   Object.freeze(Object.fromEntries(
-    reviewDemoIds.map((id) => [`${id}.js`, `${id}.js`]),
+    DEMO_CANDIDATE_IDS.map((id) => [`${id}.js`, `${id}.js`]),
+  ));
+
+export const EXECUTIVE_PREVIEW_RUNTIME_OWNERS: Readonly<Record<string, DemoId>> =
+  Object.freeze(Object.fromEntries(
+    DEMO_CANDIDATE_IDS.map((id) => [`${id}.js`, id]),
   ));
 
 const PRIVATE_ASSET_PREFIX = 'private-demo-assets/';
@@ -62,6 +70,13 @@ type ServeExecutivePreviewResourceOptions = {
 };
 
 type ServeExecutivePreviewAssetOptions = Omit<
+  ServeExecutivePreviewResourceOptions,
+  'contentType' | 'files'
+> & {
+  publicDemoIds?: readonly DemoId[];
+};
+
+type ServeExecutivePreviewRuntimeOptions = Omit<
   ServeExecutivePreviewResourceOptions,
   'contentType' | 'files'
 > & {
@@ -138,7 +153,7 @@ export async function serveExecutivePreviewResource({
 
 export function isExecutivePreviewAssetPublic(
   requestKey: string,
-  publicDemoIds: readonly DemoId[] = demoIds,
+  publicDemoIds: readonly DemoId[] = getDemoLifecycleCatalog().publicIds,
 ): boolean {
   const owner = EXECUTIVE_PREVIEW_ASSET_OWNERS[requestKey];
   return Boolean(owner && publicDemoIds.some((id) => id === owner));
@@ -147,7 +162,7 @@ export function isExecutivePreviewAssetPublic(
 export async function serveExecutivePreviewAsset({
   authorized,
   headOnly,
-  publicDemoIds = demoIds,
+  publicDemoIds = getDemoLifecycleCatalog().publicIds,
   readFile,
   requestKey,
   root,
@@ -161,7 +176,41 @@ export async function serveExecutivePreviewAsset({
     readFile,
     requestKey,
     responseHeaders: publiclyAccessible
-      ? PUBLIC_DEMO_ASSET_HEADERS
+      ? PUBLIC_DEMO_RESOURCE_HEADERS
+      : EXECUTIVE_PREVIEW_PRIVATE_HEADERS,
+    root,
+  });
+}
+
+export function isExecutivePreviewRuntimePublic(
+  requestKey: string,
+  publicDemoIds: readonly DemoId[] = getDemoLifecycleCatalog().publicIds,
+): boolean {
+  const owner = EXECUTIVE_PREVIEW_RUNTIME_OWNERS[requestKey];
+  return Boolean(owner && publicDemoIds.some((id) => id === owner));
+}
+
+export async function serveExecutivePreviewRuntime({
+  authorized,
+  headOnly,
+  publicDemoIds = getDemoLifecycleCatalog().publicIds,
+  readFile,
+  requestKey,
+  root,
+}: ServeExecutivePreviewRuntimeOptions): Promise<Response> {
+  const publiclyAccessible = isExecutivePreviewRuntimePublic(
+    requestKey,
+    publicDemoIds,
+  );
+  return serveAllowlistedResource({
+    accessGranted: authorized || publiclyAccessible,
+    contentType: 'application/javascript; charset=utf-8',
+    files: EXECUTIVE_PREVIEW_RUNTIME_FILES,
+    headOnly,
+    readFile,
+    requestKey,
+    responseHeaders: publiclyAccessible
+      ? PUBLIC_DEMO_RESOURCE_HEADERS
       : EXECUTIVE_PREVIEW_PRIVATE_HEADERS,
     root,
   });

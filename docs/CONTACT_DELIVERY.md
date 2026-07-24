@@ -7,11 +7,49 @@
 This document is the canonical blocker contract for accepting public contact
 submissions. It does not authorize intake, and the page and API must continue to
 fail closed while either the legal-publication or contact-intake gate is holding.
-The future lifecycle has two distinct phases: readiness evidence can close
-`contactIntake` only after the current holding-only lock is replaced by a
-separately reviewed implementation, and only a subsequently approved and
-enabled Production deployment can produce real delivery evidence. Closing the
-gate is not a claim that a message has already been delivered.
+The future enabled lifecycle has two distinct phases: readiness evidence can
+close `contactIntake` only after a separately reviewed schema-v3 manifest is
+adopted, and only a subsequently approved and enabled Production deployment
+can produce real delivery evidence. Closing the gate is not a claim that a
+message has already been delivered.
+
+## Schema-v3 disposition paths
+
+The checked-in manifest remains schema version 2 with
+`contactIntake=holding`, and this contract remains `Pending`. Schema v2 is
+holding-only. Under a separately adopted schema-v3 manifest, a submitted
+candidate must bind the exact commit and the Vercel deployment when its
+evidence path requires one, target exactly one of `approved` or `disabled`,
+and expire no later than seven days after submission.
+
+The two paths are intentionally different:
+
+- `approved` requires `legalPublication=approved`, a decision by the actual
+  `contact-release-authority`, and deployment-bound `contact-readiness`
+  evidence over the fixed contact scope. It enables intake only while the
+  decision and its evidence remain active and the deployment flag and service
+  configuration also pass.
+- `disabled` requires a decision by the same authority and
+  `contact-disabled-disposition` evidence confirming that public intake is not
+  authorized, an alternative support channel is available, privacy and
+  operational owners reviewed the disposition, and re-enablement requires a
+  new decision after revocation and reopening. It keeps the page unavailable
+  and API fail-closed.
+
+The `disabled` disposition may satisfy the contact dependency for legacy
+cutover and production launch, but never enables message collection. Those
+later gates must use fresh, deployment-bound `contact-disabled-verification`
+proving the page and API remain closed, no message delivery was attempted,
+provider configuration is not exposed, and the alternative channel works.
+They must not use or claim `contact-production-verification`.
+
+Every resolved decision expires. Renew only before expiry by appending a
+superseding decision with evidence observed after the prior decision. After
+expiry, fail closed, append an explicit revocation with containment evidence,
+and then reopen a new candidate. Use the same revocation path when authority is
+withdrawn or a control fails. Never edit or delete prior events. Lifecycle code
+and validation do not create the owner decision, service receipt, or authority,
+and none of this changes the current `holding`/`Pending` state.
 
 ## Preparatory phase 1: readiness approval
 
@@ -59,11 +97,12 @@ fail-closed Vercel deployment, observation time, all readiness checks, and the
 restricted readiness record by SHA-256. The restricted configuration review,
 owner confirmations, and test plan remain outside the repository.
 
-This repository revision cannot move the manifest gate from `holding`; the
-code-level transition lock rejects every attempted approval. After a separate
-reviewed lifecycle implementation is complete, `legalPublication`, the actual
-named contact-release authority, and the hash-bound readiness envelope must all
-pass before this contract may change to `Satisfied`.
+The current schema-v2 manifest cannot move the gate from `holding`; its
+code-level contract rejects every attempted approval. Only after a separately
+reviewed schema-v3 adoption, `legalPublication`, a real decision by the named
+contact-release authority, and the exact hash-bound evidence all pass may this
+contract's status change to exactly `Satisfied` for approved intake or
+`Disabled` for the fail-closed branch.
 
 ## Phase 2: approved activation and real Production validation
 

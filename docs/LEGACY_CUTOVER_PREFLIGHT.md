@@ -6,11 +6,12 @@ it does not collect evidence or prove the post-change result. Registrar, mail,
 Search Console, Vercel, legacy-host, DNS, and HTTP/TLS operators must produce
 the underlying evidence through approved procedures.
 
-**Current revision:** the code-level holding-only transition lock forces this
-command to return `NO_GO` with exit code `2` for every input. The conditional
-`GO_TO_CHANGE` behavior described below is dormant design documentation and
-cannot authorize a cutover until a separate reviewed lifecycle removes the
-lock and updates this contract.
+**Current manifest:** `config/launch-gates.json` is schema version 2 with every
+gate `holding`, so this command returns `NO_GO` with exit code `2`. Schema-v2
+validation remains holding-only. The schema-v3 path described below becomes
+eligible only after a separately authorized manifest-adoption change and a
+valid append-only decision history; lifecycle code cannot authorize a cutover
+by itself.
 
 Do not copy placeholder values into a real plan and do not store these files in
 the repository. The plan, evidence artifacts, underlying collector outputs,
@@ -19,19 +20,51 @@ Files must grant no group or other access. The receipt directory must already
 exist with mode `0700`. Real-path containment checks reject inputs or outputs
 that resolve into the repository through a symbolic-link ancestor.
 
+## Schema-v3 launch-gate prerequisite
+
+Before this preflight can return `GO_TO_CHANGE`, schema v3 must resolve
+`legalPublication=approved`, `legacyCutover=approved`, and exactly one safe
+contact disposition: `contactIntake=approved` or
+`contactIntake=disabled`. The `legacyCutover` decision must bind the same exact
+commit and deployment as its still-valid candidate. A candidate window may not
+exceed seven days, but that outer window does not extend the shorter evidence
+ages in this contract.
+
+The contact branch is explicit:
+
+- `contactMode=enabled` requires a valid contact approval and fresh
+  `contactDelivery` evidence covering real Production delivery, Reply-To, and
+  every abuse-control check.
+- `contactMode=disabled` requires a valid disabled disposition and fresh
+  `contactDisabled` evidence proving the contact page is unavailable, the API
+  fails closed, no delivery was attempted, and the alternative support route
+  works on the exact Production deployment.
+
+A disabled disposition satisfies the dependency only; it does not enable
+message intake. The selected plan mode, gate disposition, decision evidence,
+and external evidence key must agree. Expiry or explicit revocation of the
+legal, contact, or cutover decision makes the preflight `NO_GO`. Renewal must
+be appended before expiry with fresh fixed-scope evidence. An expired resolved
+decision must be explicitly revoked with containment evidence before the
+revoked gate can reopen through a new candidate. Prior lifecycle events must
+never be edited or removed.
+
 ## Plan schema
 
 The plan is strict JSON with no extra fields. The abbreviated `evidence` object
 shown below must be expanded to contain every evidence key in the contract
-table.
+table. The plan and each typed evidence artifact must be canonical sorted JSON
+with exactly one trailing newline; duplicate object keys and noncanonical
+encodings are rejected before semantic validation.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "cutoverId": "help-math-legacy-YYYY-MM-DD",
   "topology": "direct-one-hop",
   "repositoryCommit": "FULL_40_CHARACTER_GIT_SHA",
   "vercelDeploymentId": "dpl_DEPLOYMENT_ID",
+  "contactMode": "disabled",
   "salesDestination": "/resources",
   "owners": {
     "change": "NAMED_OWNER",
@@ -83,11 +116,11 @@ table.
       "approvedAt": "YYYY-MM-DDTHH:MM:SS.000Z",
       "evidenceKey": "mailContinuity"
     },
-    "contactDelivery": {
+    "contactDisposition": {
       "status": "approved",
       "approvedBy": "NAMED_OWNER",
       "approvedAt": "YYYY-MM-DDTHH:MM:SS.000Z",
-      "evidenceKey": "contactDelivery"
+      "evidenceKey": "contactDisabled"
     },
     "searchConsole": {
       "status": "approved",
@@ -125,19 +158,32 @@ table.
 ```
 
 `topology` accepts only `direct-one-hop` or `temporary-two-hop`;
-`salesDestination` accepts only `/contact` or `/resources`. All timestamps are
-canonical millisecond UTC. The start must be between 15 minutes in the past and
-60 minutes in the future, the monitoring end must still be future, and the
+`contactMode` accepts only `enabled` or `disabled`; `salesDestination` accepts
+only `/contact` or `/resources`. For `enabled`,
+`decisions.contactDisposition.evidenceKey` must be `contactDelivery`; for
+`disabled`, it must be `contactDisabled` and `salesDestination` must be
+`/resources` so a legacy sales redirect cannot land on a closed contact intake.
+The `evidence` object must contain exactly the selected contact key and all
+non-contact keys, never both contact keys. All timestamps are canonical
+millisecond UTC. The start must be between 15 minutes in the past and 60
+minutes in the future, the monitoring end must still be future, and the
 monitoring window must last at least one hour. The prior TTL must already have
 elapsed. Every machine approval must be later than the evidence it approves.
 Error and timeout percentages must remain below 100, and the monitoring window
 must fit the configured minimum probe count at the configured interval.
 
+The current redirect registry and generated host package send `/Sales.htm` to
+`/resources`, so they match the required disabled-contact disposition. An
+enabled-contact plan may select `/contact` only after a reviewed release changes
+that exact redirect and regenerates and tests the host package; a plan value
+cannot override the observed release configuration.
+
 ## Evidence artifact envelope
 
 Each plan reference is a strict JSON artifact of at most 1 MiB. Its identity
 fields must match the plan exactly. It also binds the retained full collector
-output, which may be at most 50 MiB.
+output, which may be at most 50 MiB. The artifact-envelope schema remains
+version 1; that is independent of the required plan schema version 2 above.
 
 ```json
 {
@@ -169,18 +215,115 @@ file, validates byte length and collector metadata, and rechecks freshness at
 the final decision time after repository commands finish. A `pass` envelope
 remains an owner attestation, not an independent login to the source system.
 
+`productionQuality` has one additional, required typed field. The collector
+must derive it from the GitHub workflow, workflow-run, and attempt-specific
+jobs/steps APIs and retain a strict allowlisted bundle of the required raw API
+fields as the underlying evidence:
+
+```json
+{
+  "qualityRun": {
+    "repository": "HUDongpin/helpmath-web",
+    "workflow": "Quality",
+    "workflowPath": ".github/workflows/quality.yml",
+    "event": "push",
+    "ref": "refs/heads/main",
+    "headBranch": "main",
+    "headSha": "SAME_AS_PLAN_REPOSITORY_COMMIT",
+    "runId": 29921608812,
+    "runAttempt": 1,
+    "runUrl": "https://github.com/HUDongpin/helpmath-web/actions/runs/29921608812",
+    "conclusion": "success",
+    "launchTransition": {
+      "job": "verify",
+      "step": "Enforce launch-gate transition history",
+      "conclusion": "success"
+    },
+    "jobs": {
+      "verify": "success",
+      "browser-quality": "success",
+      "lighthouse": "success"
+    }
+  }
+}
+```
+
+This is an evidence-kind-specific extension of artifact-envelope schema
+version 1; other evidence kinds reject `qualityRun`. The Production quality
+run must be the `push` run for the exact planned commit. A
+`workflow_dispatch` run is invalid because it skips the transition check, and a
+`pull_request` run is candidate evidence rather than Production evidence.
+The typed provenance must also identify the fixed
+`HUDongpin/helpmath-web` repository, `.github/workflows/quality.yml`,
+`refs/heads/main` / `main`, a positive GitHub run ID, run attempt **1 or 2**,
+and the exact canonical run URL. Attempt 3 or later fails closed, so repeated
+reruns cannot be promoted as Production evidence. A fork, another workflow or
+branch, or a URL that does not bind that run ID fails closed even when it
+reports the same commit SHA.
+Missing, skipped, cancelled, or failed transition/job results fail closed; an
+aggregate workflow conclusion cannot replace the required step and all three
+job conclusions.
+
+The referenced underlying file is a canonical projection plus request
+provenance, not an untouched complete API response. It must itself be canonical
+sorted JSON, use schema version 1, source `github-actions-api`, and API version
+`2022-11-28`, contain no credential-shaped values or sensitive fields, and have
+exactly these top-level objects:
+
+- `run`: the allowlisted raw workflow-run fields, including `id`,
+  `run_attempt`, `workflow_id`, `name`, `path`, `event`, `status`,
+  `conclusion`, `head_branch`, `head_sha`, canonical URLs, repository and head
+  repository full names, and the run timestamps;
+- `workflow`: the allowlisted raw workflow identity (`id`, `name`, `path`,
+  `state`, and canonical API URL);
+- `jobs`: the raw `total_count` and allowlisted raw job and step fields;
+- `requests`: the exact repository-scoped run and workflow API URLs plus the
+  attempt-specific
+  `/actions/runs/{run_id}/attempts/{run_attempt}/jobs?per_page=100` URL.
+
+The verifier derives `qualityRun` again from that retained bundle and compares
+every artifact field with the derived values. Both repository identities must
+be `HUDongpin/helpmath-web`; the run workflow ID must equal the retained
+workflow ID; the active workflow name and path must be `Quality` and
+`.github/workflows/quality.yml`; the push must target `main`; and the run and
+each job must bind the exact planned commit and the same allowed attempt (1 or
+2). The jobs response must contain exactly one successful `verify`,
+`browser-quality`, and `lighthouse` job for the retained run attempt, in that
+order-independent set. Array order from the GitHub API is not significant;
+each unique job is resolved by name and then checked strictly. Steps within
+each job must remain ordered by their numeric API field. The successful
+launch-transition step must occur exactly once inside `verify`. The
+`lighthouse` job must contain exactly one successful
+`Authorize Lighthouse workflow attempt`,
+`Classify Lighthouse runner capacity`, and
+`Enforce eligible Lighthouse verdict` step. This binds retained Production
+evidence to the bounded, machine-authorized Lighthouse attempt chain; a
+missing, duplicate, skipped, or failed required step fails closed.
+
+`artifact.productionQuality.observedAt` and the plan evidence timestamp must
+represent the same epoch as the raw run `updated_at`; GitHub timestamps without
+fractional seconds and artifact timestamps ending in `.000Z` therefore bind
+correctly. Job start and completion times must remain within the run interval,
+and the normal 24-hour freshness check is reapplied directly to `updated_at`. A
+collector timestamp cannot refresh an old GitHub run. The bundle remains an
+owner-retained attestation rather than an independent
+validator login to GitHub, but a contradictory artifact, arbitrary underlying
+file, stale run, wrong repository/workflow, missing job, or missing step now
+fails closed.
+
 | Evidence key | Maximum age | Required check IDs |
 | --- | ---: | --- |
 | `dnsZoneBefore` | 24 hours | `authenticatedExport`, `completeZoneCaptured`, `rollbackValuesCaptured` |
 | `dnsZoneProposed` | 24 hours | `approvedWebsiteRecordsOnly`, `mailRecordsUnchanged`, `ownershipRecordsUnchanged`, `noApexCnameConflict` |
 | `mailContinuity` | 24 hours | `inboundDeliveryPassed`, `outboundDeliveryPassed`, `mxRecordsUnchanged`, `mailTxtRecordsUnchanged` |
 | `contactDelivery` | 24 hours | `repositoryGateApproved`, `productionEnvironmentEnabled`, `retentionAndInboxOwnersConfirmed`, plus every granular `contact-production-verification` check listed below |
+| `contactDisabled` | 24 hours | `repositoryGateDisabled`, `contactPageUnavailable`, `contactApiFailsClosed`, `noDeliveryAttempted`, `alternateSupportRouteVerified` |
 | `searchConsoleControl` | 7 days | `legacyPropertyControlled`, `newPropertyControlled`, `changeOfAddressOwnerNamed` |
 | `offDeviceArchiveRestore` | 30 days | `encryptedOffDeviceCustody`, `independentRestorePassed`, `restoredBytesHashVerified` |
 | `rightsAccessibilityDisposition` | 30 days | `allGovernedSourcesClassified`, `republicationDecisionsRecorded`, `accessibilityActionsRecorded` |
 | `stableExternalLinkReview` | 24 hours | `allGovernedLinksReviewed`, `zeroUnresolvedFailures`, `reviewCommitMatched` |
 | `productionAliasAssignment` | 24 hours | `canonicalWwwAssigned`, `canonicalApexAssigned`, `readyProductionDeployment`, `deploymentCommitMatched` |
-| `productionQuality` | 24 hours | `qualityRunSucceeded`, `qualityCommitMatched` |
+| `productionQuality` | 24 hours | `qualityRunSucceeded`, `qualityCommitMatched`, `qualityRunEventWasPush`, `launchGateTransitionPassed`, `verifyJobPassed`, `browserQualityJobPassed`, `lighthouseJobPassed`; plus the typed `qualityRun` push event, exact head SHA, transition step, and three successful job conclusions |
 | `productionSmoke` | 24 hours | `productionSmokeSucceeded`, `zeroFailures`, `smokeCommitMatched` |
 | `legacyHostConfigTest` | 24 hours | `targetHostVersionRecorded`, `stagedArtifactHashMatched`, `stagedConfigTestPassed` |
 | `preCutoverDnsObservation` | 15 minutes | `authoritativeResolversAgree`, `publicResolversAgree`, `websiteRecordsMatchBeforeZone`, `mailAndOwnershipRecordsMatchBeforeZone` |
@@ -196,11 +339,18 @@ required checks are `turnstileProductionPassed`, `endToEndDeliveryPassed`,
 `logRedactionPassed`, and `failureRollbackDispositionRecorded`. Missing,
 combined, renamed, unknown, or false checks fail closed.
 
+`contactDisabled` is not a substitute for failed delivery testing. It is the
+separate fail-closed branch for an intentionally disabled contact capability.
+The artifact must bind the selected commit and deployment and prove the closed
+page/API state and working alternative support route. Any sign that intake or
+delivery occurred makes that branch invalid.
+
 ## Decision and exit behavior
 
-The current holding-only revision always returns `NO_GO` with exit `2`. The
-remaining section describes the additional conditions a future unlocked
-revision would still have to satisfy; none of them bypass the current lock.
+With the current schema-v2 all-holding manifest, the command always returns
+`NO_GO` with exit `2`. A separately adopted schema-v3 manifest still returns
+`NO_GO` unless its full append-only chain, selected contact disposition, plan,
+evidence, and operational checks all pass.
 
 The preflight returns `GO_TO_CHANGE` and exit `0` only when all plan, evidence,
 launch-gate, repository, command, destination, and receipt-store checks pass
@@ -208,13 +358,18 @@ and the receipt plus companion SHA-256 are written successfully. Every other
 result is `NO_GO` with exit `2`. There is no force, skip, or
 success-on-`NO_GO` option.
 
-The content-addressed receipt records tool hashes, repository state, plan hash,
-every artifact and underlying-evidence expected/actual hash, all checks, all
-failures, and `validUntil`, the earliest evidence/window expiry. The operator
+The content-addressed receipt records bootstrap/entry/library hashes,
+repository state, plan hash, every artifact and underlying-evidence
+expected/actual hash, all checks, all failures, and `validUntil`, the earliest
+evidence/window expiry or active legal/contact/cutover gate expiry. The operator
 must not begin a change with an expired receipt. `GO_TO_CHANGE`
 also requires at least five minutes of validity after the later of the final
-decision time and planned start time; the writer rechecks that buffer before
-atomically publishing the final JSON name. A normal
+decision time and planned start time. A bootstrap pins a clean governance HEAD
+before local modules load; the planned release candidate must exist and be an
+ancestor of that HEAD. Immediately before atomically publishing the final JSON
+name, the writer re-verifies the exact manifest, gate authorizations, external
+evidence, plan bytes, tool bytes, pinned HEAD, candidate ancestry, and validity
+buffer. A normal
 filesystem receipt must still be copied to the owner-approved append-only or
 WORM store; permissions and hashes alone do not make a filesystem immutable.
 

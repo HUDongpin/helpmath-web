@@ -9,6 +9,7 @@ docs/*
 docs/evidence/*
 !docs/evidence/launch-gates/
 !docs/evidence/demo-publication/
+!docs/evidence/github-actions/
 docs/evidence/launch-gates/*
 !docs/evidence/launch-gates/*.json
 docs/evidence/launch-gates/.*
@@ -17,6 +18,10 @@ docs/evidence/demo-publication/*
 !docs/evidence/demo-publication/*.json
 docs/evidence/demo-publication/.*
 docs/evidence/demo-publication/*/
+docs/evidence/github-actions/*
+!docs/evidence/github-actions/*.json
+docs/evidence/github-actions/.*
+docs/evidence/github-actions/*/
 e2e/
 tests/
 playwright.config.ts

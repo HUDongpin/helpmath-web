@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {createServer} from 'node:http';
 import test from 'node:test';
+import {fileURLToPath} from 'node:url';
 
 import {
   buildDemoLifecycleSmokeModel,
@@ -489,4 +492,88 @@ test('HTTP retry classification is limited to transient statuses', () => {
   for (const status of [200, 301, 400, 401, 403, 404, 501]) {
     assert.equal(isRetryableHttpStatus(status), false, `${status} should not retry`);
   }
+});
+
+test('release smoke executes through summary and reports effective launch-gate states', {
+  timeout: 30_000,
+}, async (t) => {
+  const server = createServer((request, response) => {
+    response.statusCode = 404;
+    response.setHeader('content-type', 'text/html; charset=utf-8');
+    if (request.method === 'HEAD') {
+      response.end();
+      return;
+    }
+    response.end(
+      '<!doctype html><html><head><title>Smoke fixture</title></head><body>Missing</body></html>',
+    );
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+  });
+
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  const fixtureOrigin = `http://127.0.0.1:${address.port}`;
+  const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
+  const child = spawn(process.execPath, ['scripts/release-smoke.mjs'], {
+    cwd: repositoryRoot,
+    env: {
+      ...process.env,
+      EXPECT_CONTACT_ENABLED: 'false',
+      EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT: '',
+      EXPECT_EXECUTIVE_PREVIEW_STATE: 'any',
+      SMOKE_BASE_URL: fixtureOrigin,
+      SMOKE_CANONICAL_ORIGIN: fixtureOrigin,
+      SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY: '',
+      SMOKE_FETCH_TIMEOUT_MS: '1000',
+      SMOKE_INTERNAL_LINK_CONCURRENCY: '12',
+      SMOKE_REQUEST_MAX_ATTEMPTS: '1',
+      SMOKE_REQUEST_RETRY_BASE_DELAY_MS: '0',
+      SMOKE_REQUEST_RETRY_MAX_DELAY_MS: '0',
+      SMOKE_VERCEL_BYPASS_SECRET: '',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  child.stdout.setEncoding('utf8');
+  child.stderr.setEncoding('utf8');
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk;
+  });
+
+  const {code, signal} = await new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', (exitCode, exitSignal) => {
+      resolve({code: exitCode, signal: exitSignal});
+    });
+  });
+
+  assert.equal(signal, null, stderr);
+  assert.equal(code, 1, stderr);
+  assert.doesNotMatch(stderr, /ReferenceError|launchGateManifest is not defined/u);
+  const summary = JSON.parse(stdout);
+  assert.deepEqual(summary.launchGates, {
+    legalPublication: 'holding',
+    contactIntake: 'holding',
+    demoPublication: 'holding',
+    legacyCutover: 'holding',
+    productionLaunch: 'holding',
+  });
+  assert.equal(summary.legalPublicationGate, 'holding');
+  assert.equal(summary.contactRepositoryGate, 'holding');
+  assert.ok(summary.failures.length > 0);
 });

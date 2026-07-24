@@ -5,7 +5,7 @@ import {
   isDemoCandidateId,
   type DemoCandidateId,
 } from '../demos/candidates';
-import {isLaunchGateApproved} from './launch-gates';
+import {getLaunchGateRuntimeState} from './launch-gates';
 import {
   isCanonicalUtcTimestamp,
   validateDemoActivationManifest,
@@ -42,16 +42,20 @@ export type DeriveDemoLifecycleStateOptions = Readonly<{
 }>;
 
 const activationManifest = activationManifestJson as unknown as DemoActivationManifest;
-const demoPublicationGateApproved = isLaunchGateApproved('demoPublication');
 const candidateErrors = Object.fromEntries(
   DEMO_CANDIDATE_IDS.map((id) => [id, validateDemoCandidate(demoCandidates[id], id)]),
 ) as Record<DemoCandidateId, string[]>;
-const manifestErrors = validateDemoActivationManifest(activationManifest, {
+// Validate the immutable candidate/activation structure independently from the
+// time-varying publication gate. Runtime access is resolved again below for
+// every consumer request. This lets an expired or revoked public decision
+// close public access without invalidating the separately approved private
+// executive-preview path.
+const structuralManifestErrors = validateDemoActivationManifest(activationManifest, {
   candidates: demoCandidates,
-  demoPublicationGateApproved,
+  demoPublicationGateApproved: true,
 });
 
-export const demoLifecycleUpdatedAt = manifestErrors.length === 0
+export const demoLifecycleUpdatedAt = structuralManifestErrors.length === 0
   ? activationManifest.updatedAt
   : null;
 
@@ -93,7 +97,6 @@ export function deriveDemoLifecycleState({
       if (!isCanonicalUtcTimestamp(activation.activation.activatedAt)) {
         errors.push('active demo requires a canonical activation timestamp');
       }
-      if (!gateApproved) errors.push('active demo requires the demoPublication launch gate');
     }
   }
   if (errors.length > 0 || !candidate || !activation) {
@@ -159,49 +162,91 @@ export function deriveDemoLifecycleState({
   });
 }
 
-function deriveKnownDemoLifecycleState(id: DemoCandidateId): DemoLifecycleState {
+function deriveKnownDemoLifecycleState(
+  id: DemoCandidateId,
+  demoPublicationGateApproved: boolean,
+): DemoLifecycleState {
   return deriveDemoLifecycleState({
     id,
     candidate: demoCandidates[id],
     activation: activationManifest.demos[id],
     candidateErrors: candidateErrors[id],
-    manifestErrors,
+    manifestErrors: structuralManifestErrors,
     demoPublicationGateApproved,
   });
 }
 
-export const demoLifecycleStates = Object.freeze(Object.fromEntries(
-  DEMO_CANDIDATE_IDS.map((id) => [id, deriveKnownDemoLifecycleState(id)]),
-)) as Readonly<Record<DemoCandidateId, DemoLifecycleState>>;
+function isDemoPublicationGateActive(nowMs: number): boolean {
+  const gate = getLaunchGateRuntimeState('demoPublication', nowMs);
+  return gate.active && gate.effectiveStatus === 'approved';
+}
 
-export function getDemoLifecycleState(id: string): DemoLifecycleState {
-  if (!isDemoCandidateId(id)) {
-    return Object.freeze({
+function unknownDemoLifecycleState(id: string): DemoLifecycleState {
+  return Object.freeze({
+    id,
+    candidate: null,
+    access: 'denied',
+    active: false,
+    privatePreview: false,
+    public: false,
+    indexable: false,
+    errors: Object.freeze(['unknown demo candidate']),
+  });
+}
+
+export function resolveDemoLifecycleStates(
+  nowMs = Date.now(),
+): Readonly<Record<DemoCandidateId, DemoLifecycleState>> {
+  const gateApproved = isDemoPublicationGateActive(nowMs);
+  return Object.freeze(Object.fromEntries(
+    DEMO_CANDIDATE_IDS.map((id) => [
       id,
-      candidate: null,
-      access: 'denied',
-      active: false,
-      privatePreview: false,
-      public: false,
-      indexable: false,
-      errors: Object.freeze(['unknown demo candidate']),
-    });
-  }
-  return demoLifecycleStates[id];
+      deriveKnownDemoLifecycleState(id, gateApproved),
+    ]),
+  )) as Readonly<Record<DemoCandidateId, DemoLifecycleState>>;
 }
 
-export function isDemoDenied(id: string): boolean {
-  return getDemoLifecycleState(id).access === 'denied';
+/**
+ * Build-time compatibility snapshot. Request-time consumers must call
+ * getDemoLifecycleState() or getDemoLifecycleCatalog() instead.
+ */
+export const demoLifecycleStates = resolveDemoLifecycleStates();
+
+export function getDemoLifecycleState(
+  id: string,
+  nowMs = Date.now(),
+): DemoLifecycleState {
+  if (!isDemoCandidateId(id)) return unknownDemoLifecycleState(id);
+  return deriveKnownDemoLifecycleState(id, isDemoPublicationGateActive(nowMs));
 }
 
-export function isDemoPrivatePreview(id: string): boolean {
-  return getDemoLifecycleState(id).access === 'private-preview';
+export function getDemoLifecycleCatalog(nowMs = Date.now()) {
+  const states = resolveDemoLifecycleStates(nowMs);
+  const publicIds = DEMO_CANDIDATE_IDS.filter((id) => states[id].public);
+  const indexableIds = DEMO_CANDIDATE_IDS.filter((id) => states[id].indexable);
+  const privatePreviewIds = DEMO_CANDIDATE_IDS.filter(
+    (id) => states[id].privatePreview,
+  );
+  return Object.freeze({
+    states,
+    publicIds: Object.freeze(publicIds),
+    indexableIds: Object.freeze(indexableIds),
+    privatePreviewIds: Object.freeze(privatePreviewIds),
+  });
 }
 
-export function isDemoPublic(id: string): boolean {
-  return getDemoLifecycleState(id).public;
+export function isDemoDenied(id: string, nowMs = Date.now()): boolean {
+  return getDemoLifecycleState(id, nowMs).access === 'denied';
 }
 
-export function isDemoIndexable(id: string): boolean {
-  return getDemoLifecycleState(id).indexable;
+export function isDemoPrivatePreview(id: string, nowMs = Date.now()): boolean {
+  return getDemoLifecycleState(id, nowMs).privatePreview;
+}
+
+export function isDemoPublic(id: string, nowMs = Date.now()): boolean {
+  return getDemoLifecycleState(id, nowMs).public;
+}
+
+export function isDemoIndexable(id: string, nowMs = Date.now()): boolean {
+  return getDemoLifecycleState(id, nowMs).indexable;
 }

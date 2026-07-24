@@ -253,6 +253,16 @@ async function expectNoAxeViolations(
   path: string,
   viewport: string,
 ) {
+  // Axe must inspect the rendered styles inside below-fold containment roots.
+  // Chromium otherwise reports descendants of a skipped content-visibility
+  // subtree with user-agent link colors instead of their authored colors.
+  await page.addStyleTag({content: `
+    .deferred-section,
+    .evidence-list > .evidence-entry,
+    .resource-list > .resource-entry {
+      content-visibility: visible !important;
+    }
+  `});
   const results = await new AxeBuilder({page})
     .withTags([
       'wcag2a',
@@ -395,7 +405,7 @@ test('the screenshot-matched Nunito Sans typography is bundled and used consiste
   const nunitoPreload = typography.preloadedFonts.find(
     (href) => {
       const pathname = new URL(href).pathname;
-      return pathname.includes('nunito_sans_latin_wght_normal') && pathname.endsWith('.woff2');
+      return pathname.startsWith('/_next/static/media/') && pathname.endsWith('.woff2');
     },
   );
   expect(nunitoPreload).toBeDefined();
@@ -427,6 +437,7 @@ test('Spanish home localizes content and never duplicates the /es route prefix',
   );
   expect(localHrefs.some((href) => href?.includes('/es/es'))).toBe(false);
   for (const href of localHrefs) {
+    if (href?.startsWith('/api/language-switch/')) continue;
     expect(href === '/' || href?.startsWith('/es')).toBe(true);
   }
   const partnership = page.locator('#strategic-partnership');
@@ -519,6 +530,95 @@ test('home metadata keeps the HELP Math name in both language titles', async ({p
 
   await expectDocument(page, '/es', 'es');
   await expect(page).toHaveTitle('HELP Math · El lenguaje matemático, a la vista');
+});
+
+test('static marketing routes do not ship the Next or React client runtime', async ({page}) => {
+  for (const path of [
+    '/',
+    '/es',
+    '/research',
+    '/es/research',
+    '/demos',
+    '/es/demos',
+    '/resources',
+    '/es/resources',
+  ] as const) {
+    const response = await page.goto(path, {waitUntil: 'networkidle'});
+    expect(response?.status(), path).toBe(200);
+    const externalScripts = await page.locator('script[src]').evaluateAll((scripts) =>
+      scripts.map((script) => new URL((script as HTMLScriptElement).src).pathname),
+    );
+    expect(externalScripts, path).toEqual(path.endsWith('/resources')
+      ? ['/static-marketing-navigation.js', '/static-resource-library.js']
+      : ['/static-marketing-navigation.js']);
+    await expect(page.locator('.mobile-nav')).toHaveAttribute('data-ready', 'true');
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+      'href',
+      '/manifest.webmanifest',
+    );
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/icon.svg');
+
+    const typography = await page.evaluate(() => ({
+      bodyFamily: getComputedStyle(document.body).fontFamily,
+      fontVariable: getComputedStyle(document.body)
+        .getPropertyValue('--font-nunito')
+        .trim(),
+    }));
+    expect(typography.fontVariable, path).toContain('nunitoSans');
+    expect(typography.bodyFamily, path).toContain('nunitoSans');
+
+    const scriptPreloads = await page
+      .locator('link[rel="preload"][as="script"], link[rel="modulepreload"]')
+      .evaluateAll((links) => links.map((link) => (link as HTMLLinkElement).href));
+    expect(scriptPreloads, path).toEqual([]);
+    if (path.endsWith('/demos')) {
+      expect(response?.headers()['cache-control'], path).toContain('private');
+      expect(response?.headers()['cache-control'], path).toContain('no-store');
+    }
+  }
+
+  const controller = await page.request.get('/static-marketing-navigation.js');
+  expect(controller.status()).toBe(200);
+  expect(controller.headers()['content-type']).toMatch(/javascript/u);
+  expect((await controller.body()).byteLength).toBeLessThanOrEqual(9_000);
+});
+
+test('internal static marketing route names remain non-indexable 404s', async ({page}) => {
+  for (const path of [
+    '/static/en/home',
+    '/static/es/home',
+    '/static/en/research',
+    '/static/es/research',
+    '/static/en/demos',
+    '/static/es/demos',
+    '/static/en/resources',
+    '/static/es/resources',
+  ] as const) {
+    const response = await page.goto(path, {waitUntil: 'networkidle'});
+    expect(response?.status(), path).toBe(404);
+    expect(response?.headers()['x-robots-tag'], path).toBe('noindex, nofollow');
+    await expect(page.getByRole('heading', {level: 1})).toContainText('Page not found');
+  }
+});
+
+test('static language controller preserves query and fragment in both directions', async ({page}) => {
+  await expectDocument(page, '/?source=review#strategic-partnership', 'en');
+  const spanish = page.locator('.site-header__actions a.language-switcher');
+  await expect(spanish).toHaveAttribute(
+    'href',
+    '/es?source=review#strategic-partnership',
+  );
+  await page.evaluate(() => {
+    window.history.replaceState(window.history.state, '', '/?source=updated#main-content');
+    window.dispatchEvent(new Event('help-math:location-change'));
+  });
+  await expect(spanish).toHaveAttribute('href', '/es?source=updated#main-content');
+
+  await expectDocument(page, '/es/demos?source=ceo#main-content', 'es');
+  const english = page.locator('.site-header__actions a.language-switcher');
+  await expect(english).toHaveAttribute('href', '/demos?source=ceo#main-content');
+  await english.click();
+  await expect(page).toHaveURL(/\/demos\?source=ceo#main-content$/u);
 });
 
 test('keyboard focus remains visible across the branded surface palette @cross-browser-smoke', async ({page}) => {
@@ -716,15 +816,21 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expect(englishSearch).toBeEnabled();
   await englishSearch.fill('WWC');
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
-  await expect(library.locator('.resource-entry')).toHaveCount(3);
+  await expect(library.locator('.resource-entry:not([hidden])')).toHaveCount(3);
   const englishResearchFilter = library.getByRole('button', {name: /Research/});
   await expect(englishResearchFilter).toBeEnabled();
   await englishResearchFilter.click();
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
   await englishSearch.fill('');
   await expect(library.getByRole('status')).toHaveText('12 resources shown');
-  await expect(library.locator('.resource-entry')).toHaveCount(12);
+  await expect(library.locator('.resource-entry:not([hidden])')).toHaveCount(12);
   await expect(library.getByRole('heading', {name: 'About HELP Math'})).toHaveCount(0);
+  await expect(library.locator('#about-help-math')).toBeHidden();
+
+  await englishSearch.fill('no matching HELP Math resource');
+  await expect(library.getByRole('status')).toHaveText('0 resources shown');
+  await expect(library.locator('.resource-list')).toBeHidden();
+  await expect(library.locator('.resource-empty')).toBeVisible();
 
   await expectDocument(page, '/es/resources', 'es');
   const spanishLibrary = page.locator('#resource-library');
@@ -737,9 +843,39 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expect(spanishModernizationFilter).toBeEnabled();
   await spanishModernizationFilter.click();
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 2 recursos');
-  await expect(spanishLibrary.locator('.resource-entry')).toHaveCount(2);
+  await expect(spanishLibrary.locator('.resource-entry:not([hidden])')).toHaveCount(2);
   await expect(spanishLibrary.getByRole('heading', {name: 'Notas de modernización y recuperación'})).toBeVisible();
   expectNoRuntimeIssues(issues);
+});
+
+test('resource filtering clears a fragment whose target becomes hidden', async ({page}) => {
+  const targetHash = '#technology-innovations-report';
+  await expectDocument(page, `/resources${targetHash}`, 'en');
+  const library = page.locator('#resource-library');
+  const target = page.locator(targetHash);
+  await expect(target).toBeVisible();
+  await expect(page.locator('html')).toHaveClass(/resource-fragment-navigation/u);
+
+  await library.getByRole('searchbox', {name: 'Search resources'}).fill('WWC');
+  await expect(target).toBeHidden();
+  await expect(page).toHaveURL(/\/resources$/u);
+  await expect(page.locator('html')).not.toHaveClass(/resource-fragment-navigation/u);
+  await expect(page.getByRole('link', {name: 'Language: Español'}).first()).toHaveAttribute(
+    'href',
+    '/es/resources',
+  );
+
+  await library.getByRole('searchbox', {name: 'Search resources'}).clear();
+  await expect(target).toBeVisible();
+  await expect(page).toHaveURL(/\/resources$/u);
+
+  await library.getByRole('searchbox', {name: 'Search resources'}).fill('WWC');
+  await expect(target).toBeHidden();
+  await page.evaluate((hash) => {
+    window.location.hash = hash;
+  }, targetHash);
+  await expect(page).toHaveURL(/\/resources$/u);
+  await expect(page.locator('html')).not.toHaveClass(/resource-fragment-navigation/u);
 });
 
 test('render containment preserves resource geometry, focus, and deep links', {
@@ -768,11 +904,15 @@ test('render containment preserves resource geometry, focus, and deep links', {
   const entries = list.locator('.resource-entry');
   await expect(entries).toHaveCount(18);
 
-  const containment = await entries.nth(3).evaluate((entry) => ({
-    contentVisibility: getComputedStyle(entry).contentVisibility,
+  const containment = await entries.evaluateAll((cards) => ({
+    first: getComputedStyle(cards[0]).contentVisibility,
+    fourth: getComputedStyle(cards[3]).contentVisibility,
     supported: CSS.supports('content-visibility', 'auto'),
   }));
-  if (containment.supported) expect(containment.contentVisibility).toBe('auto');
+  if (containment.supported) {
+    expect(containment.first).toBe('auto');
+    expect(containment.fourth).toBe('auto');
+  }
 
   const finalLink = entries.last().getByRole('link');
   await finalLink.focus();
@@ -782,8 +922,9 @@ test('render containment preserves resource geometry, focus, and deep links', {
   const initialHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
   const search = library.getByRole('searchbox', {name: 'Search resources'});
   await search.fill('WWC');
-  await expect(entries).toHaveCount(3);
-  const filteredGeometry = await entries.evaluateAll((cards) => cards.map((card) => {
+  const visibleEntries = list.locator('.resource-entry:not([hidden])');
+  await expect(visibleEntries).toHaveCount(3);
+  const filteredGeometry = await visibleEntries.evaluateAll((cards) => cards.map((card) => {
     const bounds = card.getBoundingClientRect();
     return {bottom: bounds.bottom, top: bounds.top};
   }));
@@ -840,14 +981,14 @@ test('render containment preserves resource geometry, focus, and deep links', {
   }
 });
 
-test('resource fragment fallback survives failed hydration chunks', async ({browserName, page}) => {
+test('resource fragment fallback survives a failed resource controller', async ({browserName, page}) => {
   test.skip(browserName !== 'chromium', 'The parser fallback is a Chromium regression contract.');
   await page.setViewportSize({width: 900, height: 900});
-  await page.route('**/_next/static/**/*.js', (route) => route.abort('failed'));
+  await page.route('**/static-resource-library.js', (route) => route.abort('failed'));
 
   for (const {path, targetHash} of [
-    {path: '/resources?test=blocked-hydration-en', targetHash: '#technology-innovations-report'},
-    {path: '/es/resources?test=blocked-hydration-es', targetHash: '#codie-past-winners'},
+    {path: '/resources?test=blocked-controller-en', targetHash: '#technology-innovations-report'},
+    {path: '/es/resources?test=blocked-controller-es', targetHash: '#codie-past-winners'},
   ]) {
     const response = await page.goto(`${path}${targetHash}`, {waitUntil: 'load'});
     expect(response?.status(), path).toBe(200);
@@ -866,7 +1007,7 @@ test('resource fragment fallback survives failed hydration chunks', async ({brow
     expect(Math.abs(geometry.top - geometry.scrollMarginTop)).toBeLessThanOrEqual(12);
   }
 
-  await page.goto('/resources?test=blocked-hydration-section#resource-library', {
+  await page.goto('/resources?test=blocked-controller-section#resource-library', {
     waitUntil: 'load',
   });
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#resource-library');
@@ -921,10 +1062,61 @@ test('stale resource fallback cannot override user navigation or browser history
   expect(await page.evaluate(() => window.location.hash)).toBe('#resource-library');
   await expect(page.locator('#resource-library')).toBeInViewport();
 
+  await page.goto(`/resources?test=filtered-stale-scroll${targetHash}`, {
+    waitUntil: 'load',
+  });
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
+  const library = page.locator('#resource-library');
+  const search = library.getByRole('searchbox', {name: 'Search resources'});
+  const target = page.locator(targetHash);
+  await expect(search).toBeEnabled();
+  await search.fill('WWC');
+  await expect(target).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('');
+  await search.clear();
+  await expect(target).toBeVisible();
+  await page.evaluate(async () => {
+    window.scrollTo({behavior: 'instant', top: 0});
+    await new Promise<void>((resolve) => requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    }));
+  });
+  const filteredBaseline = await page.evaluate(() => ({
+    fragmentGuard: document.documentElement.classList.contains(
+      'resource-fragment-navigation',
+    ),
+    hash: window.location.hash,
+    scrollY: window.scrollY,
+    targetTop: document.getElementById('technology-innovations-report')
+      ?.getBoundingClientRect().top ?? null,
+  }));
+  expect(filteredBaseline.hash).toBe('');
+  expect(filteredBaseline.fragmentGuard).toBe(false);
+
+  await releaseFontsReady();
+  await page.waitForTimeout(1_200);
+  const filteredSettled = await page.evaluate(() => ({
+    fragmentGuard: document.documentElement.classList.contains(
+      'resource-fragment-navigation',
+    ),
+    hash: window.location.hash,
+    scrollY: window.scrollY,
+    targetTop: document.getElementById('technology-innovations-report')
+      ?.getBoundingClientRect().top ?? null,
+  }));
+  expect(filteredSettled.hash).toBe('');
+  expect(filteredSettled.fragmentGuard).toBe(false);
+  expect(Math.abs(filteredSettled.scrollY - filteredBaseline.scrollY)).toBeLessThanOrEqual(1);
+  expect(filteredBaseline.targetTop).not.toBeNull();
+  expect(filteredSettled.targetTop).not.toBeNull();
+  expect(
+    Math.abs((filteredSettled.targetTop ?? 0) - (filteredBaseline.targetTop ?? 0)),
+  ).toBeLessThanOrEqual(1);
+
   await page.goto(`/resources?test=stale-resource-fallback${targetHash}`, {waitUntil: 'load'});
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(targetHash);
   await expect(page.locator('#resource-library input')).toBeEnabled();
-  await page.locator('.site-header a[href="/research"]').click();
+  await page.locator('.desktop-nav a[href="/research"]').click();
   await expect(page).toHaveURL(/\/research$/u);
   await releaseFontsReady();
   await page.waitForTimeout(1_200);
@@ -1133,12 +1325,22 @@ for (const locale of ['en', 'es'] as const) {
     );
     const expectColdRoots = (roots: Awaited<ReturnType<typeof captureRoots>>, label: string) => {
       for (const root of roots) {
-        expect(root.contentVisibility, `${label} ${root.label} uses containment`).toBe('auto');
+        const remainsVisible = String(root.label)
+          .split(/\s+/u)
+          .includes('deferred-section--home-closing');
+        expect(
+          root.contentVisibility,
+          remainsVisible
+            ? `${label} ${root.label} stays visible for accessibility inspection`
+            : `${label} ${root.label} uses containment`,
+        ).toBe(remainsVisible ? 'visible' : 'auto');
         if (root.firstChildVisible !== null) {
           expect(
             root.firstChildVisible,
-            `${label} ${root.label} first child is skipped before the root is forced`,
-          ).toBe(false);
+            remainsVisible
+              ? `${label} ${root.label} first child remains available to accessibility tools`
+              : `${label} ${root.label} first child is skipped before the root is forced`,
+          ).toBe(remainsVisible);
         }
       }
     };
@@ -1336,6 +1538,63 @@ for (const locale of ['en', 'es'] as const) {
 
 test.describe('resource library without JavaScript', () => {
   test.use({javaScriptEnabled: false});
+
+  test('preserves localized current-page semantics in server-rendered navigation', async ({page}) => {
+    const cases = [
+      {path: '/research', locale: 'en', label: 'Research', selector: '.desktop-nav'},
+      {path: '/es/research', locale: 'es', label: 'Investigación', selector: '.desktop-nav'},
+      {path: '/support', locale: 'en', label: 'Get support', selector: '.site-header__actions'},
+      {
+        path: '/es/support',
+        locale: 'es',
+        label: 'Obtener asistencia',
+        selector: '.site-header__actions',
+      },
+    ] as const;
+
+    for (const item of cases) {
+      await expectDocument(page, item.path, item.locale);
+      const currentHeaderLink = page.locator(
+        `${item.selector} a[aria-current="page"]`,
+      );
+      await expect(currentHeaderLink).toHaveCount(1);
+      await expect(currentHeaderLink).toHaveText(item.label);
+
+      const currentFallbackLink = page.locator(
+        '.mobile-nav__fallback a[aria-current="page"]',
+      );
+      await expect(currentFallbackLink).toHaveCount(1);
+      await expect(currentFallbackLink).toHaveText(item.label);
+    }
+  });
+
+  test('preserves query data through the no-JavaScript language gateway', async ({page}) => {
+    await page.setViewportSize({width: 1280, height: 800});
+    const cases = [
+      {
+        expectedHref: '/api/language-switch/en?path=%2Fcontact',
+        expectedUrl: /\/contact\?topic=research$/u,
+        label: 'Idioma: English',
+        path: '/es/contact?topic=research#main-content',
+      },
+      {
+        expectedHref: '/api/language-switch/es?path=%2Fcontact',
+        expectedUrl: /\/es\/contact\?topic=technical$/u,
+        label: 'Language: Español',
+        path: '/contact?topic=technical#main-content',
+      },
+    ] as const;
+
+    for (const item of cases) {
+      await expectDocument(page, item.path, item.path.startsWith('/es/') ? 'es' : 'en');
+      const switcher = page.locator('.site-header__actions').getByRole('link', {
+        name: item.label,
+      });
+      await expect(switcher).toHaveAttribute('href', item.expectedHref);
+      await switcher.click();
+      await expect(page).toHaveURL(item.expectedUrl);
+    }
+  });
 
   test('hides inert filters and explains that every localized resource remains available', {
     tag: ['@cross-browser-smoke', '@mobile-webkit-smoke', '@production-public-smoke'],
@@ -1720,6 +1979,68 @@ test('mobile navigation opens at a phone viewport and reaches a primary route', 
   expectNoRuntimeIssues(issues);
 });
 
+test('mobile navigation falls back to native links when its controller fails', async ({
+  browserName,
+  page,
+}) => {
+  test.skip(browserName !== 'chromium', 'The blocked-controller fallback is a Chromium contract.');
+  await page.setViewportSize({width: 390, height: 844});
+  await page.route('**/static-marketing-navigation.js', (route) => route.abort('failed'));
+
+  const response = await page.goto('/?test=blocked-static-navigation', {waitUntil: 'load'});
+  expect(response?.status()).toBe(200);
+  await expect(page.locator('.desktop-nav')).toBeHidden();
+  await expect(page.locator('.mobile-nav__trigger')).toBeHidden();
+
+  const fallback = page.locator('details.mobile-nav__fallback');
+  const fallbackTrigger = fallback.locator(':scope > .mobile-nav__fallback-trigger');
+  await expect(fallback).toBeVisible();
+  await expect(fallbackTrigger).toBeVisible();
+  await expect(fallbackTrigger).toContainText('Open navigation');
+  await fallbackTrigger.click();
+  await expect(fallback).toHaveAttribute('open', '');
+  await expect(fallbackTrigger).toContainText('Close navigation');
+
+  const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
+  await expect(navigation).toBeVisible();
+  const approach = navigation.getByRole('link', {name: 'Approach', exact: true});
+  await expect(approach).toHaveAttribute('href', '/approach');
+  await approach.click();
+  await expect(page).toHaveURL(/\/approach$/u);
+  await expect(page.getByRole('heading', {level: 1})).toContainText('Make the mathematics');
+});
+
+test('delayed static navigation enhancement preserves visible focus', async ({page}) => {
+  await page.setViewportSize({width: 390, height: 844});
+  let releaseController!: () => void;
+  const controllerGate = new Promise<void>((resolve) => {
+    releaseController = resolve;
+  });
+  await page.route('**/static-marketing-navigation.js', async (route) => {
+    await controllerGate;
+    await route.continue();
+  });
+
+  await page.goto('/?test=delayed-static-navigation', {waitUntil: 'commit'});
+  const menu = page.locator('.mobile-nav');
+  const fallback = menu.locator('details.mobile-nav__fallback');
+  const fallbackTrigger = fallback.locator(':scope > .mobile-nav__fallback-trigger');
+  await expect(fallbackTrigger).toBeVisible();
+  await fallbackTrigger.click();
+  const fallbackAbout = fallback.getByRole('link', {name: 'About', exact: true});
+  await fallbackAbout.focus();
+  await expect(fallbackAbout).toBeFocused();
+  expect(await fallback.evaluate((element) => element.matches(':focus-within'))).toBe(true);
+
+  releaseController();
+  await page.waitForLoadState('load');
+  const enhancedTrigger = menu.locator(':scope > .mobile-nav__trigger');
+  await expect(menu).toHaveAttribute('data-ready', 'true');
+  await expect(enhancedTrigger).toBeVisible();
+  await expect(enhancedTrigger).toBeFocused();
+  await expect(fallback).toBeHidden();
+});
+
 test.describe('mobile navigation without JavaScript', () => {
   test.use({javaScriptEnabled: false});
 
@@ -1739,7 +2060,11 @@ test.describe('mobile navigation without JavaScript', () => {
       await expect(page.locator('.desktop-nav')).toBeHidden();
       await expect(page.locator('.mobile-nav__trigger')).toBeHidden();
 
-      const navigation = page.locator('nav.mobile-nav__fallback');
+      const fallback = page.locator('details.mobile-nav__fallback');
+      await expect(fallback).toBeVisible();
+      await fallback.locator(':scope > .mobile-nav__fallback-trigger').click();
+      await expect(fallback).toHaveAttribute('open', '');
+      const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
       await expect(navigation).toBeVisible();
       await expect(navigation).toHaveAccessibleName(shared.navigation.ariaLabel);
       await expect(navigation.getByRole('link')).toHaveCount(
@@ -1760,7 +2085,12 @@ test.describe('mobile navigation without JavaScript', () => {
         navigation.getByRole('link', {
           name: `${shared.navigation.languageLabel}: ${shared.navigation.languageNames[locale === 'en' ? 'es' : 'en']}`,
         }),
-      ).toHaveAttribute('href', locale === 'en' ? '/es' : '/');
+      ).toHaveAttribute(
+        'href',
+        locale === 'en'
+          ? '/api/language-switch/es?path=%2F'
+          : '/api/language-switch/en?path=%2F',
+      );
 
       const approachLink = navigation.getByRole('link', {name: approach.label, exact: true});
       await expect(approachLink).toHaveAttribute('href', approachPath);
@@ -1780,7 +2110,10 @@ test.describe('mobile navigation without JavaScript', () => {
       await page.setViewportSize(viewport);
       await expectDocument(page, `/?no-js-reflow=${viewport.width}x${viewport.height}`, 'en');
 
-      const navigation = page.locator('nav.mobile-nav__fallback');
+      const fallback = page.locator('details.mobile-nav__fallback');
+      await fallback.locator(':scope > .mobile-nav__fallback-trigger').click();
+      await expect(fallback).toHaveAttribute('open', '');
+      const navigation = fallback.locator('nav.mobile-nav__fallback-panel');
       const language = navigation.getByRole('link', {name: 'Language: Español'});
       await expect(navigation).toBeVisible();
       await language.focus();
@@ -1789,6 +2122,9 @@ test.describe('mobile navigation without JavaScript', () => {
         await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
         `${viewport.width}×${viewport.height} fallback causes horizontal overflow`,
       ).toBeLessThanOrEqual(1);
+
+      await fallback.locator(':scope > .mobile-nav__fallback-trigger').click();
+      await expect(fallback).not.toHaveAttribute('open', '');
 
       const main = page.locator('main#main-content');
       await main.scrollIntoViewIfNeeded();
@@ -1856,6 +2192,30 @@ test('mobile navigation closes without obscuring keyboard focus', {
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.site-header .brand')).toBeFocused();
   expectNoRuntimeIssues(issues);
+});
+
+test('mobile navigation closes before the desktop breakpoint hides focused controls', {
+  tag: ['@cross-browser-smoke', '@mobile-webkit-smoke'],
+}, async ({page}) => {
+  await page.setViewportSize({width: 390, height: 844});
+  await expectDocument(page, '/', 'en');
+  const menu = page.locator('.mobile-nav');
+  const trigger = menu.locator(':scope > .mobile-nav__trigger');
+  await trigger.click();
+  const language = menu.getByRole('link', {name: 'Language: Español'});
+  await language.focus();
+  await expect(language).toBeFocused();
+
+  await page.setViewportSize({width: 1280, height: 800});
+  await expect(trigger).toBeHidden();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#mobile-navigation-panel')).toBeHidden();
+  await expect(page.locator('.status-strip')).toBeVisible();
+  await expect(page.locator('.site-header .brand')).toBeFocused();
+
+  await page.setViewportSize({width: 390, height: 844});
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('native mobile WebKit handles touch navigation and language switching without overflow', {
@@ -2725,7 +3085,7 @@ test('unknown routes return a non-indexable branded 404 response', async ({page}
     expect(response?.headers()['content-type'], path).toContain('text/html');
     await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
     await expect(page.getByRole('link', {name: 'Return home'})).toHaveAttribute('href', '/');
-    const languageLinks = page.locator('a.language-switcher');
+    const languageLinks = page.locator('.site-header__actions a.language-switcher');
     await expect(languageLinks).toHaveCount(1);
     await expect(languageLinks).toHaveAttribute('href', '/es');
     await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
@@ -2741,7 +3101,7 @@ test('Spanish unknown routes keep localized navigation and a non-indexable 404',
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
   await expect(page.getByRole('heading', {level: 1, name: 'Página no encontrada'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'Volver al inicio'})).toHaveAttribute('href', '/es');
-  const languageLinks = page.locator('a.language-switcher');
+  const languageLinks = page.locator('.site-header__actions a.language-switcher');
   await expect(languageLinks).toHaveCount(1);
   await expect(languageLinks).toHaveAttribute('href', '/');
   await expect(page.locator('a[href*="site-not-found-internal"]')).toHaveCount(0);
@@ -2936,7 +3296,9 @@ test('robots and sitemap publish crawl policy and both locale variants', async (
   const robotsText = await robots.text();
   expect(robotsText).toContain('User-Agent: *');
   expect(robotsText).toContain('Disallow: /api/');
-  expect(robotsText).toContain('Disallow: /executive-preview');
+  for (const path of ['/executive-preview', '/es/executive-preview']) {
+    expect(robotsText).not.toContain(`Disallow: ${path}`);
+  }
   expect(robotsText).toContain('Disallow: /flash-assets/');
   expect(robotsText).toContain('Sitemap: https://www.helpmath.ai/sitemap.xml');
   for (const id of DEMO_CANDIDATE_IDS) {

@@ -1,6 +1,9 @@
 import {createHash} from 'node:crypto';
+import {spawn} from 'node:child_process';
 import {access, readFile, readdir} from 'node:fs/promises';
+import {createServer} from 'node:net';
 import path from 'node:path';
+import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 
 import activationManifestJson from '../config/demo-activations.json';
@@ -8,6 +11,16 @@ import {DEMO_CANDIDATE_IDS, demoCandidates} from '../demos/candidates/index.ts';
 import {demoLifecycleStates} from '../lib/demo-lifecycle.ts';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+export const PUBLIC_DYNAMIC_DEMO_ROUTES = Object.freeze([
+  '/demos',
+  '/es/demos',
+]);
+
+const SERVER_START_TIMEOUT_MS = 15_000;
+const SERVER_STOP_TIMEOUT_MS = 5_000;
+const DYNAMIC_DEMO_RESPONSE_TIMEOUT_MS = 5_000;
+const PAGES_DATA_RESPONSE_TIMEOUT_MS = 2_000;
 
 const APPROVAL_METADATA_KEYS = Object.freeze([
   'acceptedAt',
@@ -88,9 +101,12 @@ function candidateRuntimeTextFingerprints(candidate, extraRuntimeText) {
   const records = [];
   const add = (value, label) => addFingerprint(records, value, label, candidate.id);
   add(candidate.runtime.entry, 'runtime entry');
+  add(candidate.runtime.globalName, 'runtime global name');
   add('private-demo-runtime', 'private runtime directory');
+  add(`/demos/${candidate.id}`, 'candidate route');
   add(`demos/modules/${candidate.id}`, 'candidate module path');
   add(`/api/executive-preview/assets/${candidate.id}/`, 'candidate asset API prefix');
+  add(`/api/executive-preview/runtime/${candidate.id}.js`, 'candidate runtime API');
 
   for (const artifact of candidate.artifacts) {
     if (
@@ -323,6 +339,198 @@ async function loadPublicBuildArtifacts() {
   })));
 }
 
+function responseArtifactName(route) {
+  return `http-response:${route}`;
+}
+
+export function publicDemoDataRoutes(buildId) {
+  if (typeof buildId !== 'string' || !/^[A-Za-z0-9_-]+$/u.test(buildId)) {
+    throw new Error('A valid Next.js build ID is required for the Pages data scan.');
+  }
+  return Object.freeze([
+    `/_next/data/${buildId}/demos.json`,
+    `/_next/data/${buildId}/es/demos.json`,
+    `/_next/data/${buildId}/static/en/demos.json`,
+    `/_next/data/${buildId}/static/es/demos.json`,
+  ]);
+}
+
+export async function loadPublicDemoResponseArtifacts(origin, fetchImpl = fetch) {
+  const normalizedOrigin = new URL(origin);
+  if (normalizedOrigin.pathname !== '/' || normalizedOrigin.search || normalizedOrigin.hash) {
+    throw new Error('Public demo scan origin must not include a path, query, or fragment.');
+  }
+
+  return Promise.all(PUBLIC_DYNAMIC_DEMO_ROUTES.map(async (route) => {
+    let response;
+    try {
+      response = await fetchImpl(new URL(route, normalizedOrigin), {
+        headers: {Accept: 'text/html'},
+        redirect: 'manual',
+        signal: AbortSignal.timeout(DYNAMIC_DEMO_RESPONSE_TIMEOUT_MS),
+      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.name : 'request failure';
+      throw new Error(
+        `Public demo response scan could not complete for ${route} (${reason}).`,
+      );
+    }
+    const contentType = response.headers.get('content-type') ?? '';
+    if (response.status !== 200) {
+      throw new Error(
+        `Public demo response scan requires HTTP 200 for ${route}; received ${response.status}.`,
+      );
+    }
+    if (!/^text\/html(?:;|$)/iu.test(contentType)) {
+      throw new Error(
+        `Public demo response scan requires HTML for ${route}; received ${contentType || 'no content type'}.`,
+      );
+    }
+
+    const contents = Buffer.from(await response.arrayBuffer());
+    if (contents.length === 0) {
+      throw new Error(`Public demo response scan received an empty body for ${route}.`);
+    }
+    return {file: responseArtifactName(route), contents};
+  }));
+}
+
+export async function loadBlockedPublicDemoDataArtifacts(
+  origin,
+  buildId,
+  fetchImpl = fetch,
+) {
+  const normalizedOrigin = new URL(origin);
+  if (normalizedOrigin.pathname !== '/' || normalizedOrigin.search || normalizedOrigin.hash) {
+    throw new Error('Pages data scan origin must not include a path, query, or fragment.');
+  }
+
+  const routes = publicDemoDataRoutes(buildId);
+  return Promise.all(routes.map(async (route) => {
+    let response;
+    try {
+      response = await fetchImpl(new URL(route, normalizedOrigin), {
+        headers: {Accept: 'application/json'},
+        redirect: 'manual',
+        signal: AbortSignal.timeout(PAGES_DATA_RESPONSE_TIMEOUT_MS),
+      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.name : 'request failure';
+      throw new Error(
+        `Blocked Pages data response scan could not complete for ${route} (${reason}).`,
+      );
+    }
+    if (response.status !== 404) {
+      throw new Error(
+        `Blocked Pages data response scan requires HTTP 404 for ${route}; `
+        + `received ${response.status}.`,
+      );
+    }
+    if (response.headers.get('cache-control') !== 'private, no-store, max-age=0') {
+      throw new Error(`Blocked Pages data response is not private/no-store for ${route}.`);
+    }
+    if (response.headers.get('x-robots-tag') !== 'noindex, nofollow, noarchive') {
+      throw new Error(`Blocked Pages data response is not noindex for ${route}.`);
+    }
+    return {
+      file: responseArtifactName(route),
+      contents: Buffer.from(await response.arrayBuffer()),
+    };
+  }));
+}
+
+async function availableLoopbackPort() {
+  const server = createServer();
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    await new Promise((resolve) => server.close(resolve));
+    throw new Error('Could not allocate a loopback port for the public demo response scan.');
+  }
+  await new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  });
+  return address.port;
+}
+
+async function startBuiltApplication() {
+  const port = await availableLoopbackPort();
+  const origin = `http://127.0.0.1:${port}`;
+  const nextCli = path.join(repositoryRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
+  const child = spawn(
+    process.execPath,
+    [nextCli, 'start', '--hostname', '127.0.0.1', '--port', String(port)],
+    {
+      cwd: repositoryRoot,
+      env: {...process.env, NODE_ENV: 'production'},
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+  let output = '';
+  const recordOutput = (chunk) => {
+    output = `${output}${chunk}`.slice(-4_000);
+  };
+  child.stdout.on('data', recordOutput);
+  child.stderr.on('data', recordOutput);
+
+  const exit = new Promise((resolve) => {
+    child.once('exit', (code, signal) => resolve({code, signal}));
+  });
+  const deadline = Date.now() + SERVER_START_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const state = await Promise.race([
+      exit.then((result) => ({kind: 'exit', result})),
+      fetch(`${origin}/demos`, {
+        headers: {Accept: 'text/html'},
+        redirect: 'manual',
+        signal: AbortSignal.timeout(1_000),
+      })
+        .then(() => ({kind: 'ready'}))
+        .catch(() => ({kind: 'retry'})),
+    ]);
+    if (state.kind === 'ready') {
+      return {
+        origin,
+        async stop() {
+          if (child.exitCode !== null || child.signalCode !== null) return;
+          child.kill('SIGTERM');
+          const stopped = await Promise.race([
+            exit.then(() => true),
+            delay(SERVER_STOP_TIMEOUT_MS, false),
+          ]);
+          if (!stopped && child.exitCode === null && child.signalCode === null) {
+            child.kill('SIGKILL');
+            await exit;
+          }
+        },
+      };
+    }
+    if (state.kind === 'exit') {
+      throw new Error(
+        `Built application exited before the public demo response scan `
+        + `(code ${state.result.code ?? 'null'}, signal ${state.result.signal ?? 'null'}).\n${output}`,
+      );
+    }
+    await delay(100);
+  }
+
+  child.kill('SIGTERM');
+  const stopped = await Promise.race([
+    exit.then(() => true),
+    delay(SERVER_STOP_TIMEOUT_MS, false),
+  ]);
+  if (!stopped && child.exitCode === null && child.signalCode === null) {
+    child.kill('SIGKILL');
+    await exit;
+  }
+  throw new Error(
+    `Built application did not become ready for the public demo response scan.\n${output}`,
+  );
+}
+
 async function main() {
   const candidateIds = Object.keys(demoCandidates).sort();
   if (JSON.stringify(candidateIds) !== JSON.stringify([...DEMO_CANDIDATE_IDS].sort())) {
@@ -334,6 +542,14 @@ async function main() {
     lifecycleStates: demoLifecycleStates,
   });
   const artifacts = await loadPublicBuildArtifacts();
+  const buildId = (await readFile(path.join(repositoryRoot, '.next', 'BUILD_ID'), 'utf8')).trim();
+  const server = await startBuiltApplication();
+  try {
+    artifacts.push(...await loadPublicDemoResponseArtifacts(server.origin));
+    artifacts.push(...await loadBlockedPublicDemoDataArtifacts(server.origin, buildId));
+  } finally {
+    await server.stop();
+  }
   const leaks = findDemoClientLeaks(artifacts, policy);
 
   if (leaks.length > 0) {
@@ -348,6 +564,8 @@ async function main() {
     protectedApprovalFingerprints: policy.forbiddenApprovalText.length,
     protectedRuntimeFileHashes: policy.forbiddenRuntimeFileHashes.length,
     protectedRuntimeTextFingerprints: policy.forbiddenRuntimeText.length,
+    blockedPagesDataRoutes: publicDemoDataRoutes(buildId),
+    scannedDynamicDemoRoutes: PUBLIC_DYNAMIC_DEMO_ROUTES,
     scannedFiles: artifacts.length,
   }));
 }

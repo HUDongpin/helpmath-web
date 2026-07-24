@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  executive-preview-lifecycle:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

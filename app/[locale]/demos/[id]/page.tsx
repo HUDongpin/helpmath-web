@@ -3,14 +3,13 @@ import {notFound} from 'next/navigation';
 
 import {DemoDetailPage} from '@/components/demos-pages';
 import {MainContent} from '@/components/main-content';
-import {demoIds, getSiteContent, isDemoId, isLocale} from '@/content';
-import {isIndexableDemo, isReviewDemoId, reviewDemoIds} from '@/demos/catalog';
+import {getRuntimeSiteContent, isLocale} from '@/content';
+import {isDemoCandidateId} from '@/demos/candidates';
+import {getDemoLifecycleState} from '@/lib/demo-lifecycle';
 import {hasExecutivePreviewSession} from '@/lib/executive-preview-server';
 import {createPageMetadata} from '@/lib/metadata';
 
-export function generateStaticParams() {
-  return [...demoIds, ...reviewDemoIds].map((id) => ({id}));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params
@@ -18,11 +17,13 @@ export async function generateMetadata({
   params: Promise<{locale: string; id: string}>;
 }): Promise<Metadata> {
   const {locale, id} = await params;
-  if (!isLocale(locale) || (!isDemoId(id) && !isReviewDemoId(id))) notFound();
-  if (isReviewDemoId(id) && !(await hasExecutivePreviewSession())) notFound();
-  const content = getSiteContent(locale).pages.demoDetails[id];
+  if (!isLocale(locale) || !isDemoCandidateId(id)) notFound();
+  const lifecycle = getDemoLifecycleState(id);
+  if (!lifecycle.public && !lifecycle.privatePreview) notFound();
+  if (!lifecycle.public && !(await hasExecutivePreviewSession())) notFound();
+  const content = getRuntimeSiteContent(locale).pages.demoDetails[id];
   const metadata = createPageMetadata(locale, content.metadata, `/demos/${id}`);
-  if (isDemoId(id) && isIndexableDemo(id)) return metadata;
+  if (lifecycle.public && lifecycle.indexable) return metadata;
 
   return {
     ...metadata,
@@ -43,8 +44,12 @@ export default async function DemoPage({
   searchParams: Promise<{frame?: string | string[]}>;
 }) {
   const [{locale, id}, query] = await Promise.all([params, searchParams]);
-  if (!isLocale(locale) || (!isDemoId(id) && !isReviewDemoId(id))) notFound();
-  if (isReviewDemoId(id) && !(await hasExecutivePreviewSession())) notFound();
+  if (!isLocale(locale) || !isDemoCandidateId(id)) notFound();
+  const lifecycle = getDemoLifecycleState(id);
+  if (!lifecycle.public && !lifecycle.privatePreview) notFound();
+  if (!lifecycle.public && !(await hasExecutivePreviewSession())) notFound();
+  const candidate = lifecycle.candidate;
+  if (!candidate) notFound();
 
   const rawFrame = Array.isArray(query.frame) ? query.frame[0] : query.frame;
   const parsedFrame = rawFrame && /^\d+$/.test(rawFrame) ? Number(rawFrame) : undefined;
@@ -55,11 +60,15 @@ export default async function DemoPage({
   return (
     <MainContent>
       <DemoDetailPage
-        content={getSiteContent(locale).pages.demoDetails[id]}
+        content={getRuntimeSiteContent(locale).pages.demoDetails[id]}
         id={id}
         locale={locale}
         requestedFrame={requestedFrame}
-        reviewMode={isReviewDemoId(id)}
+        reviewMode={!lifecycle.public}
+        runtime={{
+          globalName: candidate.runtime.globalName,
+          source: `/api/executive-preview/runtime/${id}.js`,
+        }}
       />
     </MainContent>
   );

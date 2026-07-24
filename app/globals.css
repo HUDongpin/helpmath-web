@@ -110,13 +110,14 @@ svg {
 /*
  * Keep the first view fully rendered while deferring only large, below-fold
  * regions. The intrinsic sizes are calibrated across English and Spanish
- * using the bundled Nunito Sans type system. Resource cards before the
- * deepest published anchor use their own aggregate calibration so fragment
- * navigation keeps the target below the sticky header.
+ * using the bundled Nunito Sans type system. Resource cards use aggregate
+ * calibration so fragment navigation keeps the target below the sticky
+ * header without laying out the below-fold library during first paint.
  */
 @supports (content-visibility: auto) {
   .deferred-section,
-  .resource-list > .resource-entry:nth-child(n + 4) {
+  .evidence-list > .evidence-entry,
+  .resource-list > .resource-entry {
     content-visibility: auto;
   }
 
@@ -138,6 +139,7 @@ svg {
 
   .deferred-section--home-closing {
     --deferred-block-size: clamp(224.6px, calc(289.9px - 5.1vw), 253.1px);
+    content-visibility: visible;
   }
 
   .deferred-section--demos-quality {
@@ -164,7 +166,15 @@ svg {
     --deferred-block-size: clamp(724.8px, calc(923.2px - 15.5vw), 811.4px);
   }
 
-  .resource-list > .resource-entry:nth-child(n + 4) {
+  .evidence-list > .evidence-entry {
+    contain-intrinsic-size: auto clamp(419px, calc(588px - 13.2vw), 469px);
+  }
+
+  html[lang="es"] .evidence-list > .evidence-entry {
+    contain-intrinsic-size: auto clamp(455px, calc(630px - 13.2vw), 505px);
+  }
+
+  .resource-list > .resource-entry {
     contain-intrinsic-size: auto clamp(145.4px, calc(464.1px - 24.9vw), 284.6px);
   }
 
@@ -175,6 +185,10 @@ svg {
    */
   html.resource-fragment-navigation .resource-list > .resource-entry,
   html:has(.resource-entry:target) .resource-list > .resource-entry {
+    content-visibility: visible;
+  }
+
+  html:has(.evidence-entry:target) .evidence-list > .evidence-entry {
     content-visibility: visible;
   }
 
@@ -845,8 +859,47 @@ svg {
   display: flex;
   height: 56px;
   justify-content: center;
+  position: relative;
   transform: rotate(-2deg);
   width: 56px;
+}
+
+.resource-entry__icon::before {
+  align-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  height: 25px;
+  justify-content: center;
+  line-height: 1;
+  width: 25px;
+}
+
+.resource-entry__icon--available::before {
+  content: '✓';
+}
+
+.resource-entry__icon--request::before {
+  content: '!';
+}
+
+.resource-entry__icon--review::before {
+  content: '';
+  height: 15px;
+  transform: translate(-2px, -2px);
+  width: 15px;
+}
+
+.resource-entry__icon--review::after {
+  border-top: 2px solid currentColor;
+  content: '';
+  height: 0;
+  position: absolute;
+  transform: translate(9px, 8px) rotate(45deg);
+  width: 8px;
 }
 
 .resource-entry__meta {
@@ -1909,10 +1962,16 @@ svg {
 }
 
 .mobile-nav__fallback {
-  display: none;
+  display: block;
 }
 
+.mobile-nav__fallback,
 .mobile-nav__trigger {
+  grid-area: 1 / 1;
+}
+
+.mobile-nav__trigger,
+.mobile-nav__fallback-trigger {
   align-items: center;
   background: transparent;
   border: 0;
@@ -1926,6 +1985,45 @@ svg {
   line-height: inherit;
   padding: 0;
   text-align: left;
+}
+
+.mobile-nav__trigger {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.mobile-nav__fallback-trigger {
+  display: flex;
+  list-style: none;
+}
+
+.mobile-nav__fallback-state {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.mobile-nav__fallback:not([open]) [data-fallback-close-state],
+.mobile-nav__fallback[open] [data-fallback-open-state] {
+  display: none;
+}
+
+.mobile-nav__fallback-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-nav__fallback:not([open]) > .mobile-nav__fallback-panel {
+  display: none;
+}
+
+.mobile-nav[data-ready='true'] > .mobile-nav__fallback {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.mobile-nav[data-ready='true'] > .mobile-nav__trigger {
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .mobile-nav__panel {
@@ -1945,8 +2043,12 @@ svg {
   z-index: 110;
 }
 
+.mobile-nav__panel[hidden] {
+  display: none;
+}
+
 .mobile-nav__panel > a,
-.mobile-nav__fallback > a {
+.mobile-nav__fallback-panel > a {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -1957,12 +2059,12 @@ svg {
 }
 
 .mobile-nav__panel > a:last-child,
-.mobile-nav__fallback > a:last-child {
+.mobile-nav__fallback-panel > a:last-child {
   border-bottom: 0;
 }
 
 .mobile-nav__panel > a[aria-current='page'],
-.mobile-nav__fallback > a[aria-current='page'] {
+.mobile-nav__fallback-panel > a[aria-current='page'] {
   background: var(--blue-pale);
   border-inline-start: 4px solid var(--blue);
   padding-inline-start: calc(0.6rem - 4px);
@@ -2010,6 +2112,11 @@ svg {
   color: var(--blue-dark);
   min-height: auto;
   padding-inline: 0;
+}
+
+.action__arrow {
+  font-size: 1.25em;
+  line-height: 1;
 }
 
 .global-error-body {
@@ -2599,17 +2706,7 @@ svg {
   }
 
   .mobile-nav {
-    display: block;
-  }
-
-  .mobile-nav__fallback {
-    background: var(--white);
-    border-top: 1px solid var(--line);
     display: grid;
-    gap: 0.2rem;
-    max-height: calc(100dvh - var(--site-nav-height));
-    overflow-y: auto;
-    padding-block: 0.8rem;
   }
 
   .status-strip--menu-open {
@@ -2691,6 +2788,14 @@ svg {
   }
 
   @supports (content-visibility: auto) {
+    .evidence-list > .evidence-entry {
+      contain-intrinsic-size: auto clamp(730px, calc(1270px - 138vw), 830px);
+    }
+
+    html[lang="es"] .evidence-list > .evidence-entry {
+      contain-intrinsic-size: auto clamp(760px, calc(1206px - 114vw), 840px);
+    }
+
     .deferred-section--home-audiences {
       --deferred-block-size: calc(1186.7px - 56.7vw);
     }
@@ -2731,7 +2836,7 @@ svg {
       --deferred-block-size: calc(1282px - 67.1vw);
     }
 
-    .resource-list > .resource-entry:nth-child(n + 4) {
+    .resource-list > .resource-entry {
       contain-intrinsic-size: auto calc(510.8px - 38.7vw);
     }
 
@@ -2883,7 +2988,7 @@ svg {
 
 @media (max-width: 520px) {
   @supports (content-visibility: auto) {
-    .resource-list > .resource-entry:nth-child(n + 4) {
+    .resource-list > .resource-entry {
       contain-intrinsic-size: auto calc(673.5px - 63.2vw);
     }
 
@@ -3125,7 +3230,8 @@ svg {
 
 @media print {
   .deferred-section,
-  .resource-list > .resource-entry:nth-child(n + 4) {
+  .evidence-list > .evidence-entry,
+  .resource-list > .resource-entry {
     content-visibility: visible;
   }
 

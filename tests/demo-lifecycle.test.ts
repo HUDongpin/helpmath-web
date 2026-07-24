@@ -22,6 +22,7 @@ import {
 import {
   deriveDemoLifecycleState,
   demoLifecycleStates,
+  getDemoLifecycleCatalog,
   getDemoLifecycleState,
   isDemoDenied,
   isDemoIndexable,
@@ -170,6 +171,29 @@ describe('demo candidates', () => {
     );
   });
 
+  it('rejects non-PNG private demo assets while preserving the runtime contract', () => {
+    for (const extension of ['svg', 'mp3']) {
+      const candidate = candidateFixture();
+      const privateAsset = candidate.artifacts.find(({path: artifactPath}) =>
+        artifactPath.startsWith(`private-demo-assets/${candidate.id}/`),
+      );
+      assert.ok(privateAsset, 'fixture must contain a private demo asset');
+      privateAsset.path = privateAsset.path.replace(/\.png$/u, `.${extension}`);
+      candidate.artifactSha256 = computeDemoArtifactSha256(candidate);
+
+      const errors = validateDemoCandidate(candidate).join('\n');
+      assert.match(
+        errors,
+        /path under private-demo-assets must use a lowercase \.png filename/u,
+      );
+      assert.doesNotMatch(errors, /artifactSha256 does not match/u);
+    }
+
+    const candidate = candidateFixture();
+    assert.equal(candidate.runtime.entry, `private-demo-runtime/${candidate.id}.ts`);
+    assert.deepEqual(validateDemoCandidate(candidate), []);
+  });
+
   it('binds the candidate id to the runtime digest and the aggregate to ordered artifacts', () => {
     const candidate = candidateFixture();
     candidate.candidateId = `${candidate.id}--2026-07-22--deadbeef`;
@@ -224,6 +248,10 @@ describe('demo activation manifest', () => {
       assert.equal(isDemoDenied(id), false, id);
       assert.deepEqual(demoLifecycleStates[id], state, id);
     }
+    const lifecycle = getDemoLifecycleCatalog(NOW_MS);
+    assert.deepEqual(lifecycle.publicIds, []);
+    assert.deepEqual(lifecycle.indexableIds, []);
+    assert.deepEqual(lifecycle.privatePreviewIds, DEMO_CANDIDATE_IDS);
   });
 
   it('rejects non-canonical JSON and unknown activation fields', () => {
@@ -365,6 +393,39 @@ describe('demo activation manifest', () => {
     assert.equal(inactive.privatePreview, true);
     assert.equal(inactive.public, false);
     assert.equal(inactive.indexable, false);
+  });
+
+  it('closes an activated public demo when its launch gate closes without closing private review', () => {
+    const manifest = activationFixture();
+    const id = DEMO_CANDIDATE_IDS[0];
+    activate(manifest, id);
+    const activation = manifest.demos[id];
+
+    const published = deriveDemoLifecycleState({
+      id,
+      candidate: demoCandidates[id],
+      activation,
+      candidateErrors: [],
+      manifestErrors: activationErrors(manifest, true),
+      demoPublicationGateApproved: true,
+    });
+    const gateClosed = deriveDemoLifecycleState({
+      id,
+      candidate: demoCandidates[id],
+      activation,
+      candidateErrors: [],
+      manifestErrors: activationErrors(manifest, true),
+      demoPublicationGateApproved: false,
+    });
+
+    assert.equal(published.public, true);
+    assert.equal(published.access, 'public');
+    assert.equal(gateClosed.public, false);
+    assert.equal(gateClosed.indexable, false);
+    assert.equal(gateClosed.active, false);
+    assert.equal(gateClosed.privatePreview, true);
+    assert.equal(gateClosed.access, 'private-preview');
+    assert.deepEqual(gateClosed.errors, []);
   });
 
   it('can deactivate a valid activation without changing the immutable candidate digest', () => {

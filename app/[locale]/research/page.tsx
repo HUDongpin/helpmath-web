@@ -12,5 +12,5 @@ export async function generateMetadata({params}: {params: Promise<{locale: 'en' 
 
 export default async function ResearchRoute({params}: {params: Promise<{locale: 'en' | 'es'}>}) {
   const {locale} = await params;
-  return <MainContent><ResearchPage content={getSiteContent(locale).pages.research} /></MainContent>;
+  return <MainContent><ResearchPage content={getSiteContent(locale).pages.research} locale={locale} /></MainContent>;
 }

@@ -4,6 +4,18 @@ Production website for [www.helpmath.ai](https://www.helpmath.ai). This is a
 self-contained Next.js application with English as the unprefixed default
 locale and Spanish under `/es`.
 
+This private repository, `HUDongpin/helpmath-web`, with its repository root as
+the Vercel project root, is the only authorized production source for
+`helpmath.ai`. The separate `HELP MATH_Flash_To_JS/apps/web` application is an
+internal migration workbench: do not connect it to the production Vercel
+project or assign either canonical domain to it. Workbench previews must use a
+separate, protected non-production project with no `helpmath.ai` aliases.
+
+See the authoritative
+[website migration status matrix](docs/WEBSITE_MIGRATION_STATUS.md) for the
+separate public-website and HELP Math 2.0 product scopes, completed work,
+remaining launch gates, and owner inputs.
+
 ## Local verification
 
 ```bash
@@ -27,6 +39,48 @@ container-specific; do not regenerate them from a normal host run.
 `npm run test:e2e:chromium`,
 `npm run test:e2e:webkit`, `npm run test:e2e:mobile-webkit`, and
 `npm run test:e2e:firefox` are available for focused local diagnostics.
+
+The Lighthouse job retains five samples for each of five reviewed routes,
+collected as five balanced rounds that rotate every route through every
+temporal position, plus versioned capacity and quality verdicts. Every route's
+median Lighthouse benchmark index must be greater than Lighthouse's own
+slow-host boundary, and no route may contain more than one sample at or below
+that boundary. The five-run median keeps the strict product budgets resilient
+to one isolated runtime stall, while a second total-blocking-time result above
+200 ms fails the distribution guard. An
+identity-bound, explicitly ineligible first runner permits exactly one complete
+Quality workflow rerun on a fresh runner. Because GitHub's native full-rerun
+surface does not make the prior attempt's artifact available to attempt two,
+attempt two reconstructs the versioned capacity record from the GitHub-served
+exact-run Lighthouse job log, verifies that record and the required prior
+steps, and verifies all three replacement Quality jobs, including jobs that are
+still queued. For pull requests, the evidence binds both the source-branch SHA
+reported by the Jobs API and the synthetic merge SHA actually checked out by
+Actions;
+focused job retries, attempts after two, and retries of an eligible product
+budget failure are rejected.
+
+The public home, Research, Resources, and Demos routes use server-rendered Pages
+Router shells with the Next/React browser runtime disabled. They retain a
+native `details` navigation fallback and load only small, self-hosted
+progressive-enhancement controllers. `/static-marketing-navigation.js` handles
+menu focus, short-viewport sizing, and query/fragment-aware language switching;
+Resources additionally loads `/static-resource-library.js` for its search,
+category filters, and fragment alignment. The Demos shell remains
+request-rendered and explicitly non-cacheable so the launch-gate state is never
+frozen into a static build.
+
+If the navigation controller is unavailable, the native navigation and
+language gateway remain usable. The gateway preserves the validated path and
+same-origin query, but cannot preserve a URL fragment because browsers do not
+send fragments in HTTP requests or Referer headers. If the Resources controller
+is unavailable, its disabled filters leave every entry visible and the guarded
+inline fragment fallback still preserves direct resource links.
+
+This rerun policy establishes lineage for reviewed candidate code; it is not a
+cryptographic attestation against a malicious pull request that rewrites its own
+workflow or policy script. Production evidence independently accepts only a
+reviewed Quality `push` run for the exact `main` commit.
 
 Every external GitHub Action is pinned to a reviewed full commit SHA.
 Dependabot groups proposed GitHub Actions updates into a weekly pull request;

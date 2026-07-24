@@ -1,5 +1,3 @@
-import NextLink from 'next/link';
-
 import type {Locale} from '@/content/types';
 
 import {MainContent} from './main-content';
@@ -28,9 +26,9 @@ export function NotFoundPage({locale}: {locale: Locale}) {
           <h1>{content.title}</h1>
           <p>{content.body}</p>
           <div className="page-hero__actions">
-            <NextLink className="action action--primary" href={content.href} prefetch={false}>
+            <a className="action action--primary" href={content.href}>
               {content.action}
-            </NextLink>
+            </a>
           </div>
         </div>
       </Container>

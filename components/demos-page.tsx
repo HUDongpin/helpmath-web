@@ -1,15 +1,15 @@
 import {FlaskConical} from 'lucide-react';
 
-import type {DemosContent} from '@/content/types';
+import type {DemosContent, Locale} from '@/content/types';
 
 import {Action, Callout, Container, Eyebrow, Section} from './ui';
 import {PageHero} from './page-hero';
 import {TextSection} from './text-section';
 
-export function DemosPage({content}: {content: DemosContent}) {
+export function DemosPage({content, locale}: {content: DemosContent; locale: Locale}) {
   return (
     <>
-      <PageHero content={content.hero} tone="coral" />
+      <PageHero content={content.hero} locale={locale} tone="coral" />
       <Section className="section--compact">
         <Container>
           <Callout {...content.previewNotice} tone="yellow" />

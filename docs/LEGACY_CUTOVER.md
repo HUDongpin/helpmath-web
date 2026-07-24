@@ -4,8 +4,63 @@
 
 The modern site is live at `https://www.helpmath.ai`. The historical site at
 `https://www.helpprogram.net` remains on its existing host. Do not move the old
-domain until the legal review and verified contact-delivery gates in
-`DEPLOYMENT.md` are complete.
+domain until the legal review and the selected, deployment-verified contact
+disposition in `DEPLOYMENT.md` are complete.
+
+An additional containment issue was reconfirmed at
+`2026-07-23T14:59:07.744Z`: all 20 combinations of the historical student,
+teacher, school, district, and project-administrator `.aspx` login paths across
+apex/`www` and HTTP/HTTPS returned `200` with unprocessed ASP.NET page
+directives and server-control markup. The response exposes legacy filenames
+and form structure, not the code-behind implementation, but it is not a
+working or trustworthy login surface and users must not submit credentials
+there. The [sanitized public baseline](./evidence/legacy-login-surface-baseline-2026-07-23.json)
+retains statuses, selected headers, byte counts, body fingerprints, and marker
+booleans without retaining response bodies or credentials. The legacy-host owner
+should prioritize replacing those exact paths with the reviewed emergency
+one-hop `/login` redirects in
+`ops/legacy-host/login-containment/`, or an explicitly approved `410`
+containment, even if the broader domain cutover must wait. That package
+discards incoming queries, matches path-case variants, and deliberately leaves
+all other legacy routes unchanged. Preserve mail records and retain the
+pre-change host configuration and rollback evidence.
+
+The checked-in launch-gate manifest remains schema version 2 with all five
+gates `holding`, and the owner decisions required to execute cutover remain
+`Pending`. Schema v2 is holding-only; lifecycle code, documentation, a clean
+preflight, or a deployed redirect package does not authorize a DNS or old-host
+change.
+
+## Schema-v3 cutover authorization path
+
+Only a separately adopted schema-v3 manifest can make a future cutover
+candidate eligible. It must have an active `legalPublication=approved`
+decision and exactly one active contact disposition:
+`contactIntake=approved` or `contactIntake=disabled`. The latter is an explicit
+decision to keep intake off, not a waiver or an approval to collect messages.
+
+The `legacyCutover` candidate must target `approved`, bind the exact release
+commit and Vercel deployment, and have a window of no more than seven days.
+The actual `legacy-cutover-authority` must append the decision while the
+candidate and all dependencies are valid. Its fixed evidence path depends on
+the contact disposition:
+
+- with approved contact, use fresh
+  `contact-production-verification` followed by
+  `legacy-cutover-authorization`;
+- with disabled contact, use fresh `contact-disabled-verification` proving the
+  page and API remain closed and the alternative support route works, followed
+  by `legacy-cutover-authorization`.
+
+The preflight plan must select the same contact mode and bind the same commit
+and deployment. If contact is disabled, the plan must route `/Sales.htm` to
+`/resources`, not the unavailable contact page. The seven-day candidate limit
+never extends the preflight's 15-minute, 24-hour, 7-day, or 30-day evidence
+ages. If any dependency or cutover decision expires or is revoked, the result
+is `NO_GO`. Renewal must be appended before expiry with newly observed
+evidence; after expiry, append an explicit revocation with containment
+evidence and then reopen a new candidate. Explicit revocation preserves the
+prior history. No event may be edited or removed.
 
 The Next.js project defines permanent redirects for the audited legacy paths.
 `next.config.ts` is the runtime authority. `tests/legacy-redirects.test.ts` and
@@ -18,7 +73,17 @@ the generated Apache 2.4 package in `ops/legacy-host/`. It is derived from the
 same `next.config.ts` authority, fails closed for unlisted files, and must pass
 `npm run check:legacy-apache`, `npm run test:legacy-apache`, and the actual
 host's `httpd -t` before installation. Preparing this package does not deploy
-it or authorize a DNS change.
+it or authorize a DNS change. The complete package retains ordinary
+non-credential query strings for canonical continuity, but discards all query
+data and matches case variants for the same five retired credential-entry
+paths as the emergency package.
+
+The smaller `ops/legacy-host/login-containment/` package is the only generated
+Apache artifact suitable for the urgent five-login-path action before the full
+cutover gates resolve. It has no root redirect, catch-all, custom error
+document, blocked-file rule, DNS action, or mail action. Repository and local
+Apache tests prove only the package behavior; live HTTP and HTTPS evidence is
+still required after the legacy-host owner installs it.
 
 `LEGACY_RESOURCE_MAP.md` records the editorial reason, preferred stable source,
 and rights disposition for high-value historical documents. Complete its
@@ -49,6 +114,14 @@ become circular evidence once it points back to the modern page.
 | Exact DealerDocs WWC, DOI-linked study, ERIC-linked article, media report, and brochure files | Matching `/resources#...` record listed in `LEGACY_RESOURCE_MAP.md` |
 | Other `/DealerDocs/*`, `/teacher_guide/*` paths | `/resources` |
 | `/Beta/*`, `/beta/*` | `/curriculum` |
+
+The `/Sales.htm` row above records the current redirect implementation. A
+schema-v3 cutover plan that selects `contactMode=disabled` therefore uses the
+current `/resources` destination and can satisfy this routing constraint. An
+enabled-contact plan may still select `/contact`, but the reviewed release,
+generated Apache package, tests, and external plan must all implement the same
+choice. Do not edit the external plan to claim a destination the release commit
+does not implement.
 
 The crawl intentionally keeps two exceptions out of production redirects:
 
@@ -133,14 +206,18 @@ DNS. Do not store registrar credentials or mail secrets in the repository.
 
 ## Executable preflight
 
-**Current revision:** the code-level holding-only transition lock makes every
-invocation return `NO_GO` with exit code `2`, even if all historical preflight
-inputs are structurally complete. The `GO_TO_CHANGE` contract below is dormant
-design documentation for a future reviewed lifecycle; it cannot authorize a
-cutover in this revision.
+**Current manifest:** the schema-v2 holding-only state makes every invocation
+return `NO_GO` with exit code `2`, even if all other preflight inputs are
+structurally complete. A future valid schema-v3 history is necessary but still
+not sufficient: the external plan, fixed evidence, operational commands, and
+private receipt must also pass.
 
-Run the fail-closed preflight from the exact clean release commit before any
-legacy-host or DNS change:
+Run the fail-closed preflight from a clean governance HEAD before any
+legacy-host or DNS change. The external plan names the deployed release
+candidate commit; that candidate must exist and be an ancestor of the clean
+governance HEAD. The active legal, contact, and cutover decisions must bind
+that exact candidate/deployment, and the launch-gate validator must prove that
+the current governed bytes still equal the candidate-tree digest:
 
 ```bash
 npm run preflight:legacy-cutover -- \
@@ -152,19 +229,23 @@ The exact plan, evidence-envelope, required-check, freshness, and exit contract
 is documented in `LEGACY_CUTOVER_PREFLIGHT.md`.
 
 The plan must live outside the repository, explicitly choose `direct-one-hop`
-or `temporary-two-hop`, pin the full repository commit and Vercel deployment,
-resolve `/Sales.htm`, name change/rollback/DNS/mail/Search Console owners,
-define the UTC monitoring window and structured rollback thresholds, and record
-the nine required decisions as machine-readable approvals. It must reference
-fourteen non-secret JSON evidence artifacts by absolute external path,
-SHA-256, and observation time: before/proposed DNS zones, mail continuity,
-verified production contact delivery, Search Console control, off-device
-archive restore, rights/accessibility disposition, a fresh stable-link review,
-Production alias assignment, Quality,
-Production smoke, a staged target-host config test, and fresh pre-cutover DNS
-plus HTTP/TLS baselines.
+or `temporary-two-hop`, select contact mode `enabled` or `disabled`, pin the
+full repository commit and Vercel deployment, resolve `/Sales.htm`, name
+change/rollback/DNS/mail/Search Console owners, define the UTC monitoring window
+and structured rollback thresholds, and record the nine required decisions as
+machine-readable approvals. It must reference fourteen non-secret JSON evidence
+artifacts by absolute external path, SHA-256, and observation time:
+before/proposed DNS zones, mail continuity, exactly one of verified Production
+contact delivery or verified Production-disabled contact, Search Console
+control, off-device archive restore, rights/accessibility disposition, a fresh
+stable-link review, Production alias assignment, Quality, Production smoke, a
+staged target-host config test, and fresh pre-cutover DNS plus HTTP/TLS
+baselines.
 
-The preflight reads every referenced artifact and the retained underlying
+The plan and every typed evidence artifact must use canonical sorted JSON with
+one trailing newline. Noncanonical encodings, duplicate object keys, invalid
+clocks, excessive nesting, or placeholder hashes fail closed. The preflight
+reads every referenced artifact and the retained underlying
 collector output to which it points. It resolves real paths, rejects repository
 paths, symbolic-link terminals, permissive files, and oversized inputs, then
 recomputes both SHA-256 values and validates exact evidence kind,
@@ -175,16 +256,23 @@ Console control expires after 7 days and the independent off-device restore
 and rights/accessibility disposition after 30 days. Credential-shaped fields
 or values are rejected.
 
-The command reruns the repository launch-gate, generated Apache, local Apache
-2.4 contract, and metadata source-custody checks; confirms the clean worktree
-and plan commit; requires `legalPublication`, `contactIntake`, and
-`legacyCutover` approval; validates all nine machine-readable plan decisions;
-and binds every external receipt to the planned topology, deployment, and
-commit. A zero-exit `GO_TO_CHANGE` requires successful creation of a private
+The command uses a minimal bootstrap to pin the clean governance HEAD before
+loading local preflight modules. It reruns the repository launch-gate,
+generated Apache, local Apache 2.4 contract, and metadata source-custody checks;
+confirms the candidate/HEAD ancestry; requires `legalPublication=approved`,
+`legacyCutover=approved`, and a matching `contactIntake=approved` or
+`contactIntake=disabled` disposition; validates all nine machine-readable plan
+decisions; and binds every external receipt to the planned topology,
+deployment, and commit. A zero-exit `GO_TO_CHANGE` requires successful creation
+of a private
 `0600`, content-addressed JSON receipt and companion SHA-256 in a pre-existing
 absolute external directory that grants no group or other access. The receipt
-contains a `validUntil` deadline and must not be used to begin a change after
-it. Any failed or
+contains a `validUntil` deadline: the earliest plan/evidence deadline or
+legal/contact/cutover gate expiry. Immediately before the atomic receipt
+publish, it rechecks the manifest bytes, gate authorization snapshot, external
+evidence snapshot, plan hash, clean pinned HEAD, tool hashes, candidate
+ancestry, and five-minute validity buffer. It must not be used to begin a
+change after that deadline. Any failed or
 missing check, terminated/timed-out child command, receipt failure, or absent
 receipt store yields `NO_GO` and exit code `2`.
 
@@ -221,12 +309,14 @@ not the repository. There is no force or success-on-`NO_GO` option.
    samples under `/PR/`, the exact document routes in
    `LEGACY_RESOURCE_MAP.md`, wildcard fallbacks under `/DealerDocs/` and
    `/teacher_guide/`, `/shortdemo/`, `/Beta/`, and `/beta/`, the
-   intentionally unavailable SWF, and a true unknown path.
+   intentionally unavailable SWF, all five retired credential-entry paths
+   with a non-sensitive query-discard probe and case variant, and a true
+   unknown path.
 7. Retain status, `Location` headers, redirect-hop count, final canonical URL,
-   query preservation, fragment preservation for deep routes, target-element
-   existence, TLS result, and response body type. There must be no loop,
-   downgrade, raw Flash delivery, missing deep-link target, or unknown-path
-   soft `200`.
+   ordinary-query preservation, credential-entry query discard, fragment
+   preservation for deep routes, target-element existence, TLS result, and
+   response body type. There must be no loop, downgrade, raw Flash delivery,
+   missing deep-link target, or unknown-path soft `200`.
 8. Submit the new sitemap and, when available for the site configuration, the
    domain-move signal in the relevant Search Console properties. Monitor crawl
    errors, indexing, and redirect chains.

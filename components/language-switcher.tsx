@@ -1,11 +1,17 @@
 'use client';
 
-import {Languages} from 'lucide-react';
-import {useSearchParams} from 'next/navigation';
-import {Suspense, useSyncExternalStore} from 'react';
+import {usePathname} from 'next/navigation';
+import {useSyncExternalStore} from 'react';
 
-import {Link, usePathname} from '@/i18n/navigation';
 import type {Locale} from '@/content/types';
+import {BROWSER_LOCATION_CHANGE_EVENT} from '@/i18n/browser-location';
+import {
+  languageSwitchGatewayHref,
+  localizeHref,
+  stripLocalePrefix,
+} from '@/i18n/href';
+
+import {Languages} from './server-icons';
 
 type LanguageSwitcherProps = {
   locale: Locale;
@@ -15,17 +21,23 @@ type LanguageSwitcherProps = {
   pathnameOverride?: string;
 };
 
-function subscribeToHashChange(onStoreChange: () => void): () => void {
+function subscribeToLocationChange(onStoreChange: () => void): () => void {
   window.addEventListener('hashchange', onStoreChange);
-  return () => window.removeEventListener('hashchange', onStoreChange);
+  window.addEventListener('popstate', onStoreChange);
+  window.addEventListener(BROWSER_LOCATION_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('hashchange', onStoreChange);
+    window.removeEventListener('popstate', onStoreChange);
+    window.removeEventListener(BROWSER_LOCATION_CHANGE_EVENT, onStoreChange);
+  };
 }
 
-function getHash(): string {
-  return window.location.hash;
+function getLocationSuffix(): string | null {
+  return `${window.location.search}${window.location.hash}`;
 }
 
-function getServerHash(): string {
-  return '';
+function getServerLocationSuffix(): string | null {
+  return null;
 }
 
 function SwitcherLink({
@@ -38,17 +50,15 @@ function SwitcherLink({
   const targetLocale: Locale = locale === 'en' ? 'es' : 'en';
 
   return (
-    <Link
+    <a
       aria-label={`${label}: ${names[targetLocale]}`}
       className="language-switcher"
       href={href}
-      locale={targetLocale}
       onClick={onNavigate}
-      prefetch={false}
     >
       <Languages aria-hidden="true" size={18} />
       <span>{names[targetLocale]}</span>
-    </Link>
+    </a>
   );
 }
 
@@ -56,21 +66,27 @@ function LanguageSwitcherWithLocation({
   pathname,
   ...props
 }: LanguageSwitcherProps & {pathname: string}) {
-  const searchParams = useSearchParams();
-  const hash = useSyncExternalStore(subscribeToHashChange, getHash, getServerHash);
-  const query = searchParams.toString();
-  const href = `${pathname}${query ? `?${query}` : ''}${hash}`;
+  const locationSuffix = useSyncExternalStore(
+    subscribeToLocationChange,
+    getLocationSuffix,
+    getServerLocationSuffix,
+  );
+  const targetLocale: Locale = props.locale === 'en' ? 'es' : 'en';
+  const href = locationSuffix === null
+    ? languageSwitchGatewayHref(pathname, targetLocale)
+    : `${pathname}${locationSuffix}`;
 
-  return <SwitcherLink href={href} {...props} />;
+  return (
+    <SwitcherLink
+      href={locationSuffix === null ? href : localizeHref(href, targetLocale)}
+      {...props}
+    />
+  );
 }
 
 export function LanguageSwitcher({pathnameOverride, ...props}: LanguageSwitcherProps) {
-  const currentPathname = usePathname();
+  const currentPathname = stripLocalePrefix(usePathname() ?? '/');
   const pathname = pathnameOverride ?? currentPathname;
 
-  return (
-    <Suspense fallback={<SwitcherLink href={pathname} {...props} />}>
-      <LanguageSwitcherWithLocation pathname={pathname} {...props} />
-    </Suspense>
-  );
+  return <LanguageSwitcherWithLocation pathname={pathname} {...props} />;
 }

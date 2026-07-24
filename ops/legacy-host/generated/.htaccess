@@ -116,13 +116,13 @@ RewriteRule "^/?trial_register\.aspx$" "https://www.helpmath.ai/contact" [R=301,
 # /Login.htm -> /login
 RewriteRule "^/?Login\.htm$" "https://www.helpmath.ai/login" [R=301,L,NE]
 # /district_login.aspx -> /login
-RewriteRule "^/?district_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+RewriteRule "^/?district_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
 # /school_login.aspx -> /login
-RewriteRule "^/?school_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+RewriteRule "^/?school_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
 # /student_login.aspx -> /login
-RewriteRule "^/?student_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+RewriteRule "^/?student_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
 # /teacher_login.aspx -> /login
-RewriteRule "^/?teacher_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+RewriteRule "^/?teacher_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
 # /user_studentlogin.aspx -> /login
 RewriteRule "^/?user_studentlogin\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
 # /student_register.aspx -> /login
@@ -132,7 +132,7 @@ RewriteRule "^/?teacher_register\.aspx$" "https://www.helpmath.ai/login" [R=301,
 # /trialuser_login.aspx -> /login
 RewriteRule "^/?trialuser_login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
 # /Project_Admin_Login.aspx -> /login
-RewriteRule "^/?Project_Admin_Login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE]
+RewriteRule "^/?Project_Admin_Login\.aspx$" "https://www.helpmath.ai/login" [R=301,L,NE,QSD,NC]
 # /TechSpecs.htm -> /support
 RewriteRule "^/?TechSpecs\.htm$" "https://www.helpmath.ai/support" [R=301,L,NE]
 # /Ti.htm -> /support

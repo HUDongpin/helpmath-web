@@ -1,9 +1,6 @@
-'use client';
+import type {Locale} from '@/content/types';
 
-import {useLocale} from '@/i18n/navigation';
-
-export function PageHeroMotif() {
-  const locale = useLocale();
+export function PageHeroMotif({locale}: {locale: Locale}) {
   const words = locale === 'es' ? 'ocho grupos de cuatro' : 'eight groups of four';
 
   return (

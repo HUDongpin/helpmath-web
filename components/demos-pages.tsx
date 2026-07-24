@@ -3,7 +3,6 @@ import {ArrowLeft, CheckCircle2, ShieldCheck} from 'lucide-react';
 import type {DemoDetailContent, DemoId, Locale} from '@/content/types';
 import {Link} from '@/i18n/navigation';
 
-import {DemoPlayer} from './demo-player';
 import {ExecutiveDemoRuntimeLoader} from './executive-demo-runtime-loader';
 import {Callout, Container, Eyebrow, Section, SectionHeading} from './ui';
 
@@ -13,12 +12,17 @@ export function DemoDetailPage({
   locale,
   requestedFrame,
   reviewMode = false,
+  runtime,
 }: {
   content: DemoDetailContent;
   id: DemoId;
   locale: Locale;
   requestedFrame?: number;
   reviewMode?: boolean;
+  runtime: {
+    globalName: string;
+    source: string;
+  };
 }) {
   const reviewNotice = locale === 'es'
     ? 'Revisión ejecutiva interna. Este prototipo heredado no está validado como fiel o completo. El audio, la aceptación técnica y la revisión de derechos siguen pendientes. No se autoriza su distribución ni republicación pública.'
@@ -44,7 +48,7 @@ export function DemoDetailPage({
       ) : null}
       <header className="demo-detail-header">
         <Container>
-          <Link className="back-link" href={backHref}>
+          <Link className="back-link" href={backHref} locale={locale}>
             <ArrowLeft aria-hidden="true" size={18} />
             {backLabel}
           </Link>
@@ -69,21 +73,14 @@ export function DemoDetailPage({
               <span>{content.playerLabel}</span>
               <span>{id.replace('conversion-', 'Conversion ')}</span>
             </div>
-            {reviewMode ? (
-              <ExecutiveDemoRuntimeLoader
-                content={content}
-                demoId={id}
-                locale={locale}
-                requestedFrame={requestedFrame}
-              />
-            ) : (
-              <DemoPlayer
-                content={content}
-                demoId={id}
-                locale={locale}
-                requestedFrame={requestedFrame}
-              />
-            )}
+            <ExecutiveDemoRuntimeLoader
+              content={content}
+              demoId={id}
+              locale={locale}
+              requestedFrame={requestedFrame}
+              runtimeGlobalName={runtime.globalName}
+              runtimeSource={runtime.source}
+            />
           </div>
           <p className="demo-reduced-note">{content.reducedMotionNote}</p>
         </Container>

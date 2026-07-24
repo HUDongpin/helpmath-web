@@ -14,6 +14,7 @@ import {
   isExecutivePreviewAssetPublic,
   serveExecutivePreviewAsset,
 } from '@/lib/executive-preview-resources';
+import {getDemoLifecycleCatalog} from '@/lib/demo-lifecycle';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -34,10 +35,15 @@ async function serveAsset(
 ) {
   const {asset} = await params;
   const relativePath = asset.join('/');
-  const publiclyAccessible = isExecutivePreviewAssetPublic(relativePath);
+  const publicDemoIds = getDemoLifecycleCatalog().publicIds;
+  const publiclyAccessible = isExecutivePreviewAssetPublic(
+    relativePath,
+    publicDemoIds,
+  );
   return serveExecutivePreviewAsset({
     authorized: publiclyAccessible ? false : await isAuthorized(request),
     headOnly,
+    publicDemoIds,
     readFile,
     requestKey: relativePath,
     root: path.join(process.cwd(), 'private-demo-assets'),

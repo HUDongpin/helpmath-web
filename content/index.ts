@@ -1,6 +1,7 @@
 import { enContent } from "./en";
 import { esContent } from "./es";
 import {indexableDemoIds, demoIds, reviewDemoIds} from "../demos/catalog";
+import {getDemoLifecycleCatalog} from "../lib/demo-lifecycle";
 import {applyDemoLifecycleContent} from "./demo-lifecycle-content";
 import type { Locale, SiteContent } from "./types";
 
@@ -9,13 +10,18 @@ export * from "./types";
 export const defaultLocale: Locale = "en";
 export const supportedLocales = ["en", "es"] as const satisfies readonly Locale[];
 
+const baseSiteContent: Readonly<Record<Locale, SiteContent>> = {
+  en: enContent,
+  es: esContent,
+};
+
 export const siteContent: Readonly<Record<Locale, SiteContent>> = {
-  en: applyDemoLifecycleContent(enContent, {
+  en: applyDemoLifecycleContent(baseSiteContent.en, {
     publicDemoIds: demoIds,
     indexableDemoIds,
     reviewDemoIds,
   }),
-  es: applyDemoLifecycleContent(esContent, {
+  es: applyDemoLifecycleContent(baseSiteContent.es, {
     publicDemoIds: demoIds,
     indexableDemoIds,
     reviewDemoIds,
@@ -38,6 +44,19 @@ export function normalizeLocale(value: string | null | undefined): Locale {
 
 export function getSiteContent(locale?: string | null): SiteContent {
   return siteContent[normalizeLocale(locale)];
+}
+
+export function getRuntimeSiteContent(
+  locale?: string | null,
+  nowMs = Date.now(),
+): SiteContent {
+  const normalizedLocale = normalizeLocale(locale);
+  const lifecycle = getDemoLifecycleCatalog(nowMs);
+  return applyDemoLifecycleContent(baseSiteContent[normalizedLocale], {
+    publicDemoIds: lifecycle.publicIds,
+    indexableDemoIds: lifecycle.indexableIds,
+    reviewDemoIds: lifecycle.privatePreviewIds,
+  });
 }
 
 export function getPageContent<Key extends keyof SiteContent["pages"]>(

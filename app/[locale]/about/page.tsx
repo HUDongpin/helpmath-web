@@ -58,7 +58,7 @@ export default async function AboutRoute({
   return (
     <>
       <MainContent>
-        <AboutPage content={content} />
+        <AboutPage content={content} locale={locale} />
       </MainContent>
       <script
         dangerouslySetInnerHTML={{__html: structuredData}}

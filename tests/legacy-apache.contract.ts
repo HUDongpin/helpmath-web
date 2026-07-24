@@ -9,15 +9,22 @@ import {describe, it} from 'node:test';
 
 import {
   LEGACY_APACHE_OUTPUT_PATHS,
+  LEGACY_LOGIN_CONTAINMENT_OUTPUT_PATHS,
+  LEGACY_LOGIN_CONTAINMENT_PATHS,
   LEGACY_TARGET_ORIGIN,
 } from '../scripts/generate-apache-legacy-redirects';
 
 const execFileAsync = promisify(execFile);
 const expectedApacheVersion = 'Apache/2.4.66';
+const expectedApacheVersionPattern = new RegExp(
+  `${expectedApacheVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|\\(|$)`,
+);
 const retiredFileMarker = 'RETIRED_SOURCE_MUST_NOT_BE_SERVED';
+const legacyPassthroughMarker = 'LEGACY_CONTENT_REMAINS_AVAILABLE_DURING_CONTAINMENT';
 const debugEnabled = process.env.HELP_MATH_APACHE_DEBUG === '1';
 
 type DeploymentMode = 'htaccess' | 'directory-include';
+type DeploymentPackage = 'cutover' | 'login-containment';
 
 function debug(message: string) {
   if (debugEnabled) {
@@ -90,19 +97,25 @@ async function stopApache(child: ChildProcess): Promise<void> {
   debug(`stop signal complete for pid ${child.pid ?? 'unknown'}`);
 }
 
-async function waitForApache(baseUrl: string, child: ChildProcess, diagnostics: () => string) {
+async function waitForApache(
+  baseUrl: string,
+  child: ChildProcess,
+  diagnostics: () => string,
+  readyPath: string,
+  readyStatus: number,
+) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     if (child.exitCode !== null || child.signalCode !== null) {
       throw new Error(`Apache exited before accepting requests.\n${diagnostics()}`);
     }
 
     try {
-      const response = await fetch(`${baseUrl}/`, {
+      const response = await fetch(`${baseUrl}${readyPath}`, {
         redirect: 'manual',
         signal: AbortSignal.timeout(500),
       });
       await response.arrayBuffer();
-      if (response.status === 301) {
+      if (response.status === readyStatus) {
         return;
       }
     } catch {
@@ -114,9 +127,15 @@ async function waitForApache(baseUrl: string, child: ChildProcess, diagnostics: 
   throw new Error(`Apache did not become ready.\n${diagnostics()}`);
 }
 
-async function startApache(httpd: string, mode: DeploymentMode) {
-  debug(`starting ${mode}`);
-  const temporaryRoot = await mkdtemp(path.join(tmpdir(), `helpmath-apache-${mode}-`));
+async function startApache(
+  httpd: string,
+  mode: DeploymentMode,
+  deploymentPackage: DeploymentPackage,
+) {
+  debug(`starting ${deploymentPackage}/${mode}`);
+  const temporaryRoot = await mkdtemp(
+    path.join(tmpdir(), `helpmath-apache-${deploymentPackage}-${mode}-`),
+  );
   const serverRoot = path.join(temporaryRoot, 'server');
   const documentRoot = path.join(temporaryRoot, 'htdocs');
   const logPath = path.join(serverRoot, 'error.log');
@@ -139,10 +158,25 @@ async function startApache(httpd: string, mode: DeploymentMode) {
     'utf8',
   );
   await writeFile(path.join(documentRoot, 'unknown-secret.txt'), retiredFileMarker, 'utf8');
+  await writeFile(path.join(documentRoot, 'About.htm'), legacyPassthroughMarker, 'utf8');
+  await writeFile(
+    path.join(documentRoot, 'legacy-untouched.txt'),
+    legacyPassthroughMarker,
+    'utf8',
+  );
 
-  const generatedHtaccess = LEGACY_APACHE_OUTPUT_PATHS[0];
-  const generatedInclude = LEGACY_APACHE_OUTPUT_PATHS[1];
-  const installedInclude = path.join(serverRoot, 'helpmath-legacy-redirects.conf');
+  const outputPaths =
+    deploymentPackage === 'cutover'
+      ? LEGACY_APACHE_OUTPUT_PATHS
+      : LEGACY_LOGIN_CONTAINMENT_OUTPUT_PATHS;
+  const generatedHtaccess = outputPaths[0];
+  const generatedInclude = outputPaths[1];
+  const installedInclude = path.join(
+    serverRoot,
+    deploymentPackage === 'cutover'
+      ? 'helpmath-legacy-redirects.conf'
+      : 'helpmath-login-containment.conf',
+  );
   if (mode === 'htaccess') {
     await copyFile(generatedHtaccess, path.join(documentRoot, '.htaccess'));
   } else {
@@ -198,7 +232,13 @@ async function startApache(httpd: string, mode: DeploymentMode) {
   const diagnostics = () => [...stdout, ...stderr].join('').slice(-8_000);
   const baseUrl = `http://127.0.0.1:${port}`;
   try {
-    await waitForApache(baseUrl, child, diagnostics);
+    await waitForApache(
+      baseUrl,
+      child,
+      diagnostics,
+      deploymentPackage === 'cutover' ? '/' : '/About.htm',
+      deploymentPackage === 'cutover' ? 301 : 200,
+    );
   } catch (error) {
     await stopApache(child);
     await rm(temporaryRoot, {recursive: true, force: true});
@@ -243,6 +283,36 @@ async function assertNotFoundWithoutLeak(baseUrl: string, requestPath: string) {
   debug(`404 ${requestPath}`);
 }
 
+async function assertLegacyPassThrough(baseUrl: string, requestPath: string) {
+  debug(`GET ${requestPath}`);
+  const response = await fetch(`${baseUrl}${requestPath}`, {redirect: 'manual'});
+  const body = await response.text();
+  assert.equal(response.status, 200, requestPath);
+  assert.equal(response.headers.get('location'), null, requestPath);
+  assert.equal(body, legacyPassthroughMarker, requestPath);
+  debug(`200 ${requestPath}`);
+}
+
+async function assertLoginContainmentRedirect(
+  baseUrl: string,
+  requestPath: string,
+  method: 'GET' | 'HEAD' | 'POST' = 'GET',
+) {
+  debug(`${method} ${requestPath}`);
+  const response = await fetch(`${baseUrl}${requestPath}`, {
+    method,
+    redirect: 'manual',
+  });
+  await response.arrayBuffer();
+  assert.equal(response.status, 301, `${method} ${requestPath}`);
+  assert.equal(
+    response.headers.get('location'),
+    `${LEGACY_TARGET_ORIGIN}/login`,
+    `${method} ${requestPath}`,
+  );
+  debug(`301 ${method} ${requestPath}`);
+}
+
 async function exerciseContract(baseUrl: string) {
   debug(`exercising ${baseUrl}`);
   await assertRedirect(baseUrl, '/', {pathname: '/'});
@@ -279,6 +349,18 @@ async function exerciseContract(baseUrl: string) {
   );
   await assertRedirect(baseUrl, '/Beta/historical-unit', {pathname: '/curriculum'});
   await assertRedirect(baseUrl, '/beta/historical-unit', {pathname: '/curriculum'});
+  for (const requestPath of LEGACY_LOGIN_CONTAINMENT_PATHS) {
+    await assertLoginContainmentRedirect(baseUrl, requestPath);
+  }
+  await assertLoginContainmentRedirect(
+    baseUrl,
+    '/STUDENT_LOGIN.ASPX?containment_probe=discard',
+  );
+  await assertLoginContainmentRedirect(
+    baseUrl,
+    '/teacher_login.aspx?containment_probe=discard',
+    'POST',
+  );
 
   await assertNotFoundWithoutLeak(baseUrl, '/Images/Help_Slideshow.swf');
   await assertNotFoundWithoutLeak(
@@ -289,17 +371,44 @@ async function exerciseContract(baseUrl: string) {
   debug(`contract complete for ${baseUrl}`);
 }
 
+async function exerciseLoginContainmentContract(baseUrl: string) {
+  debug(`exercising login containment ${baseUrl}`);
+  for (const requestPath of LEGACY_LOGIN_CONTAINMENT_PATHS) {
+    await assertLoginContainmentRedirect(baseUrl, requestPath);
+  }
+  await assertLoginContainmentRedirect(
+    baseUrl,
+    '/STUDENT_LOGIN.ASPX?containment_probe=discard',
+  );
+  await assertLoginContainmentRedirect(
+    baseUrl,
+    '/teacher_login.aspx?containment_probe=discard',
+    'POST',
+  );
+  await assertLoginContainmentRedirect(baseUrl, '/school_login.aspx', 'HEAD');
+  await assertLegacyPassThrough(baseUrl, '/About.htm');
+  await assertLegacyPassThrough(baseUrl, '/legacy-untouched.txt');
+  debug(`login containment contract complete for ${baseUrl}`);
+}
+
 describe('Apache 2.4 legacy-host cutover contract', () => {
+  it('accepts only the exact pinned Apache version token', () => {
+    assert.match('Server version: Apache/2.4.66 (Unix)', expectedApacheVersionPattern);
+    assert.doesNotMatch('Server version: Apache/2.4.660 (Unix)', expectedApacheVersionPattern);
+    assert.doesNotMatch('Server version: Apache/2.4.66evil (Unix)', expectedApacheVersionPattern);
+    assert.doesNotMatch('Server version: Apache/2.4.66.1 (Unix)', expectedApacheVersionPattern);
+  });
+
   it(
     'passes through both generated deployment forms on the pinned local Apache',
     {timeout: 30_000},
     async () => {
       const httpd = await findHttpd();
       const version = await execFileAsync(httpd, ['-v']);
-      assert.match(`${version.stdout}\n${version.stderr}`, new RegExp(expectedApacheVersion.replace('.', '\\.')));
+      assert.match(`${version.stdout}\n${version.stderr}`, expectedApacheVersionPattern);
 
       for (const mode of ['htaccess', 'directory-include'] as const) {
-        const server = await startApache(httpd, mode);
+        const server = await startApache(httpd, mode, 'cutover');
         try {
           await exerciseContract(server.baseUrl);
         } catch (error) {
@@ -308,6 +417,36 @@ describe('Apache 2.4 legacy-host cutover contract', () => {
           await stopApache(server.child);
           await rm(server.temporaryRoot, {recursive: true, force: true});
           debug(`${mode} cleanup complete`);
+        }
+      }
+    },
+  );
+});
+
+describe('Apache 2.4 emergency login-containment contract', () => {
+  it(
+    'redirects only the five retired login paths in both generated deployment forms',
+    {timeout: 30_000},
+    async () => {
+      const httpd = await findHttpd();
+      const version = await execFileAsync(httpd, ['-v']);
+      assert.match(
+        `${version.stdout}\n${version.stderr}`,
+        expectedApacheVersionPattern,
+      );
+
+      for (const mode of ['htaccess', 'directory-include'] as const) {
+        const server = await startApache(httpd, mode, 'login-containment');
+        try {
+          await exerciseLoginContainmentContract(server.baseUrl);
+        } catch (error) {
+          throw new Error(
+            `${mode} login-containment contract failed: ${String(error)}\n${server.diagnostics()}`,
+          );
+        } finally {
+          await stopApache(server.child);
+          await rm(server.temporaryRoot, {recursive: true, force: true});
+          debug(`${mode} login-containment cleanup complete`);
         }
       }
     },

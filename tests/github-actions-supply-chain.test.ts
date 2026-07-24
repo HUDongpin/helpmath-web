@@ -1,10 +1,41 @@
 import assert from 'node:assert/strict';
 import {readFile, readdir} from 'node:fs/promises';
+import {createRequire} from 'node:module';
 import path from 'node:path';
 import {describe, it} from 'node:test';
 
 const repositoryRoot = process.cwd();
 const workflowsDirectory = path.join(repositoryRoot, '.github/workflows');
+const require = createRequire(import.meta.url);
+const {load: parseYaml} = require('js-yaml') as {
+  load: (source: string) => unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+const requiredQualityCheckNames = new Set(['verify', 'browser-quality', 'lighthouse']);
+
+function assertDoesNotShadowQualityChecks(workflowName: string, source: string) {
+  const document = parseYaml(source);
+  assert.ok(isRecord(document), `${workflowName} must contain a YAML mapping`);
+  assert.ok(isRecord(document.jobs), `${workflowName} must contain a jobs mapping`);
+
+  for (const [jobId, job] of Object.entries(document.jobs)) {
+    assert.ok(
+      !requiredQualityCheckNames.has(jobId),
+      `${workflowName} must not shadow the required Quality check ${jobId}`,
+    );
+
+    if (!isRecord(job) || typeof job.name !== 'string') continue;
+    const displayName = job.name.trim();
+    assert.ok(
+      !requiredQualityCheckNames.has(displayName),
+      `${workflowName} job ${jobId} must not use the required Quality check name ${displayName}`,
+    );
+  }
+}
 
 const approvedActions = new Map([
   ['actions/checkout', '3d3c42e5aac5ba805825da76410c181273ba90b1'],
@@ -34,6 +65,37 @@ describe('GitHub Actions supply-chain policy', () => {
         );
       }
     }
+  });
+
+  it('reserves the required Quality check names for the Quality workflow', async () => {
+    const workflowNames = (await readdir(workflowsDirectory)).filter((name) =>
+      /\.ya?ml$/u.test(name),
+    );
+
+    for (const workflowName of workflowNames) {
+      if (workflowName === 'quality.yml') continue;
+      const workflow = await readFile(path.join(workflowsDirectory, workflowName), 'utf8');
+      assertDoesNotShadowQualityChecks(workflowName, workflow);
+    }
+  });
+
+  it('rejects quoted job ids and display names that shadow Quality checks', () => {
+    assert.throws(
+      () =>
+        assertDoesNotShadowQualityChecks(
+          'quoted-job.yml',
+          `jobs:\n  'verify' :\n    runs-on: ubuntu-latest\n    steps: []\n`,
+        ),
+      /must not shadow the required Quality check verify/u,
+    );
+    assert.throws(
+      () =>
+        assertDoesNotShadowQualityChecks(
+          'named-job.yml',
+          `jobs:\n  safe-job:\n    name: lighthouse\n    runs-on: ubuntu-latest\n    steps: []\n`,
+        ),
+      /must not use the required Quality check name lighthouse/u,
+    );
   });
 
   it('allows Dependabot to propose reviewed GitHub Actions commit updates', async () => {

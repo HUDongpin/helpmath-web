@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {describe, it} from 'node:test';
+import {PathParamsContext} from 'next/dist/shared/lib/hooks-client-context.shared-runtime';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 
+import LocalizedError from '../app/[locale]/error';
 import {
   ERROR_RECOVERY_COPY,
   ErrorRecovery,
@@ -12,6 +14,20 @@ import {
 } from '../components/error-recovery';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
+
+function renderLocalizedError(locale: 'en' | 'es'): string {
+  return renderToStaticMarkup(
+    createElement(
+      PathParamsContext.Provider,
+      {value: {locale}},
+      createElement(LocalizedError, {
+        error: new Error('not rendered'),
+        reset() {},
+        unstable_retry() {},
+      }),
+    ),
+  );
+}
 
 describe('error recovery experience', () => {
   it('renders complete, privacy-preserving recovery choices in both locales', () => {
@@ -39,6 +55,23 @@ describe('error recovery experience', () => {
       );
       assert.doesNotMatch(html, /digest|stack trace|error message/iu, locale);
     }
+  });
+
+  it('uses route params for the first localized error server render', () => {
+    const spanish = renderLocalizedError('es');
+    assert.ok(spanish.includes(ERROR_RECOVERY_COPY.es.title));
+    assert.ok(spanish.includes(ERROR_RECOVERY_COPY.es.retry));
+    assert.match(spanish, /href="\/es"/u);
+    assert.match(spanish, /href="\/es\/support"/u);
+    assert.ok(!spanish.includes(ERROR_RECOVERY_COPY.en.title));
+
+    const english = renderLocalizedError('en');
+    assert.ok(english.includes(ERROR_RECOVERY_COPY.en.title));
+    assert.ok(english.includes(ERROR_RECOVERY_COPY.en.retry));
+    assert.match(english, /href="\/"/u);
+    assert.match(english, /href="\/support"/u);
+    assert.ok(!english.includes(ERROR_RECOVERY_COPY.es.title));
+    assert.doesNotMatch(english, /href="\/es(?:\/support)?"/u);
   });
 
   it('derives the global fallback locale only from a leading locale segment', () => {
