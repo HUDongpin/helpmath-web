@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {describe, it} from 'node:test';
 
 const repositoryRoot = process.cwd();
+const require = createRequire(import.meta.url);
 
 function workflowJob(source: string, jobName: string) {
   const marker = `  ${jobName}:\n`;
@@ -102,11 +104,39 @@ describe('Lighthouse quality gate', () => {
     );
 
     assert.match(lighthouseConfig, /aggregationMethod: 'median'/u);
-    assert.match(lighthouseConfig, /numberOfRuns: 5/u);
-    for (const route of ['/', '/es', '/research', '/resources', '/demos']) {
-      assert.match(
-        lighthouseConfig,
-        new RegExp(`http://127\\.0\\.0\\.1:3216${route === '/' ? '/' : route}`, 'u'),
+    assert.match(lighthouseConfig, /numberOfRuns: 1/u);
+    const lighthouseRuntimeConfig = require(
+      path.join(repositoryRoot, 'lighthouserc.cjs'),
+    );
+    const urls = lighthouseRuntimeConfig.ci.collect.url as string[];
+    const routes = ['/', '/es', '/research', '/resources', '/demos'];
+    assert.equal(urls.length, 25);
+    assert.equal(lighthouseRuntimeConfig.ci.collect.numberOfRuns, 1);
+    const collectedRoutes = urls.map((rawUrl) => {
+      const url = new URL(rawUrl);
+      assert.equal(url.origin, 'http://127.0.0.1:3216');
+      assert.equal(url.search, '');
+      assert.equal(url.hash, '');
+      return url.pathname;
+    });
+    for (const route of routes) {
+      assert.equal(
+        collectedRoutes.filter(candidate => candidate === route).length,
+        5,
+      );
+    }
+    for (let round = 0; round < 5; round += 1) {
+      assert.deepEqual(
+        new Set(collectedRoutes.slice(round * 5, round * 5 + 5)),
+        new Set(routes),
+      );
+    }
+    for (const [routeIndex, route] of routes.entries()) {
+      assert.deepEqual(
+        Array.from({length: 5}, (_, round) =>
+          collectedRoutes[round * 5 + ((routeIndex - round + 5) % 5)],
+        ),
+        Array(5).fill(route),
       );
     }
     assert.match(

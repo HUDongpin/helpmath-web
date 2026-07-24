@@ -80,9 +80,11 @@ jobs:
     # standard four-core Intel runner so runner capacity does not masquerade
     # as a product regression. A runner whose per-route median benchmark falls
     # at or below Lighthouse's own slow-host boundary, or has more than one
-    # slow sample on a route, is ineligible. The whole Quality workflow may
-    # then be rerun once on a fresh runner; an eligible product-budget failure
-    # is never retried.
+    # slow sample on a route, is ineligible. Five balanced rounds rotate every
+    # route through every temporal position so runner startup and tail windows
+    # cannot be assigned permanently to one page. The whole Quality workflow
+    # may then be rerun once on a fresh runner; an eligible product-budget
+    # failure is never retried.
     runs-on: macos-15-intel
     timeout-minutes: 20
     permissions:
