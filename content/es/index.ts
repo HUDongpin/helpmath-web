@@ -530,6 +530,7 @@ export const esContent = {
         title: "Información, no matrículas ni acceso a lecciones",
         paragraphs: [
           "El sitio moderno ofrece información y estado de publicación. No incluye demostraciones públicas, lecciones completas, pruebas de ubicación, paneles docentes, tareas ni almacenamiento de progreso.",
+          "Las lecciones históricas de HELP Math incluían práctica Try It y Play It. Esas pantallas originales de Flash a menudo mostraban instrucciones de arrastrar y soltar o de juegos. Este sitio público no restaura ahora los controles interactivos equivalentes: destinos arrastrables, zonas para soltar ni widgets de respuesta. Hasta que se acepte una interacción JavaScript revisada, esas instrucciones en pantalla son ilustración histórica, no acciones que se puedan completar aquí.",
           "La futura publicación curricular depende de auditorías de fuentes y derechos, revisión didáctica, trabajo de accesibilidad y validación frente al comportamiento original.",
         ],
       },
@@ -1002,6 +1003,12 @@ export const esContent = {
           question: "¿Está disponible el curso completo de HELP Math?",
           answer:
             "Todavía no. La versión actual incluye información del proyecto, pero no demostraciones públicas. La disponibilidad curricular o de demos solo se describirá después de revisar fuentes, derechos, instrucción y accesibilidad.",
+        },
+        {
+          id: "try-it-play-it",
+          question: "¿Puedo completar las actividades Try It o Play It de arrastrar y soltar o los juegos?",
+          answer:
+            "No en este sitio público. Las lecciones históricas de HELP Math usaban actividades Flash Try It y Play It con controles de arrastre, soltar y juegos. El sitio web público actual no restaura esos widgets interactivos. Si ves instrucciones escritas como “arrastra los términos clave…”, forman parte de la ilustración original, no de controles activos. La navegación de la lección, la animación y el audio son independientes de esa capa de interacción que aún no está restaurada.",
         },
         {
           id: "student-help",
