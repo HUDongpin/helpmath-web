@@ -692,6 +692,45 @@ test('historical curriculum publishes a dated HELP Math 1.0 catalog without maki
   expectNoRuntimeIssues(issues);
 });
 
+test('curriculum and support disclose that Try It / Play It are not live drag or game controls', async ({page}) => {
+  const issues = monitorRuntimeIssues(page);
+
+  for (const viewport of [
+    {width: 1280, height: 800},
+    {width: 390, height: 844},
+  ] as const) {
+    await page.setViewportSize(viewport);
+
+    await expectDocument(page, '/curriculum', 'en');
+    const availability = page.locator('#availability');
+    await availability.scrollIntoViewIfNeeded();
+    await expect(availability.getByRole('heading', {level: 2, name: 'Information, not enrollment or lesson access'})).toBeVisible();
+    await expect(availability.getByText(/Try It and Play It practice/i)).toBeVisible();
+    await expect(
+      availability.getByText(/does not currently restore matching interactive controls/i),
+    ).toBeVisible();
+    await expect(availability.getByText(/historical artwork, not actions learners can complete/i)).toBeVisible();
+
+    await expectDocument(page, '/support', 'en');
+    const faq = page.getByRole('region', {name: 'Frequently asked questions'});
+    const tryItQuestion = faq.getByText('Can I complete Try It or Play It drag-and-drop or games?');
+    await tryItQuestion.scrollIntoViewIfNeeded();
+    await expect(tryItQuestion).toBeVisible();
+    await tryItQuestion.click();
+    await expect(faq.getByText(/does not restore those interactive widgets/i)).toBeVisible();
+    await expect(faq.getByText(/original artwork, not live controls/i)).toBeVisible();
+  }
+
+  await page.setViewportSize({width: 390, height: 844});
+  await expectDocument(page, '/es/curriculum', 'es');
+  await expect(page.locator('#availability').getByText(/Try It y Play It/i)).toBeVisible();
+  await expect(
+    page.locator('#availability').getByText(/no restaura ahora los controles interactivos equivalentes/i),
+  ).toBeVisible();
+
+  expectNoRuntimeIssues(issues);
+});
+
 test('resource library filters eighteen sourced records in both languages', async ({page}) => {
   const issues = monitorRuntimeIssues(page);
   await expectDocument(page, '/resources', 'en');
