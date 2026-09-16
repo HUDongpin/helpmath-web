@@ -1470,10 +1470,14 @@ test.describe('locale-independent resource search', () => {
 
 test('page hero motif localizes its visible math phrase', async ({page}) => {
   await expectDocument(page, '/contact', 'en');
-  await expect(page.locator('.motif-card--words')).toHaveText('eight groups of four');
+  await expect(page.locator('.motif-words--en')).toBeVisible();
+  await expect(page.locator('.motif-words--en')).toHaveText('eight groups of four');
+  await expect(page.locator('.motif-words--es')).toBeHidden();
 
   await expectDocument(page, '/es/contact', 'es');
-  await expect(page.locator('.motif-card--words')).toHaveText('ocho grupos de cuatro');
+  await expect(page.locator('.motif-words--es')).toBeVisible();
+  await expect(page.locator('.motif-words--es')).toHaveText('ocho grupos de cuatro');
+  await expect(page.locator('.motif-words--en')).toBeHidden();
 });
 
 test('support FAQ and callout landmarks have localized accessible names', {

@@ -321,6 +321,43 @@ describe('executive preview entry canonicalization', () => {
     assert.equal(await response.text(), '');
   });
 
+  it('lets Next.js RSC flight queries through on the canonical entry', async () => {
+    for (const path of [
+      '/executive-preview?_rsc=abc123',
+      '/executive-preview?error=1&_rsc=abc123',
+      '/es/executive-preview?_rsc=1hash',
+      '/es/executive-preview?error=1&_rsc=1hash',
+    ]) {
+      const response = await proxy(new NextRequest(`${origin}${path}`));
+      assert.equal(response.status, 200, path);
+      assert.equal(response.headers.get('location'), null, path);
+      assert.equal(await response.text(), '', path);
+    }
+  });
+
+  it('still strips leakable query when an RSC param is also present', async () => {
+    const response = await proxy(new NextRequest(
+      `${origin}/executive-preview?returnTo=${encodedEnglishDemoPath}&_rsc=abc123`,
+    ));
+    const body = await response.text();
+    const location = response.headers.get('location');
+    const disclosureSurface = [
+      ...response.headers.entries().map(([name, value]) => `${name}: ${value}`),
+      body,
+    ].join('\n');
+
+    assert.equal(response.status, 307);
+    assert.ok(location);
+    const target = new URL(location, origin);
+    assert.equal(target.origin, origin);
+    assert.equal(`${target.pathname}${target.search}`, '/executive-preview');
+    assert.equal(body, '');
+    assert.doesNotMatch(disclosureSurface, /returnto/iu);
+    assert.doesNotMatch(disclosureSurface, /conversion-1-2/iu);
+    assert.doesNotMatch(disclosureSurface, /\/demos\//iu);
+    assert.doesNotMatch(disclosureSurface, /_rsc/iu);
+  });
+
   it('uses private temporary redirects for path-only canonicalization', async () => {
     for (const [path, expectedLocation] of [
       ['/executive-preview/', '/executive-preview'],
