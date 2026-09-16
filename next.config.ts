@@ -255,6 +255,7 @@ export const legacyRedirects: NonNullable<NextConfig['redirects']> = async () =>
 const nextConfig: NextConfig = {
   experimental: {
     globalNotFound: true,
+    optimizePackageImports: ['lucide-react'],
   },
   images: {
     localPatterns: [],
