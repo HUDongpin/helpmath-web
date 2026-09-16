@@ -530,6 +530,7 @@ export const enContent = {
         title: "Information, not enrollment or lesson access",
         paragraphs: [
           "The modern site currently offers project information and publication status. It does not provide public lesson demos, full lessons, placement testing, teacher dashboards, class assignments, or student progress storage.",
+          "Archived HELP Math lessons included Try It and Play It practice. Those original Flash screens often showed drag-and-drop or game instructions. This public site does not currently restore matching interactive controls—drag targets, drop zones, or answer widgets. Until a reviewed JavaScript interaction is accepted, any such on-screen instructions are historical artwork, not actions learners can complete here.",
           "Future curriculum publication depends on source audit, rights review, instructional review, accessibility work, and validation against original behavior.",
         ],
       },
@@ -1002,6 +1003,12 @@ export const enContent = {
           question: "Is the full HELP Math course available?",
           answer:
             "Not yet. The current release includes project information but no public lesson demonstrations. Curriculum or demo availability will be described only after source, rights, instructional, and accessibility reviews are complete.",
+        },
+        {
+          id: "try-it-play-it",
+          question: "Can I complete Try It or Play It drag-and-drop or games?",
+          answer:
+            "Not on this public site. Historical HELP Math lessons used Flash Try It and Play It activities with drag, drop, and game controls. The current public website does not restore those interactive widgets. If you see written instructions such as “drag the key terms…”, they are part of the original artwork, not live controls. Lesson navigation, animation playback, and audio are separate from that missing interaction layer.",
         },
         {
           id: "student-help",
