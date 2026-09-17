@@ -23,7 +23,7 @@ not authorize a status change. Record the manifest SHA-256 in release evidence.
 5. Configure a provider or edge rate limit for `/api/contact`; the route also
    validates Turnstile action and hostname and rejects non-JSON or oversized
    bodies.
-6. Deploy a protected Preview, bind it to the exact private-repository commit
+6. Deploy a protected Preview, bind it to the exact repository commit
    using the authenticated checks in `RELEASE_EVIDENCE.md`, and run the browser
    suite and release smoke against that Preview with the automation bypass
    secret supplied only through the local environment.
