@@ -755,14 +755,14 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expect(englishSearch).toBeEnabled();
   await englishSearch.fill('WWC');
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
-  await expect(library.locator('.resource-entry')).toHaveCount(3);
+  await expect(library.locator('.resource-entry').filter({visible: true})).toHaveCount(3);
   const englishResearchFilter = library.getByRole('button', {name: /Research/});
   await expect(englishResearchFilter).toBeEnabled();
   await englishResearchFilter.click();
   await expect(library.getByRole('status')).toHaveText('3 resources shown');
   await englishSearch.fill('');
   await expect(library.getByRole('status')).toHaveText('12 resources shown');
-  await expect(library.locator('.resource-entry')).toHaveCount(12);
+  await expect(library.locator('.resource-entry').filter({visible: true})).toHaveCount(12);
   await expect(library.getByRole('heading', {name: 'About HELP Math'})).toHaveCount(0);
 
   await expectDocument(page, '/es/resources', 'es');
@@ -776,7 +776,7 @@ test('resource library filters eighteen sourced records in both languages', asyn
   await expect(spanishModernizationFilter).toBeEnabled();
   await spanishModernizationFilter.click();
   await expect(spanishLibrary.getByRole('status')).toHaveText('Se muestran 2 recursos');
-  await expect(spanishLibrary.locator('.resource-entry')).toHaveCount(2);
+  await expect(spanishLibrary.locator('.resource-entry').filter({visible: true})).toHaveCount(2);
   await expect(spanishLibrary.getByRole('heading', {name: 'Notas de modernización y recuperación'})).toBeVisible();
   expectNoRuntimeIssues(issues);
 });
@@ -821,8 +821,9 @@ test('render containment preserves resource geometry, focus, and deep links', {
   const initialHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
   const search = library.getByRole('searchbox', {name: 'Search resources'});
   await search.fill('WWC');
-  await expect(entries).toHaveCount(3);
-  const filteredGeometry = await entries.evaluateAll((cards) => cards.map((card) => {
+  const visibleEntries = entries.filter({visible: true});
+  await expect(visibleEntries).toHaveCount(3);
+  const filteredGeometry = await visibleEntries.evaluateAll((cards) => cards.map((card) => {
     const bounds = card.getBoundingClientRect();
     return {bottom: bounds.bottom, top: bounds.top};
   }));
@@ -1469,10 +1470,14 @@ test.describe('locale-independent resource search', () => {
 
 test('page hero motif localizes its visible math phrase', async ({page}) => {
   await expectDocument(page, '/contact', 'en');
-  await expect(page.locator('.motif-card--words')).toHaveText('eight groups of four');
+  await expect(page.locator('.motif-words--en')).toBeVisible();
+  await expect(page.locator('.motif-words--en')).toHaveText('eight groups of four');
+  await expect(page.locator('.motif-words--es')).toBeHidden();
 
   await expectDocument(page, '/es/contact', 'es');
-  await expect(page.locator('.motif-card--words')).toHaveText('ocho grupos de cuatro');
+  await expect(page.locator('.motif-words--es')).toBeVisible();
+  await expect(page.locator('.motif-words--es')).toHaveText('ocho grupos de cuatro');
+  await expect(page.locator('.motif-words--en')).toBeHidden();
 });
 
 test('support FAQ and callout landmarks have localized accessible names', {

@@ -2297,6 +2297,18 @@ svg {
   transform: rotate(3deg);
 }
 
+.motif-words--es {
+  display: none;
+}
+
+html[lang="es"] .motif-words--en {
+  display: none;
+}
+
+html[lang="es"] .motif-words--es {
+  display: inline;
+}
+
 .motif-grid {
   display: grid;
   gap: 6px;

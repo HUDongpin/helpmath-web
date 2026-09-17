@@ -24,6 +24,9 @@ const EXECUTIVE_PREVIEW_ENTRY_CANONICAL_PATHS = new Map([
   ['/es/executive-preview', '/es/executive-preview'],
   ['/en/executive-preview', '/executive-preview'],
 ]);
+// Next App Router flight requests append `?_rsc=`. Stripping that param on an
+// already-canonical entry 307-loops the RSC client (ERR_TOO_MANY_REDIRECTS).
+const NEXT_RSC_QUERY_PARAM = '_rsc';
 
 const publicFilePaths = new Set([
   '/icon.svg',
@@ -59,6 +62,23 @@ function normalizedPathname(pathname: string) {
   return collapsed.length > 1 ? collapsed.replace(/\/+$/u, '') : collapsed;
 }
 
+function executivePreviewCanonicalSearch(searchParams: URLSearchParams) {
+  return searchParams.get('error') === '1' ? '?error=1' : '';
+}
+
+function hasUnsupportedExecutivePreviewQuery(searchParams: URLSearchParams) {
+  let sawExactErrorMarker = false;
+  for (const [key, value] of searchParams.entries()) {
+    if (key === NEXT_RSC_QUERY_PARAM) continue;
+    if (key === 'error' && value === '1' && !sawExactErrorMarker) {
+      sawExactErrorMarker = true;
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
 function canonicalizeExecutivePreviewEntry(request: NextRequest) {
   const requestPath = request.nextUrl.pathname;
   const normalizedRequestPath = normalizedPathname(requestPath);
@@ -71,11 +91,12 @@ function canonicalizeExecutivePreviewEntry(request: NextRequest) {
   // Canonicalize before the App Router renders the page. A Server Component
   // redirect serializes the original search params into its RSC response body,
   // which would disclose a private candidate path even when Location is safe.
-  // Only the exact local error marker is part of the supported entry contract.
-  const canonicalSearch = request.nextUrl.searchParams.get('error') === '1'
-    ? '?error=1'
-    : '';
-  const hasUnsupportedQuery = request.nextUrl.search !== canonicalSearch;
+  // Supported entry query is the exact local error marker, plus Next's internal
+  // RSC flight param. Location never echoes `_rsc` or leakable params.
+  const canonicalSearch = executivePreviewCanonicalSearch(request.nextUrl.searchParams);
+  const hasUnsupportedQuery = hasUnsupportedExecutivePreviewQuery(
+    request.nextUrl.searchParams,
+  );
   const hasNonCanonicalPath = requestPath !== canonicalPath;
   if (!hasUnsupportedQuery && !hasNonCanonicalPath) return null;
 
