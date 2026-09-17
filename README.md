@@ -49,14 +49,14 @@ bound to the same candidate digest.
 
 ## Deployment
 
-Import this private repository into Vercel with the repository root as the
+Import this repository into Vercel with the repository root as the
 project root. Configure the variables in `.env.example`; production contact
 delivery fails closed unless it is explicitly enabled and Turnstile and Resend
 are fully configured. See
 `docs/DEPLOYMENT.md` before promoting a deployment or changing DNS.
 Use `npm run smoke:production` for the repeatable post-deployment contract and
 record the authenticated GitHub/Vercel identity described in
-[`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md). The private repository
+[`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md). The repository
 commit is deliberately not exposed through a public health endpoint.
 The time-bounded, unauthenticated DNS/HTTP/TLS snapshot for both domains is in
 [`docs/DOMAIN_PUBLIC_BASELINE.md`](docs/DOMAIN_PUBLIC_BASELINE.md); it is not a
