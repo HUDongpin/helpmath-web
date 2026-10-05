@@ -43,8 +43,13 @@ npm run check:generated
 npm test
 npm run build
 npm run test:e2e
-npm audit --audit-level=high
+npm audit --omit=dev --audit-level=high
 ```
+
+That production audit is the merge gate. Dev-only advisories are tracked
+separately: the Quality `verify` job also runs the full
+`npm audit --audit-level=high` with `continue-on-error`, so those findings
+stay in the logs without failing the candidate.
 
 The `browser-quality` CI job separately runs `npm run test:visual` inside the
 digest-pinned Playwright Linux container declared in `quality.yml`. Treat that
