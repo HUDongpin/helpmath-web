@@ -62,7 +62,7 @@ secret by itself.
    still be needed for diagnosis.
 2. Identify the intended rollback deployment in the authenticated Vercel
    project. Match it to the full Git commit, successful Quality run, and its
-   immutable release record. Confirm it belongs to this private repository and
+   immutable release record. Confirm it belongs to this repository and
    project.
 3. Review the target against the current safety boundaries: both unauthenticated
    demo families and their assets/runtimes are closed, Contact is disabled
