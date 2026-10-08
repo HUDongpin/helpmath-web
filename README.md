@@ -6,6 +6,9 @@ locale and Spanish under `/es`.
 
 ## Local verification
 
+Use Node.js 24 matching `.nvmrc` (same major as Vercel and
+`docs/DEPLOYMENT.md`).
+
 ```bash
 npm ci
 npx playwright install chromium firefox webkit
