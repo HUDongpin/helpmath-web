@@ -1,34 +1,60 @@
 name: Executive preview lifecycle
 
 on:
-  schedule:
-    - cron: "17 0,6,12,18 * * *"
+  deployment_status:
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployment URL to verify (for example a Vercel preview URL)
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: executive-preview-lifecycle
+  group: executive-preview-lifecycle-${{ github.event.deployment.id || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment.environment == 'Preview' &&
+      github.event.deployment_status.state == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       NEXT_TELEMETRY_DISABLED: "1"
+      SMOKE_BASE_URL: ${{ github.event.deployment_status.environment_url || inputs.base_url }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resolve preview URL
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SMOKE_BASE_URL}" ]; then
+            echo "::warning title=Smoke skipped::No preview URL available. Lifecycle smoke was NOT run."
+            echo "## Executive preview lifecycle: SKIPPED (no preview URL; nothing was verified)" >> "$GITHUB_STEP_SUMMARY"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Smoke target: ${SMOKE_BASE_URL}"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.target.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - if: steps.target.outputs.run == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - if: steps.target.outputs.run == 'true'
+        run: npm ci
       - name: Verify public contract and approved preview lifecycle
+        if: steps.target.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -39,7 +65,7 @@ jobs:
             "$evidence_directory/canonical-contract.json" \
             > "$evidence_directory/lifecycle-observation.json"
       - name: Retain non-secret lifecycle evidence
-        if: always()
+        if: always() && steps.target.outputs.run == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: executive-preview-lifecycle-${{ github.run_id }}-${{ github.run_attempt }}
