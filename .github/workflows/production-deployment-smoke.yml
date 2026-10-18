@@ -155,6 +155,8 @@ jobs:
       - name: Verify canonical production contract
         id: canonical
         if: always() && steps.identity.outcome == 'success'
+        env:
+          SMOKE_BASE_URL: ${{ env.CANONICAL_URL }}
         shell: bash
         run: |
           set -euo pipefail

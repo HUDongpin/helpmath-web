@@ -37,7 +37,7 @@ transition-lock change must keep legal publishing, contact intake, demos,
 cutover, and release consumers fail closed throughout each approval and
 activation transition.
 
-After promotion, run `npm run smoke:production` against the canonical domain.
+After promotion, run `SMOKE_BASE_URL=https://PUBLIC-PRODUCTION-ALIAS npm run smoke:production`. `SMOKE_BASE_URL` is required; the script has no default target.
 This checks the exact sitemap set, metadata and reciprocal language alternates,
 internal links, legacy and `/en` redirects, branded 404 policy, draft indexing,
 private demo routes/assets/optimizer paths, static assets, security headers,
@@ -102,10 +102,15 @@ also sets a repository-enforced maximum close of
 earlier, but it cannot extend access beyond that timestamp without a reviewed
 code change. Missing, Preview, Production, and unknown `VERCEL_ENV` values are
 all ceiling-bound; only the exact `development` context may use a later local
-test fixture. The scheduled `Executive preview lifecycle` workflow runs the
+test fixture. The `Executive preview lifecycle` workflow (manual `workflow_dispatch` with
+`base_url` and `sha`, or a successful Preview `deployment_status`; no schedule) runs the
 complete public smoke without credentials, accepts a safe early close, checks
 the exact expiry while the login entry is active, and requires the entry to be
-unavailable after the repository deadline.
+unavailable after the repository deadline. The workflow first probes the target; a protected Preview (HTTP 401/403 or a
+Vercel SSO redirect) is skipped with a `SKIPPED (nothing was verified)` job
+summary, because no bypass secret is stored in Actions. Protected Previews are
+therefore not verified by this workflow; run it manually against an
+unprotected URL when verification is needed.
 
 Vercel injects `VERCEL_URL`, `VERCEL_BRANCH_URL`, and
 `VERCEL_PROJECT_PRODUCTION_URL`; do not copy them into custom variables. The
