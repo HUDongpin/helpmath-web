@@ -78,7 +78,7 @@ The following facts still require the meeting owner to record in
      SMOKE_BASE_URL=https://DEPLOYMENT-URL-TO-VERIFY \
        npm run smoke:production
 
-     PLAYWRIGHT_BASE_URL="https://www.helpmath.ai" \
+     PLAYWRIGHT_BASE_URL=https://DEPLOYMENT-URL-TO-VERIFY \
      PLAYWRIGHT_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
        npx playwright test --project=chromium --output="$PW_OUTPUT" --grep \
        'executive preview grants a short-lived private session'

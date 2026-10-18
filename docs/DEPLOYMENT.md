@@ -106,7 +106,11 @@ test fixture. The `Executive preview lifecycle` workflow (manual `workflow_dispa
 `base_url` and `sha`, or a successful Preview `deployment_status`; no schedule) runs the
 complete public smoke without credentials, accepts a safe early close, checks
 the exact expiry while the login entry is active, and requires the entry to be
-unavailable after the repository deadline.
+unavailable after the repository deadline. The workflow first probes the target; a protected Preview (HTTP 401/403 or a
+Vercel SSO redirect) is skipped with a `SKIPPED (nothing was verified)` job
+summary, because no bypass secret is stored in Actions. Protected Previews are
+therefore not verified by this workflow; run it manually against an
+unprotected URL when verification is needed.
 
 Vercel injects `VERCEL_URL`, `VERCEL_BRANCH_URL`, and
 `VERCEL_PROJECT_PRODUCTION_URL`; do not copy them into custom variables. The

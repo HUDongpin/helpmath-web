@@ -42,9 +42,6 @@ jobs:
             echo "::warning title=Smoke skipped::No preview URL available. Lifecycle smoke was NOT run."
             echo "## Executive preview lifecycle: SKIPPED (no preview URL; nothing was verified)" >> "$GITHUB_STEP_SUMMARY"
             echo "run=false" >> "$GITHUB_OUTPUT"
-          elif ! [[ "${SMOKE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error title=Missing deployment SHA::Pass the full commit SHA the deployment was built from so the smoke contract matches it."
-            exit 1
           else
             probe="$(curl --silent --show-error --output /dev/null --max-time 20 \
               --write-out '%{http_code} %{redirect_url}' "${SMOKE_BASE_URL}")"
@@ -55,6 +52,9 @@ jobs:
               echo "::warning title=Smoke skipped::${SMOKE_BASE_URL} is protected (HTTP ${status}). No bypass secret is used, so the lifecycle smoke was NOT run."
               echo "## Executive preview lifecycle: SKIPPED (protected preview, HTTP ${status}; nothing was verified)" >> "$GITHUB_STEP_SUMMARY"
               echo "run=false" >> "$GITHUB_OUTPUT"
+            elif ! [[ "${SMOKE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error title=Missing deployment SHA::Pass the full commit SHA the deployment was built from so the smoke contract matches it."
+              exit 1
             else
               echo "Smoke target: ${SMOKE_BASE_URL} at ${SMOKE_SHA}"
               echo "run=true" >> "$GITHUB_OUTPUT"
