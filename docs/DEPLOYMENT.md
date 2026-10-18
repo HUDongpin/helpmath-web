@@ -37,7 +37,7 @@ transition-lock change must keep legal publishing, contact intake, demos,
 cutover, and release consumers fail closed throughout each approval and
 activation transition.
 
-After promotion, run `SMOKE_BASE_URL=https://DEPLOYMENT-URL-TO-VERIFY npm run smoke:production`. `SMOKE_BASE_URL` is required; the script has no default target.
+After promotion, run `SMOKE_BASE_URL=https://PUBLIC-PRODUCTION-ALIAS npm run smoke:production`. `SMOKE_BASE_URL` is required; the script has no default target.
 This checks the exact sitemap set, metadata and reciprocal language alternates,
 internal links, legacy and `/en` redirects, branded 404 policy, draft indexing,
 private demo routes/assets/optimizer paths, static assets, security headers,
