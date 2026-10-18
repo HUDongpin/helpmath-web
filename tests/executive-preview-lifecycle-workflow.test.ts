@@ -9,12 +9,17 @@ const workflowPath = path.join(
 );
 
 describe('executive preview lifecycle workflow', () => {
-  it('runs on a bounded schedule and allows manual verification', async () => {
+  it('verifies an explicit preview at its own commit and never defaults to www', async () => {
     const workflow = await readFile(workflowPath, 'utf8');
 
-    assert.match(workflow, /^on:\n  schedule:/mu);
-    assert.match(workflow, /cron: "17 0,6,12,18 \* \* \*"/u);
+    assert.match(workflow, /^on:\n  deployment_status:/mu);
+    assert.doesNotMatch(workflow, /schedule:/u);
     assert.match(workflow, /^  workflow_dispatch:\s*$/mu);
+    assert.match(workflow, /github\.event\.deployment\.environment == 'Preview'/u);
+    assert.match(workflow, /SMOKE_BASE_URL: \$\{\{ github\.event\.deployment_status\.environment_url \|\| inputs\.base_url \}\}/u);
+    assert.match(workflow, /ref: \$\{\{ env\.SMOKE_SHA \}\}/u);
+    assert.match(workflow, /Smoke skipped/u);
+    assert.doesNotMatch(workflow, /www\.helpmath\.ai/u);
     assert.match(workflow, /timeout-minutes: 10/u);
   });
 

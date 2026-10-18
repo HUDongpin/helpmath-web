@@ -98,7 +98,7 @@ URL is not the canonical Production origin. After the exact reviewed deployment
 is promoted, run:
 
 ```bash
-npm run smoke:production
+SMOKE_BASE_URL="$DEPLOYMENT_URL" npm run smoke:production
 ```
 
 The `Production deployment smoke` workflow also runs after a successful GitHub

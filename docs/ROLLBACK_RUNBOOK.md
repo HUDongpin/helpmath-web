@@ -74,7 +74,7 @@ secret by itself.
 5. In authenticated Vercel evidence, confirm both `www.helpmath.ai` and the apex
    redirect are assigned as expected. Retain the prior and resulting deployment
    IDs; a successful page load alone does not prove alias identity.
-6. Run `npm run smoke:production` against the canonical domain and retain the
+6. Run `SMOKE_BASE_URL="$DEPLOYMENT_URL" npm run smoke:production` against the restored deployment and retain the
    complete JSON plus timestamp. Confirm `failures: []`, then verify the
    specific incident path from an independent network. If executive access is
    still approved, test it only through the separate ephemeral-credential

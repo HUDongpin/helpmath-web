@@ -5,7 +5,11 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Deployment URL to verify (for example a Vercel preview URL)
+        description: Immutable deployment URL to verify (per-deployment Vercel URL, not a branch alias)
+        required: false
+        type: string
+      sha:
+        description: Full 40-character commit SHA that the deployment was built from
         required: false
         type: string
 
@@ -27,6 +31,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       SMOKE_BASE_URL: ${{ github.event.deployment_status.environment_url || inputs.base_url }}
+      SMOKE_SHA: ${{ github.event.deployment.sha || inputs.sha }}
     steps:
       - name: Resolve preview URL
         id: target
@@ -37,8 +42,11 @@ jobs:
             echo "::warning title=Smoke skipped::No preview URL available. Lifecycle smoke was NOT run."
             echo "## Executive preview lifecycle: SKIPPED (no preview URL; nothing was verified)" >> "$GITHUB_STEP_SUMMARY"
             echo "run=false" >> "$GITHUB_OUTPUT"
+          elif ! [[ "${SMOKE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error title=Missing deployment SHA::Pass the full commit SHA the deployment was built from so the smoke contract matches it."
+            exit 1
           else
-            echo "Smoke target: ${SMOKE_BASE_URL}"
+            echo "Smoke target: ${SMOKE_BASE_URL} at ${SMOKE_SHA}"
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.target.outputs.run == 'true'
@@ -46,6 +54,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+          ref: ${{ env.SMOKE_SHA }}
       - if: steps.target.outputs.run == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:

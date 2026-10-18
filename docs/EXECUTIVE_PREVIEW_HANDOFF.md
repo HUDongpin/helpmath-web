@@ -19,10 +19,11 @@ transcript, screenshot, build log, or retained test artifact.
 The same absolute close and two-demo scope are enforced in
 `config/executive-preview-window.json`. Production fails closed if its Vercel
 expiry is later than that reviewed ceiling; missing or unknown deployment
-context is also ceiling-bound, and an earlier manual close remains safe. A
-credential-free scheduled lifecycle check verifies the public/private
-boundary every six hours and requires the entry to be unavailable after the
-close.
+context is also ceiling-bound, and an earlier manual close remains safe. The
+credential-free `Executive preview lifecycle` workflow no longer runs on a
+schedule: run it with `workflow_dispatch` (`base_url` plus `sha`) or let a
+successful Preview `deployment_status` trigger it. There is no automatic
+six-hourly boundary check.
 
 This review is not publication-rights approval, strict Flash fidelity
 acceptance, product acceptance, classroom-use approval, or permission to
@@ -74,6 +75,7 @@ The following facts still require the meeting owner to record in
      EXPECT_EXECUTIVE_PREVIEW_STATE=login \
      EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT=2026-07-28T15:59:00.000Z \
      SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
+     SMOKE_BASE_URL="$DEPLOYMENT_URL" \
        npm run smoke:production
 
      PLAYWRIGHT_BASE_URL="https://www.helpmath.ai" \
@@ -128,7 +130,7 @@ After the close deployment:
 1. Confirm both language entry routes show **Executive preview is
    unavailable**.
 2. Rerun
-   `EXPECT_EXECUTIVE_PREVIEW_STATE=unavailable npm run smoke:production` and
+   `SMOKE_BASE_URL="$DEPLOYMENT_URL" EXPECT_EXECUTIVE_PREVIEW_STATE=unavailable npm run smoke:production` and
    confirm both entry routes report the unavailable state, all four localized
    demo paths, 12 image resources, and two runtime resources are closed with
    private/no-store/noindex boundaries, and `failures: []`.

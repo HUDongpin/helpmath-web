@@ -59,7 +59,7 @@ project root. Configure the variables in `.env.example`; production contact
 delivery fails closed unless it is explicitly enabled and Turnstile and Resend
 are fully configured. See
 `docs/DEPLOYMENT.md` before promoting a deployment or changing DNS.
-Use `npm run smoke:production` for the repeatable post-deployment contract and
+Use `SMOKE_BASE_URL=<deployment URL> npm run smoke:production` for the repeatable post-deployment contract and
 record the authenticated GitHub/Vercel identity described in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md). The private repository
 commit is deliberately not exposed through a public health endpoint.
