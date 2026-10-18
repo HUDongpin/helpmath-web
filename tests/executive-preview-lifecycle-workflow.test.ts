@@ -43,4 +43,13 @@ describe('executive preview lifecycle workflow', () => {
     );
     assert.match(workflow, /retention-days: 30/u);
   });
+
+  it('skips protected previews instead of authenticating', async () => {
+    const workflow = await readFile(workflowPath, 'utf8');
+
+    assert.match(workflow, /Protection probe/u);
+    assert.match(workflow, /"\$\{status\}" == "401" \|\| "\$\{status\}" == "403"/u);
+    assert.match(workflow, /vercel\\\.com\/sso/u);
+    assert.match(workflow, /SKIPPED \(protected preview/u);
+  });
 });

@@ -46,8 +46,19 @@ jobs:
             echo "::error title=Missing deployment SHA::Pass the full commit SHA the deployment was built from so the smoke contract matches it."
             exit 1
           else
-            echo "Smoke target: ${SMOKE_BASE_URL} at ${SMOKE_SHA}"
-            echo "run=true" >> "$GITHUB_OUTPUT"
+            probe="$(curl --silent --show-error --output /dev/null --max-time 20 \
+              --write-out '%{http_code} %{redirect_url}' "${SMOKE_BASE_URL}")"
+            status="${probe%% *}"
+            location="${probe#* }"
+            echo "Protection probe: HTTP ${status} ${location}"
+            if [[ "${status}" == "401" || "${status}" == "403" || "${location}" =~ vercel\.com/sso|/_vercel/sso|vercel\.com/login ]]; then
+              echo "::warning title=Smoke skipped::${SMOKE_BASE_URL} is protected (HTTP ${status}). No bypass secret is used, so the lifecycle smoke was NOT run."
+              echo "## Executive preview lifecycle: SKIPPED (protected preview, HTTP ${status}; nothing was verified)" >> "$GITHUB_STEP_SUMMARY"
+              echo "run=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "Smoke target: ${SMOKE_BASE_URL} at ${SMOKE_SHA}"
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            fi
           fi
       - if: steps.target.outputs.run == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
