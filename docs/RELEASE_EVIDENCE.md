@@ -95,10 +95,12 @@ upload the temporary browser state.
 
 The script automatically skips the public-domain redirect matrix when its base
 URL is not the canonical Production origin. After the exact reviewed deployment
-is promoted, run:
+is promoted, run the command below, replacing `https://DEPLOYMENT-URL-TO-VERIFY`
+with the immutable URL of the deployment under test (the script refuses to run
+without `SMOKE_BASE_URL`):
 
 ```bash
-SMOKE_BASE_URL="$DEPLOYMENT_URL" npm run smoke:production
+SMOKE_BASE_URL=https://DEPLOYMENT-URL-TO-VERIFY npm run smoke:production
 ```
 
 The `Production deployment smoke` workflow also runs after a successful GitHub

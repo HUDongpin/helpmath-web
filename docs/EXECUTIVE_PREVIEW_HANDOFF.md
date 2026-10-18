@@ -75,7 +75,7 @@ The following facts still require the meeting owner to record in
      EXPECT_EXECUTIVE_PREVIEW_STATE=login \
      EXPECT_EXECUTIVE_PREVIEW_EXPIRES_AT=2026-07-28T15:59:00.000Z \
      SMOKE_EXECUTIVE_PREVIEW_ACCESS_KEY="$EXEC_KEY" \
-     SMOKE_BASE_URL="$DEPLOYMENT_URL" \
+     SMOKE_BASE_URL=https://DEPLOYMENT-URL-TO-VERIFY \
        npm run smoke:production
 
      PLAYWRIGHT_BASE_URL="https://www.helpmath.ai" \
@@ -130,7 +130,7 @@ After the close deployment:
 1. Confirm both language entry routes show **Executive preview is
    unavailable**.
 2. Rerun
-   `SMOKE_BASE_URL="$DEPLOYMENT_URL" EXPECT_EXECUTIVE_PREVIEW_STATE=unavailable npm run smoke:production` and
+   `SMOKE_BASE_URL=https://DEPLOYMENT-URL-TO-VERIFY EXPECT_EXECUTIVE_PREVIEW_STATE=unavailable npm run smoke:production` and
    confirm both entry routes report the unavailable state, all four localized
    demo paths, 12 image resources, and two runtime resources are closed with
    private/no-store/noindex boundaries, and `failures: []`.
