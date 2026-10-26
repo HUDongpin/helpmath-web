@@ -16,8 +16,13 @@ npm run check:demo-lifecycle
 npm test
 npm run build
 npm run test:e2e
-npm audit --audit-level=high
+npm audit --omit=dev --audit-level=high
 ```
+
+The Quality `verify` job uses that production audit as the merge gate. A
+following step runs the full `npm audit --audit-level=high` with
+`continue-on-error` so dev-only advisories stay visible in the logs without
+blocking the job.
 
 The Quality workflow also runs eight visual-regression checks in a
 digest-pinned Playwright Linux container as the image's non-root test user. The
