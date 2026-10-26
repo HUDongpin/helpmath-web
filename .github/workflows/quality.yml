@@ -36,7 +36,13 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:coverage
-      - run: npm audit --audit-level=high
+      # Production dependencies are the merge gate. Dev-only advisories
+      # (eslint, Lighthouse, and other tooling) are tracked separately by
+      # the following non-blocking audit so they stay visible in the logs.
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Report dev-tooling advisories
+        continue-on-error: true
+        run: npm audit --audit-level=high
       - run: npm run build
 
   browser-quality:
