@@ -83,7 +83,13 @@ const lifecycleModel = buildDemoLifecycleSmokeModel({
   reviewIds: demoCatalog.reviewDemoIds,
 });
 
-const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? 'https://www.helpmath.ai');
+const smokeBaseUrlInput = process.env.SMOKE_BASE_URL?.trim();
+if (!smokeBaseUrlInput) {
+  throw new Error(
+    'SMOKE_BASE_URL is required. Pass the deployment URL to verify; www.helpmath.ai is no longer a default.',
+  );
+}
+const baseUrl = new URL(smokeBaseUrlInput);
 const canonicalBaseUrl = new URL(
   process.env.SMOKE_CANONICAL_ORIGIN ?? 'https://www.helpmath.ai',
 );
@@ -1653,4 +1659,12 @@ summary.failures = failures;
 
 console.log(JSON.stringify(summary, null, 2));
 
-if (failures.length > 0) process.exitCode = 1;
+if (failures.length > 0) {
+  const shown = failures.slice(0, 50);
+  console.error(`Release smoke: ${failures.length} contract failure(s) against ${baseUrl.origin}`);
+  for (const failure of shown) console.error(`- ${failure}`);
+  if (failures.length > shown.length) {
+    console.error(`... ${failures.length - shown.length} more in the JSON summary`);
+  }
+  process.exitCode = 1;
+}
