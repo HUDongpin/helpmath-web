@@ -227,6 +227,41 @@ Do not call the domain migration complete until old apex and `www`, HTTP and
 HTTPS, representative paths, query preservation, unknown-path behavior, TLS,
 mail continuity, and Search Console checks all have retained evidence.
 
+## 6. Production surface and marketing routes
+
+Tracks issue #77. This section is an engineering observation from
+2026-10-30. It is not a decision and does not change any gate.
+
+- `www.helpmath.ai` (the apex redirects to it with a 308) is served by the
+  Vercel project `helpmath-web` (`prj_q3v5Ue0zCL1T9rzTFD21KpNc5tzu`).
+  - That project now builds `HUDongpin/help-math-2-0-workbench` (`apps/web`),
+    not this repository.
+  - The live `x-helpmath-git-commit-sha` header is
+    `cff09fae404a37ef10a93b6f323231ccb2eb0b3f` (workbench PR #29).
+  - The section 4 "Current deployed application observation" from 2026-07-23
+    therefore no longer describes production. It stays as historical
+    evidence.
+- This repository's marketing routes return `404` on production: `/about`,
+  `/research`, `/contact` and `/demos` were checked. `helpmath-web.vercel.app`
+  also returns `404`.
+- Production serves the learning platform plus the draft Privacy and Terms
+  pages.
+  - `POST /api/contact` fails closed.
+  - Robots: `robots.txt` is `Disallow: /`, and pages send `noindex`.
+- Workbench `main` has merged indexing for `www` only (workbench PR #36). Every
+  Production deployment of workbench `main` has failed since 2026-10-20, so that
+  change is not live.
+- Draft PR #60 calls this repository the sole authorized production source and
+  the workbench Preview-only. The observed deployment is the reverse.
+- All five launch gates in `config/launch-gates.json` remain `holding`.
+
+| Decision | Owner answer or evidence reference | Approved by / date |
+| --- | --- | --- |
+| Public surface of `www.helpmath.ai` until the gates unlock: the learning platform only, this marketing site, or both (and how they combine) | Pending | Pending |
+| Whether Research, Contact and Demos wait for `productionLaunch` and draft PR #60, or move to the learning platform or a subdomain | Pending | Pending |
+| What to align now: outbound messaging, README, and sitemap-metadata expectations (`lib/sitemap-metadata.ts` `STATIC_SITEMAP_PAGES`) | Pending | Pending |
+| Disposition of draft PR #60's "sole authorized production source" claim | Pending | Pending |
+
 ## Final authorization
 
 | Gate | Approver | Date | Evidence reference |
